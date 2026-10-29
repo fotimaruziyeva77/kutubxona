@@ -1,0 +1,452 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   DIZAYN TOKENLARI — SIFAT LIBRARY institutsional tizimi
+   ---------------------------------------------------------------------------
+   MAQSAD: mahsulot maktab direktori, OTM rektori, idora rahbari va davlat
+   kutubxonasi mudiriga KO'RSATILADI va SOTILADI. Shuning uchun vizual ovoz
+   "ishonchli davlat platformasi" bo'lishi kerak: toza, tartibli, sovuq ko'k,
+   ko'p oq bo'shliq. Bezak effektlari (orb, glassmorphism, gradient matn)
+   ishonchni pasaytiradi — ular yo'q.
+
+   TANLOV VA SABABI:
+   • Brend — institutsional ko'k (#2563eb → #1e3a8a). Ko'k davlat/ta'lim
+     sohasining universal rangi: bilim, barqarorlik, rasmiylik. Kutubxona
+     katalog tizimlari (WorldCat, milliy kutubxonalar) ham shu oilada.
+   • Sarlavhalar — chuqur navy (#1e3a8a). Qora emas: navy yumshoqroq va
+     brend bilan bir oilada turadi.
+   • Fon — ko'kimtir och kul (#f4f6fb). Sof oq emas: kartalar fondan
+     ajralib turadi va sahifa "qatlamli" ko'rinadi.
+   • Aksent — kahrabo/oltin. FAQAT yutuq, medal, reyting uchun (kam va
+     maqsadli). Ko'k+oltin — universitet gerblari va kitob muqovalarining
+     klassik jufti.
+   • Neytrallar — slate (sovuq kul). Ko'k bilan bir oilada; iliq kul
+     (stone) ko'k yonida sarg'ish-iflos ko'rinadi.
+
+   MUHIM: quyida standart `blue/indigo/slate/gray` shkalalari ham qayta
+   ta'riflangan. Ilova yuzlab sahifada shu utility'larni hardcode qilgan —
+   tokenni almashtirish BARCHA sahifalarni bitta faylda bir tilga keltiradi.
+   =========================================================================== */
+
+@theme {
+  /* ── Brend: institutsional ko'k ───────────────────────────────────────── */
+  --color-brand-50:  #eff5ff;
+  --color-brand-100: #dbe8fe;
+  --color-brand-200: #bfd7fe;
+  --color-brand-300: #93bbfd;
+  --color-brand-400: #6096fa;
+  --color-brand-500: #3b76f6;
+  --color-brand-600: #2563eb;  /* asosiy — tugmalar, faol holat */
+  --color-brand-700: #1d4ed8;  /* hover */
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;  /* sarlavhalar, CTA banner */
+  --color-brand-950: #172554;  /* eng chuqur — footer, siyoh bloklar */
+
+  /* ── Aksent: kahrabo-oltin (yutuq, medal, reyting) ───────────────────── */
+  --color-accent-50:  #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+
+  /* ── Ma'lumot: zumrad (donat / jamg'arma / o'sish) ───────────────────── */
+  --color-info-50:  #ecfdf5;
+  --color-info-100: #d1fae5;
+  --color-info-400: #34d399;
+  --color-info-500: #10b981;
+  --color-info-600: #059669;
+  --color-info-700: #047857;
+  --color-info-900: #064e3b;
+
+  /* ── Standart shkalalar qayta ta'riflanadi ────────────────────────────
+     blue/indigo → brend ko'ki (eski hardcode utility'lar brendga tushadi).
+     slate/gray → bir xil sovuq neytral (ikki xil kul aralashib ketmasin).
+     sky/violet/red/green — semantik ranglar, tegilmaydi. */
+  --color-blue-50:  #eff5ff;
+  --color-blue-100: #dbe8fe;
+  --color-blue-200: #bfd7fe;
+  --color-blue-300: #93bbfd;
+  --color-blue-400: #6096fa;
+  --color-blue-500: #3b76f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+  --color-blue-950: #172554;
+
+  --color-indigo-50:  #eff5ff;
+  --color-indigo-100: #dbe8fe;
+  --color-indigo-200: #bfd7fe;
+  --color-indigo-300: #93bbfd;
+  --color-indigo-400: #6096fa;
+  --color-indigo-500: #3b76f6;
+  --color-indigo-600: #2563eb;
+  --color-indigo-700: #1d4ed8;
+  --color-indigo-800: #1e40af;
+  --color-indigo-900: #1e3a8a;
+  --color-indigo-950: #172554;
+
+  --color-gray-50:  #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+
+  /* ── Sirtlar va chegaralar (semantik nomlar) ─────────────────────────── */
+  --color-surface:        #ffffff;  /* kartalar */
+  --color-surface-muted:  #f4f6fb;  /* sahifa foni — ko'kimtir och kul */
+  --color-surface-sunken: #eaeefa;
+  --color-line:           #e3e8f2;  /* standart chegara */
+  --color-line-strong:    #cbd5e6;  /* hover chegarasi */
+
+  /* ── Soyalar — nozik, ko'k tusида (qora soya "iflos" ko'rinadi) ──────── */
+  --shadow-card:       0 1px 2px 0 rgb(23 37 84 / 0.04), 0 2px 6px -1px rgb(23 37 84 / 0.06);
+  --shadow-card-hover: 0 4px 10px -2px rgb(23 37 84 / 0.08), 0 14px 28px -6px rgb(23 37 84 / 0.12);
+  --shadow-brand:      0 8px 24px -8px rgb(37 99 235 / 0.45);
+}
+
+/* Brend so'z belgisi shrifti — Plus Jakarta Sans (layout.tsx, next/font →
+   --font-jakarta). `font-display` utility shu yerdan chiqadi; matn Inter'da. */
+@theme inline {
+  --font-display: var(--font-jakarta), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: 222 47% 98%;
+  --foreground: 222 47% 11%;
+  --primary: 221 83% 53%;          /* brand-600 (#2563eb) bilan bir xil */
+  --primary-foreground: 0 0% 100%;
+  --muted: 214 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --border: 218 33% 92%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* ── Semantik tokenlarni tunga qayta ta'riflash ───────────────────────
+     `bg-surface`, `border-line`, `.card-surface` — hammasi shu
+     o'zgaruvchilarga tayanadi, shuning uchun bitta joyda qiymatni
+     almashtirish yetadi. */
+  --color-surface:        #182238;
+  --color-surface-muted:  #0f172a;
+  --color-surface-sunken: #253150;
+  --color-line:           #2a3752;
+  --color-line-strong:    #3d4c6d;
+  --shadow-card:       0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px -1px rgb(0 0 0 / 0.28);
+  --shadow-card-hover: 0 4px 10px -2px rgb(0 0 0 / 0.3), 0 14px 28px -6px rgb(0 0 0 / 0.4);
+
+  --background: 222 47% 8%;
+  --foreground: 213 31% 94%;
+  --primary: 217 91% 68%;
+  --primary-foreground: 222 47% 11%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --border: 218 28% 24%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  /* Inter next/font orqali --font-sans ga bog'lanadi (layout.tsx). */
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===========================================================================
+   TIPOGRAFIKA
+   ---------------------------------------------------------------------------
+   Katta o'lchamda harflar orasi kengroq turadi va sarlavha "tarqoq"
+   ko'rinadi. Professional maketlarda sarlavha qanchalik katta bo'lsa,
+   tracking shunchalik siqiladi.
+   =========================================================================== */
+@layer base {
+  h1, h2, h3 { letter-spacing: -0.02em; }
+  h1 { letter-spacing: -0.03em; }
+}
+
+/* ===========================================================================
+   SIRT YORDAMCHILARI
+   =========================================================================== */
+
+/* Sahifa/hero foni — tekis emas: tepada juda nozik ko'k nur.
+   Tekis fon "shablon" taassurotini beradi, bu esa chuqurlik qo'shadi. */
+.hero-canvas {
+  background-color: var(--color-surface-muted);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 85% -5%, rgb(37 99 235 / 0.10), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 5% 0%, rgb(37 99 235 / 0.06), transparent 55%);
+}
+.dark .hero-canvas {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 85% -5%, rgb(37 99 235 / 0.20), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 5% 0%, rgb(37 99 235 / 0.12), transparent 55%);
+}
+
+/* Siyoh sirt — chuqur ko'k bloklar (CTA banner, donat, footer). */
+.ink-surface {
+  background-color: var(--color-brand-900);
+  background-image:
+    radial-gradient(ellipse 65% 60% at 15% 0%, rgb(37 99 235 / 0.45), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 95% 100%, rgb(245 158 11 / 0.10), transparent 55%);
+}
+
+/* Karta — bir xil chegara + nozik soya. Har komponentda takrorlanmasin. */
+.card-surface {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+}
+.card-interactive {
+  transition: border-color 150ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+.card-interactive:hover {
+  border-color: var(--color-line-strong);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive:hover { transform: none; }
+}
+
+/* ===========================================================================
+   3D KITOB
+   ---------------------------------------------------------------------------
+   Kitob javondagi PREDMET bo'lib ko'rinishi kerak, rasm emas — o'quvchi
+   muqovani ko'rib tanlaydi. Boshlang'ich burchak kichik (-14°): kitob biroz
+   ochilgan holda turadi va koreshkasi ko'rinadi. Hoverda deyarli to'g'rilanadi
+   va ko'tariladi — "qo'lga olish" harakati.
+
+   Soya AYNAN kitob ostida va yumshoq: qattiq soya "stiker" taassuroti beradi.
+   =========================================================================== */
+.book3d {
+  transform: rotateY(-14deg) rotateX(1deg);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 420ms ease;
+  filter: drop-shadow(6px 10px 14px rgb(23 37 84 / 0.28));
+  will-change: transform;
+}
+.group:hover .book3d,
+.book3d:hover {
+  transform: rotateY(-5deg) rotateX(0deg) translateY(-8px) scale(1.02);
+  filter: drop-shadow(10px 18px 26px rgb(23 37 84 / 0.34));
+}
+.dark .book3d {
+  filter: drop-shadow(6px 10px 14px rgb(0 0 0 / 0.55));
+}
+.dark .group:hover .book3d,
+.dark .book3d:hover {
+  filter: drop-shadow(10px 18px 26px rgb(0 0 0 / 0.6));
+}
+
+/* Harakat kamaytirilgan bo'lsa — kitob tekis va qimirlamaydi.
+   Perspektiva saqlanadi (u harakat emas), lekin animatsiya yo'q. */
+@media (prefers-reduced-motion: reduce) {
+  .book3d {
+    transition: none;
+    transform: rotateY(-8deg);
+  }
+  .group:hover .book3d,
+  .book3d:hover {
+    transform: rotateY(-8deg);
+  }
+}
+
+/* ===========================================================================
+   LOGOTIP — components/brand/Logo.tsx
+   ---------------------------------------------------------------------------
+   Belgi inline SVG; gradient to'xtash nuqtalari va uchqun rangi shu yerda.
+   Tun rejimida belgi bir pog'ona yorug'roq (to'q navy fonda yo'qolmasin).
+   =========================================================================== */
+.sl-logo-c1 { stop-color: #1e40af; }
+.sl-logo-c2 { stop-color: #2563eb; }
+.sl-logo-c3 { stop-color: #60a5fa; }
+.sl-logo-p1 { stop-color: #ffffff; }
+.sl-logo-p2 { stop-color: #e0e7ff; }
+.sl-logo-spark { fill: #2563eb; }
+.dark .sl-logo-c1 { stop-color: #2563eb; }
+.dark .sl-logo-c2 { stop-color: #3b82f6; }
+.dark .sl-logo-c3 { stop-color: #60a5fa; }
+.dark .sl-logo-p2 { stop-color: #dbeafe; }
+.dark .sl-logo-spark { fill: #93c5fd; }
+
+/* Eyebrow — bo'lim ustidagi kichik belgi-yorliq. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand-600);
+}
+.eyebrow::before {
+  content: "";
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-brand-500);
+}
+.dark .eyebrow { color: var(--color-brand-300); }
+
+/* Jonli nuqta — real vaqt indikatori. */
+@keyframes sl-pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.08); }
+}
+.live-dot {
+  width: 0.5rem; height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-info-500);
+  position: relative;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: var(--color-info-500);
+  opacity: 0.3;
+  animation: sl-pulse-glow 2s ease-in-out infinite;
+}
+
+/* ===========================================================================
+   KUN/TUN REJIMI — Dark-mode retrofit (Tailwind v4)
+   ---------------------------------------------------------------------------
+   Ilova yuzlab komponentda hardcoded ochiq-rang utility'lar ishlatadi
+   (bg-white, text-gray-*, ...) — `dark:` variantlarsiz. Har bir komponentni
+   qo'lda o'zgartirmasdan, eng ko'p ishlatiladigan utility'larni `.dark`
+   ostida qayta moslaymiz. Bu qoidalar QATLAMSIZ — Tailwind'ning
+   @layer utilities'idan ustun keladi.
+   =========================================================================== */
+
+/* — Fon ranglari — */
+.dark .bg-white { background-color: #182238; }
+.dark .bg-gray-50 { background-color: #0f172a; }
+.dark .bg-gray-100 { background-color: #182238; }
+.dark .bg-gray-200 { background-color: #253150; }
+.dark .bg-slate-50 { background-color: #0f172a; }
+.dark .bg-slate-100 { background-color: #182238; }
+.dark .bg-slate-200 { background-color: #253150; }
+
+/* — Rang-aksentli pastel fonlar (semantik tusni saqlab dark tint) — */
+.dark .bg-blue-50, .dark .bg-indigo-50, .dark .bg-brand-50,
+.dark .bg-blue-100, .dark .bg-indigo-100, .dark .bg-brand-100 { background-color: #17243f; }
+.dark .text-brand-600, .dark .text-brand-700,
+.dark .text-blue-600, .dark .text-blue-700,
+.dark .text-indigo-600, .dark .text-indigo-700 { color: #93bbfd; }
+.dark .bg-sky-50 { background-color: #0e2436; }
+.dark .bg-accent-50, .dark .bg-accent-100 { background-color: #2e2410; }
+.dark .text-accent-600, .dark .text-accent-700 { color: #fbbf24; }
+.dark .bg-green-50, .dark .bg-emerald-50, .dark .bg-teal-50 { background-color: #0d2a20; }
+.dark .bg-amber-50, .dark .bg-yellow-50, .dark .bg-orange-50 { background-color: #2e2410; }
+.dark .bg-red-50, .dark .bg-rose-50 { background-color: #2d1719; }
+.dark .bg-purple-50, .dark .bg-violet-50, .dark .bg-pink-50, .dark .bg-fuchsia-50 { background-color: #241a2e; }
+.dark .bg-cyan-50 { background-color: #0e2830; }
+
+/* — Yarim-shaffof oq kontent yuzalari — */
+.dark .bg-white\/50 { background-color: rgb(24 34 56 / 0.5); }
+.dark .bg-white\/60 { background-color: rgb(24 34 56 / 0.6); }
+.dark .bg-white\/70 { background-color: rgb(24 34 56 / 0.7); }
+.dark .bg-white\/80 { background-color: rgb(24 34 56 / 0.8); }
+.dark .bg-white\/90 { background-color: rgb(24 34 56 / 0.9); }
+.dark .bg-white\/95 { background-color: rgb(24 34 56 / 0.95); }
+
+/* — Form maydonlari tun rejimida: kartadan to'qroq fon + ko'rinadigan
+   chegara, aks holda maydon karta rangiga qo'shilib ketadi. — */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.dark select,
+.dark textarea {
+  background-color: #0f172a;
+  border-color: #2a3752;
+  color: #e8eefb;
+  color-scheme: dark;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748b; }
+
+/* — Chegaralar tun rejimida ko'rinsin — */
+.dark .border-gray-100, .dark .border-slate-100 { border-color: #212d47; }
+.dark .border-gray-200, .dark .border-slate-200 { border-color: #2a3752; }
+.dark .border-gray-300, .dark .border-slate-300 { border-color: #3d4c6d; }
+
+/* — Matn ranglari — */
+.dark .text-gray-900, .dark .text-slate-900, .dark .text-black { color: #e8eefb; }
+.dark .text-gray-800, .dark .text-slate-800 { color: #dbe3f4; }
+.dark .text-gray-700, .dark .text-slate-700 { color: #c3cee4; }
+.dark .text-gray-600, .dark .text-slate-600 { color: #94a3b8; }
+.dark .text-gray-500, .dark .text-slate-500 { color: #94a3b8; }
+.dark .text-gray-400, .dark .text-slate-400 { color: #64748b; }
+
+/* — Hover fonlari — */
+.dark .hover\:bg-white:hover { background-color: #182238; }
+.dark .hover\:bg-gray-50:hover { background-color: #182238; }
+.dark .hover\:bg-gray-100:hover { background-color: #253150; }
+.dark .hover\:bg-gray-200:hover { background-color: #34426a; }
+
+/* — Pastel gradient bosqichlari — */
+.dark .from-white, .dark .from-gray-50, .dark .from-slate-50 { --tw-gradient-from: #0f172a var(--tw-gradient-from-position); }
+.dark .from-blue-50, .dark .from-indigo-50, .dark .from-sky-50 { --tw-gradient-from: #17243f var(--tw-gradient-from-position); }
+.dark .via-white, .dark .via-gray-50, .dark .via-slate-50 { --tw-gradient-via: #0f172a var(--tw-gradient-via-position); }
+.dark .via-blue-50, .dark .via-indigo-50 { --tw-gradient-via: #17243f var(--tw-gradient-via-position); }
+.dark .to-white, .dark .to-gray-50, .dark .to-slate-50 { --tw-gradient-to: #182238 var(--tw-gradient-to-position); }
+.dark .to-blue-50, .dark .to-indigo-50, .dark .to-sky-50 { --tw-gradient-to: #17243f var(--tw-gradient-to-position); }
+
+/* — Floating til/tema boshqaruvi — */
+.locale-theme-control {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* ===========================================================================
+   SUCCESS CHECK — mikro-animatsiya
+   ---------------------------------------------------------------------------
+   Doira 350ms da chiziladi, keyin belgi 250ms da — "yakunlandi" hissi.
+   =========================================================================== */
+
+.sl-success__circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: sl-draw-circle 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.sl-success__check {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: sl-draw-check 0.25s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes sl-draw-circle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes sl-draw-check {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-success__circle,
+  .sl-success__check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

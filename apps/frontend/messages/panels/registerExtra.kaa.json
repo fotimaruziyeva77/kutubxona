@@ -1,0 +1,119 @@
+{
+  "RegisterPage": {
+    "steps": {
+      "phone": "Telefon",
+      "personal": "Maǵlıwmatlar",
+      "address": "Mánzil",
+      "who": "Kim siz?",
+      "done": "Tayar"
+    },
+    "types": {
+      "CITIZEN": {
+        "label": "Ápiwayı puqara",
+        "desc": "Hesh qanday qosımsha tastıyıq kerek emes"
+      },
+      "STUDENT_SCHOOL": {
+        "label": "Mektep oqıwshısı",
+        "desc": "Mektep administratorı tárepinen 1 kúnde tastıyıqlanadı"
+      },
+      "STUDENT_UNIVERSITY": {
+        "label": "Student",
+        "desc": "JOO administratorı tárepinen 1 kúnde tastıyıqlanadı"
+      },
+      "GOVERNMENT_EMPLOYEE": {
+        "label": "Mámleket xızmetkeri",
+        "desc": "Mákeme HR administratorı tárepinen 2 kúnde tastıyıqlanadı"
+      },
+      "TEACHER": {
+        "label": "Oqıtıwshı",
+        "desc": "Mákeme administratorı tárepinen 1 kúnde tastıyıqlanadı"
+      }
+    },
+    "freeTextHint": "Erkin tekst — admin tastıyıqlawda tekseriledi",
+    "back": "Artqa",
+    "continue": "Dawam etiw",
+    "step1": {
+      "titlePhone": "Telefon nomerińizdi tastıyıqlań",
+      "titleOtp": "SMS kodtı kirgiziń",
+      "titlePassword": "Parol ornatıń",
+      "phoneLabel": "Telefon nomeri",
+      "passwordLabel": "Parol",
+      "passwordPlaceholder": "Keminde 8 belgi",
+      "confirmLabel": "Paroldi tastıyıqlań",
+      "confirmPlaceholder": "Paroldi qayta kirgiziń",
+      "continue": "Dawam etiw →",
+      "continuing": "Dawam etilmekte...",
+      "sendSms": "SMS jiberiw",
+      "sending": "Jiberilmekte...",
+      "otpSentTo": "<strong>{phone}</strong> nomerine 6 sanlı kod jiberildi",
+      "otpLabel": "Tastıyıqlaw kodı",
+      "verify": "Tastıyıqlaw",
+      "verifying": "Tekserilmekte...",
+      "changeNumber": "← Nomerdi ózgertiw",
+      "resend": "Qayta jiberiw",
+      "resendIn": "Qayta jiberiw ({seconds}s)",
+      "phoneVerified": "Telefon tastıyıqlandı. Endi kiriw parolın ornatıń."
+    },
+    "step2": {
+      "title": "Jeke maǵlıwmatlar",
+      "nameLabel": "Atı Familiyası",
+      "namePlaceholder": "Álisher Nawayı",
+      "dobLabel": "Tuwılǵan sáne",
+      "genderLabel": "Jınısı",
+      "male": "Er adam",
+      "female": "Hayal"
+    },
+    "step3": {
+      "title": "Jasaw mánzilińiz",
+      "geoError": "Aymaqlar dizimi júklenbedi.",
+      "retry": "Qayta urınıw",
+      "viloyat": "Wálayat",
+      "tuman": "Rayon / Qala",
+      "mahalla": "Máhelle / MPJ",
+      "select": "Tańlań…",
+      "street": "Kóshe",
+      "streetPlaceholder": "Ǵárezsizlik kóshesi",
+      "house": "Úy №",
+      "apartment": "Kvartira №",
+      "privateHouse": "Jeke úyde jasayman (kvartira nomeri joq)"
+    },
+    "step4": {
+      "title": "Siz kim retinde dizimnen ótpektesiz?",
+      "school": "Mektep atı",
+      "schoolPlaceholder": "Nawayı 8-mektep",
+      "class": "Klass",
+      "classPlaceholder": "9-A",
+      "university": "JOO atı",
+      "universityPlaceholder": "Nawayı mámleketlik universiteti",
+      "faculty": "Fakultet",
+      "facultyPlaceholder": "Filologiya",
+      "direction": "Baǵdar",
+      "directionPlaceholder": "Ózbek tili hám ádebiyatı",
+      "course": "Kurs",
+      "organization": "Ministrlik / Mákeme",
+      "organizationPlaceholder": "Jaslar isleri agentligi",
+      "department": "Bólim",
+      "departmentPlaceholder": "Xabar xızmeti",
+      "position": "Lawazım",
+      "positionPlaceholder": "Bas qániyge",
+      "submitting": "Saqlanbaqta...",
+      "submit": "Dizimnen ótiw"
+    },
+    "errors": {
+      "phoneIncomplete": "Telefon nomerin tolıq kirgiziń: +998 XX XXX XX XX",
+      "otpLength": "6 sanlı kodtı kirgiziń",
+      "generic": "Qátelik júz berdi",
+      "wrongCode": "Nadurıs kod",
+      "passwordMin": "Parol keminde 8 belgiden ibarat bolıwı kerek",
+      "passwordMismatch": "Paroller sáykes emes",
+      "nameRequired": "Atıńız hám familiyańızdı kirgiziń",
+      "dobRequired": "Tuwılǵan sáneńizdi kirgiziń",
+      "regionRequired": "Wálayat, rayon hám máhelleni tańlań",
+      "streetRequired": "Kóshe atın kirgiziń",
+      "houseRequired": "Úy nomerin kirgiziń",
+      "apartmentRequired": "Kvartira nomerin kirgiziń yamasa \"Jeke úy\" di belgileń"
+    },
+    "haveAccount": "Aldınnan dizimnen ótkensiz be?",
+    "login": "Kiriw"
+  }
+}

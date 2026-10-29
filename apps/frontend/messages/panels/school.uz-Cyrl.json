@@ -1,0 +1,99 @@
+{
+  "SchoolPanel": {
+    "title": "Мактаб панели",
+    "subtitle": "Ўқувчилар, статистика ва ПҚ-9 мувофиқлик",
+    "selectSchool": "Мактаб танланг",
+    "selectSchoolPlaceholder": "— Мактаб танланг —",
+    "selectSchoolHint": "Статистикани кўриш учун мактаб танланг",
+    "approve": "Тасдиқлаш",
+    "reject": "Рад этиш",
+    "cancel": "Бекор қилиш",
+    "riTitle": "Ўқиш индекси",
+    "points": "{value} балл",
+    "tabs": {
+      "overview": "Умумий",
+      "students": "Ўқувчилар",
+      "rankings": "Рейтинг"
+    },
+    "pdf": {
+      "button": "ПҚ-9 ҳисоботи",
+      "preparing": "Тайёрланмоқда…",
+      "error": "ПҚ-9 ҳисоботини юклаб бўлмади. Қайта уриниб кўринг.",
+      "subscriptionRequired": "Обуна талаб қилинади"
+    },
+    "rejectModal": {
+      "title": "Ўқувчини рад этиш",
+      "desc": "рад этилмоқда. Сабаб киритинг (камида 3 белги).",
+      "reasonPlaceholder": "Рад этиш сабаби...",
+      "minError": "Сабаб камида 3 белги бўлиши керак"
+    },
+    "overview": {
+      "loading": "Статистика юкланмоқда",
+      "errorTitle": "Статистика юкланмади",
+      "errorMessage": "Мактаб статистикасини олиб бўлмади. Интернет алоқасини текшириб, қайта уриниб кўринг.",
+      "totalStudents": "Жами ўқувчилар",
+      "activeCount": "{count} фаол",
+      "coverage": "Қамров даражаси",
+      "coverageSub": "Фаол / Жами",
+      "avgRi": "Ўртача ўқиш индекси",
+      "avgRiSub": "Ўқувчилар ўртачаси",
+      "goal20": "20 китоб мақсади",
+      "achievedPeople": "{count} киши",
+      "achievedRate": "{rate}% эришди",
+      "goalProgress": "Мақсад прогресси",
+      "goal20Annual": "20 китоб (йиллик)",
+      "studentCoverage": "Ўқувчи қамрови",
+      "activeClubs": "Фаол клуб",
+      "monthlyTransactions": "Бу ой транзакция",
+      "byClass": "Синф бўйича ўқувчилар",
+      "noClassData": "Синф маълумоти йўқ",
+      "classLabel": "{name}-синф",
+      "studentCount": "{count} ўқувчи",
+      "kAnonTitle": "Махфийлик чегараси (k<5) — ўқиш индекси яширилган",
+      "kAnonText": "Синф кичик — ўқувчи махфийлиги учун яширилди",
+      "riValue": "RI: {value}"
+    },
+    "students": {
+      "classFilterLabel": "Синф фильтри",
+      "classFilterPlaceholder": "Синф фильтри (масалан: 9A)",
+      "statusFilterLabel": "Ҳолат фильтри",
+      "allStatuses": "Барча ҳолатлар",
+      "perPage": "Саҳифада:",
+      "thName": "Исм",
+      "thClass": "Синф",
+      "thStatus": "Ҳолат",
+      "thRi": "Ўқиш индекси",
+      "thAction": "Амал",
+      "noId": "ID йўқ",
+      "notCalculated": "Ҳисобланмаган",
+      "empty": "Ўқувчилар топилмади",
+      "pageInfo": "{first}–{last} / {total} ўқувчи",
+      "prevPage": "Олдинги саҳифа",
+      "nextPage": "Кейинги саҳифа"
+    },
+    "rankings": {
+      "title": "Республика мактаб рейтинги",
+      "loading": "Рейтинг юкланмоқда",
+      "errorTitle": "Рейтинг юкланмади",
+      "errorMessage": "Мактаб рейтингини олиб бўлмади. Қайта уриниб кўринг.",
+      "emptyTitle": "Рейтинг ҳали шаклланмаган",
+      "emptyDesc": "Мактаблар фаоллиги йиғилгач республика рейтинги шу ерда кўринади.",
+      "thRank": "Ўрин",
+      "thSchool": "Мактаб",
+      "thCoverage": "Қамров %",
+      "thAvgRi": "Ўртача RI",
+      "avgRiTitle": "Ўртача ўқиш индекси",
+      "thClubActivity": "Клуб фаоллик",
+      "thTotal": "Жами балл"
+    },
+    "pq9": {
+      "title": "ПҚ-9 Мувофиқлик ҳолати",
+      "summary": "{pass}/{total} талабга мос",
+      "met": "Мос",
+      "notMet": "Мос эмас",
+      "clubCriterion": "Фаол Жадидлар изидан клуби",
+      "unitPoints": "балл",
+      "unitClub": "клуб"
+    }
+  }
+}

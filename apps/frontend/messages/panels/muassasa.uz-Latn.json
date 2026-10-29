@@ -1,0 +1,93 @@
+{
+  "MuassasaPanel": {
+    "title": "Muassasa paneli",
+    "subtitle": "O'z kutubxonangizni boshqarish, fond va foydalanuvchilarni nazorat qilish",
+    "types": {
+      "GOV": "Davlat",
+      "SCH": "Maktab",
+      "UNI": "OTM",
+      "ORG": "Idora",
+      "MAH": "Mahalla"
+    },
+    "userTypes": {
+      "CITIZEN": "Fuqaro",
+      "STUDENT_SCHOOL": "O'quvchi",
+      "STUDENT_UNIVERSITY": "Talaba",
+      "GOVERNMENT_EMPLOYEE": "Davlat xizmatchisi",
+      "TEACHER": "O'qituvchi"
+    },
+    "subStatus": {
+      "TRIAL": "Sinov (30 kun)",
+      "ACTIVE": "Faol",
+      "PENDING": "To'lov kutilmoqda",
+      "FROZEN": "Muzlatilgan",
+      "DELETED": "O'chirilgan"
+    },
+    "libsError": {
+      "title": "Kutubxonalar ro'yxati yuklanmadi",
+      "message": "Bu sizga kutubxona biriktirilmagan degani EMAS. Qayta urinib ko'ring."
+    },
+    "selectLibrary": "Kutubxona tanlang",
+    "loading": "Yuklanmoqda…",
+    "noAssignedLibrary": "Sizga biriktirilgan kutubxona topilmadi.",
+    "selectPlaceholder": "— Tanlang —",
+    "emptyPrompt": {
+      "title": "Boshlash uchun yuqoridan kutubxona tanlang",
+      "subtitle": "Fond, obuna va arizalar shu yerda ko'rinadi"
+    },
+    "libError": {
+      "title": "Kutubxona ma'lumoti yuklanmadi",
+      "message": "Server javob bermadi. Qayta urinib ko'ring."
+    },
+    "stats": {
+      "readers": "Kitobxonlar",
+      "totalBooks": "Jami kitoblar",
+      "available": "Mavjud",
+      "borrowed": "Berilgan",
+      "genres": "Turlar"
+    },
+    "subscription": {
+      "title": "Obuna holati",
+      "plan": "Tarif:",
+      "start": "Boshlanish:",
+      "end": "Tugash:",
+      "trialEnds": "Sinov muddat tugaydi:",
+      "pendingNote": "To'lov kutilmoqda. Faktura emailingizga yuborildi.",
+      "notFound": "Obuna ma'lumoti topilmadi"
+    },
+    "inventory": {
+      "loadError": "Inventarizatsiya hisobotini yuklab bo'lmadi — sahifani yangilab ko'ring.",
+      "title": "Inventarizatsiya hisoboti",
+      "alertBadge": "Farq {pct}% — Tekshirish kerak",
+      "declared": "E'lon qilingan",
+      "inSystem": "Tizimda",
+      "available": "Mavjud",
+      "borrowed": "Berilgan",
+      "discrepancy": "Farq"
+    },
+    "fund": {
+      "title": "Kitob fondi",
+      "summary": "{titles} ta nom, jami {copies} nusxa",
+      "errorTitle": "Fond yuklanmadi",
+      "errorMessage": "Bu fond bo'sh degani EMAS. Qayta urinib ko'ring.",
+      "empty": "Fond bo'sh",
+      "total": "Jami {count}",
+      "available": "Mavjud {count}",
+      "badgeNone": "Mavjud emas",
+      "badgeLow": "Oz qoldi",
+      "badgeAvailable": "Mavjud",
+      "moreHidden": "{count} ta kitob ko'rsatilmadi —",
+      "goToBooks": "Kitob fondi sahifasiga o'tish"
+    },
+    "pending": {
+      "title": "Tasdiqlash kutayotganlar",
+      "countBadge": "{count} ta",
+      "loadError": "Arizalar ro'yxatini yuklab bo'lmadi — bu ariza yo'q degani EMAS. Sahifani yangilang.",
+      "empty": "Tasdiqlash uchun yangi ariza yo'q",
+      "unknownName": "Noma'lum",
+      "appliedAt": "Ariza: {date}",
+      "approve": "Tasdiqlash",
+      "reject": "Rad etish"
+    }
+  }
+}

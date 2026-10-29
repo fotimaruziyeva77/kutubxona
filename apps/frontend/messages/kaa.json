@@ -1,0 +1,670 @@
+{
+  "common": {
+    "search": "Izlew",
+    "login": "Kiriwi",
+    "register": "Dizimge alınıw",
+    "logout": "Shıǵıw",
+    "loading": "Júkleniwde...",
+    "error": "Qátelik júz berdi",
+    "save": "Saqlaw",
+    "cancel": "Toqtatıw",
+    "confirm": "Tastıyıqlaw",
+    "back": "Artqa",
+    "yes": "Áwet",
+    "no": "Joq",
+    "close": "Jabıw",
+    "edit": "Ózgertiw",
+    "delete": "Óshiriw",
+    "submit": "Jiberiw",
+    "download": "Júklep alıw",
+    "refresh": "Jańalaw",
+    "filter": "Filtr",
+    "all": "Barlıǵı",
+    "noData": "Maǵlıwmat joq",
+    "total": "Jámi",
+    "active": "Aktiv",
+    "inactive": "Aktiv emes"
+  },
+  "nav": {
+    "home": "Bas bet",
+    "libraries": "Kitapxanalar",
+    "books": "Kitaplar",
+    "ratings": "Reytinglar",
+    "profile": "Profil",
+    "dashboard": "Basqarıw paneli",
+    "stats": "Statistika",
+    "alerts": "Eskertpeler",
+    "transactions": "Tranzaksiyalar",
+    "donate": "Donat"
+  },
+  "register": {
+    "devBypass": {
+      "title": "Telefon hám parol ornatıw",
+      "banner": "DEV rejimi: SMS OTP óshirilgen. Telefon hám parolingizdi kiritiń."
+    }
+  },
+  "login": {
+    "devBypassReset": {
+      "title": "Paroldi tiklaw",
+      "banner": "DEV rejimi: SMS OTP óshirilgen. Telefon hám jańa paroldi kiritiń."
+    }
+  },
+  "auth": {
+    "phone": "Telefon nómeri",
+    "phonePlaceholder": "+998 XX XXX XX XX",
+    "sendOtp": "SMS kod jiberiw",
+    "otpCode": "SMS kod",
+    "otpPlaceholder": "4 sanlı kod",
+    "verifyOtp": "Tastıyıqlaw",
+    "otpSent": "SMS kod jiberildi",
+    "resendIn": "{seconds} sekund keyin qayta jiberiw",
+    "firstName": "Atı",
+    "lastName": "Familiyası",
+    "birthDate": "Tuǵılǵan sánesi",
+    "gender": "Jınısı",
+    "male": "Er",
+    "female": "Áyel",
+    "userType": "Paydalanıwshı túri",
+    "citizen": "Ádettegi puqara",
+    "student": "Oqıwshı",
+    "university": "Student",
+    "employee": "Mámleketlik xızmetker",
+    "teacher": "Oqıtıwshı",
+    "viloyat": "Wálayat",
+    "tuman": "Rayon",
+    "mahalla": "Máhelle",
+    "street": "Kóshesi",
+    "house": "Úy nómeri",
+    "apartment": "Páter nómeri"
+  },
+  "home": {
+    "hero": "Milliy Kitapxana Platforması",
+    "heroDesc": "Ózbekistandaǵı barlıq kitapxanalar bir sistemada",
+    "searchPlaceholder": "Kitap, avtor yaki janr izlew...",
+    "stats": {
+      "libraries": "Kitapxana",
+      "readers": "Kitap oqıwshı",
+      "books": "Kitap",
+      "todayRead": "Búgin oqıldı",
+      "activeLibraries": "Aktiv kitapxana"
+    },
+    "b2b": {
+      "title": "Shólkemler ushın",
+      "desc": "PQ-9 talaplardı avtomatik orınlaw",
+      "demoBtn": "Demo soraw",
+      "priceBtn": "Bahaları"
+    },
+    "howItWorks": {
+      "title": "Qálaysha isleydi",
+      "step1": "Dizimge alınıń",
+      "step2": "Jaqın kitapxananı tabıń",
+      "step3": "Oqıń hám bal toplań"
+    }
+  },
+  "library": {
+    "available": "Bar",
+    "notAvailable": "Joq",
+    "reserve": "Bron etıw",
+    "distance": "{km} km uzaqlıqta",
+    "fund": "Fond",
+    "workingHours": "Jumıs waqtı",
+    "address": "Mánzili",
+    "type": {
+      "GOV": "Mámleketlik kitapxana",
+      "SCH": "Mektep kitapxanası",
+      "UNI": "Joqarı oqıw orını kitapxanası",
+      "ORG": "Shólkem kitapxanası",
+      "MAH": "Máhelle kitapxanası"
+    },
+    "billing": {
+      "title": "Meniń abonentim",
+      "loading": "Júklenbekte...",
+      "loadError": "Júkleb bolmadı: {err}",
+      "noSub": "Abonent tabılmadı",
+      "noLogin": "Kiriw kerek",
+      "noLoginDesc": "Esabıńızdı kóriw ushın aldın kiriń.",
+      "planLabel": "Tarif",
+      "trialEnds": "Sınaq tamamlanadı",
+      "daysLeft": "(qalǵan {n} kún)",
+      "nextDue": "Keyingi tólew múddeti",
+      "dueLabel": "Tólew múddeti:",
+      "amountLabel": "Summa:",
+      "frozenTitle": "Abonent muzlatılǵan",
+      "frozenReason": "Sebep: {reason}",
+      "deletedTitle": "Abonent óshirilgen",
+      "payNow": "Házir tólew",
+      "submitting": "Jiberilmekte...",
+      "invoiceCreated": "Faktura jaratıldı: {id}",
+      "renewed": "Abonent jańalandı. Bet qayta júklenedi.",
+      "historyTitle": "Fakturalar tarıyxı",
+      "history": {
+        "id": "Faktura",
+        "amount": "Summa",
+        "due": "Múddet",
+        "status": "Halat"
+      }
+    }
+  },
+  "reading": {
+    "index": "Oqıw indeksi",
+    "booksRead": "Oqılǵan kitaplar",
+    "streak": "Ketme-ket kúnler",
+    "history": "Indeks tariyxı",
+    "leaderboard": "Liderler jadveli",
+    "myIndex": "Meniń indeksim",
+    "components": {
+      "booksCount": "Kitaplar sanı",
+      "consistency": "Dúzimlililik",
+      "diversity": "Janr kóp túrliligi",
+      "discipline": "Qaytarıw intizomı",
+      "activity": "Aktivlik"
+    },
+    "sources": {
+      "library": "Kitapxana",
+      "isbn": "ISBN skan",
+      "store": "Kitap dúkeni",
+      "mutolaa": "Mutolaa platforması",
+      "ebook": "Elektron kitap"
+    }
+  },
+  "transaction": {
+    "status": {
+      "PENDING": "Kútilmekte",
+      "RESERVED": "Bron etilgen",
+      "BORROWED": "Alınǵan",
+      "RETURNED": "Qaytarılǵan",
+      "CANCELLED": "Toqtatılǵan",
+      "OVERDUE": "Múddeti ótken"
+    },
+    "type": {
+      "RESERVE": "Bron",
+      "BORROW": "Alıw",
+      "RETURN": "Qaytarıw"
+    },
+    "borrowedAt": "Alınǵan sáne",
+    "dueDate": "Qaytarıw múddeti",
+    "returnedAt": "Qaytarılǵan sáne",
+    "overdueDays": "{days} kún keshikti",
+    "extendDue": "Múddetin uzaytırıw",
+    "extendNote": "Tek 1 ret uzaytırıw múmkin (+7 kún)",
+    "noActiveBooks": "Hazır alınǵan kitap joq",
+    "history": "Kitap tariyxı",
+    "myBooks": "Meniń kitaplarım",
+    "reserveSuccess": "Wáde etilgen bron qılındı",
+    "borrowSuccess": "Kitap berildi",
+    "returnSuccess": "Kitap qaytarıldı",
+    "limitReached": "Kitap limitine jettińiz",
+    "alreadyReserved": "Bul kitap ásireden bron etilgen",
+    "scanQr": "QR kodni skan etıw",
+    "isbnScan": "ISBN skan",
+    "isbnScanDesc": "Satıp alınǵan kitaptıń ISBN kodın skan etıń"
+  },
+  "top": {
+    "title": "Ashıq reytinglar",
+    "categories": {
+      "all": "Ulıwma Top-100",
+      "male": "Erler Top-100",
+      "female": "Áyeller Top-100",
+      "students": "Oqıwshılar Top-100",
+      "university": "Studentler Top-100",
+      "families": "Top áyeller",
+      "mahallas": "Top máhelleler",
+      "schools": "Top mektepler",
+      "orgs": "Top shólkemler",
+      "districts": "Top rayonlar",
+      "regions": "Top wálayatlar",
+      "donors": "Donat etkenler"
+    },
+    "rank": "Orın",
+    "score": "Bal",
+    "books": "Kitap",
+    "region": "Aymaqlıq",
+    "updatedAt": "Jańalandı",
+    "monthly": "Aylıq",
+    "daily": "Kúnlik",
+    "weekly": "Háptelik",
+    "realtime": "Real waqıt",
+    "selectMonth": "Ay tańlanǵ",
+    "noEntries": "Áli reytingda esh kim joq"
+  },
+  "donate": {
+    "title": "Donat etıw",
+    "desc": "Sizdiń mablaǵlarıńız kitapxana fondların bayıtıwǵa sarplanadi",
+    "amount": "Miqdarı (sum)",
+    "purpose": "Maqset",
+    "purposes": {
+      "books": "Kitap satıp alıw",
+      "equipment": "Jihazlar",
+      "general": "Ulıwma fond"
+    },
+    "topDonors": "Top donatorlar",
+    "totalCollected": "Jámi jinnalanǵan",
+    "totalSpent": "Sarplanǵan",
+    "remaining": "Qalǵanı",
+    "donateBtn": "Donat etıw",
+    "anonymous": "Anonim donat",
+    "thankYou": "Raxmet! Donatıńız qabıl alındı",
+    "transparency": "Ashıqlıq esabatı",
+    "spentOn": "Qayerge sarplanǵan"
+  },
+  "stats": {
+    "title": "Statistika",
+    "national": "Milliy statistika",
+    "viloyat": "Wálayat statistikası",
+    "tuman": "Rayon statistikası",
+    "mahalla": "Máhelle statistikası",
+    "readingIndex": "Oqıwshılıq indeksi",
+    "activeReaders": "Aktiv oqıwshılar",
+    "totalBooks": "Jámi kitaplar",
+    "totalLibraries": "Jámi kitapxanalar",
+    "transactionsMonth": "Bul ay tranzaksiyalar",
+    "growth": "Ósiw",
+    "genres": "Janr analizi",
+    "shortage": "Kitap jetispewshiligi",
+    "mapTitle": "Oqıwshılıq indeksi xaritası",
+    "mapLegend": {
+      "high": "Joqarı (70–100)",
+      "medium": "Orta (50–69)",
+      "low": "Tómen (30–49)",
+      "veryLow": "Juda tómen (<30)"
+    },
+    "period": {
+      "today": "Búgin",
+      "week": "Bul háfte",
+      "month": "Bul ay",
+      "year": "Bul jıl"
+    }
+  },
+  "alerts": {
+    "title": "Eskertpeler",
+    "noAlerts": "Hesh qanday eskertpe joq",
+    "severity": {
+      "CRITICAL": "Kritik",
+      "WARNING": "Eskertpe",
+      "INFO": "Maǵlıwmat"
+    },
+    "resolve": "Sheshildi",
+    "resolvedAt": "Sheshilgen waqıt",
+    "active": "Aktiv eskertpeler",
+    "resolved": "Sheshilgenler"
+  },
+  "admin": {
+    "dashboard": "Basqarıw paneli",
+    "users": "Paydalanıwshılar",
+    "pendingUsers": "Kútilmekteler",
+    "approveUser": "Tastıyıqlaw",
+    "rejectUser": "Ret etıw",
+    "auditLogs": "Audit logları",
+    "riskLogs": "Risk logları",
+    "demoRequests": "Demo sorawlar",
+    "reports": "Esabatlar",
+    "downloadReport": "PDF esabat júklep alıw",
+    "reportMonth": "Aylıq esabat",
+    "userStatus": {
+      "ACTIVE": "Aktiv",
+      "PENDING": "Kútilmekte",
+      "BLOCKED": "Bloklanǵan",
+      "INACTIVE": "Aktiv emes"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "myId": "Meniń ID",
+    "downloadQr": "QR júklep alıw",
+    "readingIndex": "Oqıw indeksi",
+    "badges": "Jetiskenlikler",
+    "editProfile": "Profildi ózgertiw",
+    "joinDate": "Dizimge alınǵan sáne",
+    "trustScore": "Isenim balı",
+    "family": "Áyle",
+    "familyMembers": "Áyle aǵzaları",
+    "joinFamily": "Áylege qosılıw"
+  },
+  "offline": {
+    "banner": "Internet baylanısı joq. Kesh maǵlıwmatları kórsetilmekte.",
+    "syncPending": "Maǵlıwmatlar internet kelgende sinxronlanadı",
+    "lastSync": "Aqırǵı sinxronlaw: {time}"
+  },
+  "subscriptions": {
+    "title": "Abonentler — Admin basqarıwı",
+    "statusLabel": "Halat:",
+    "all": "Hámmesi",
+    "totalLabel": "Jámi: {n}",
+    "noPermission": "Ruqsat joq",
+    "noPermissionDesc": "Bul betke tek SUPER_ADMIN hám BUXGALTER kire aladı.",
+    "table": {
+      "library": "Kitapxana",
+      "plan": "Tarif",
+      "status": "Halat",
+      "endDate": "Tamamlanadı",
+      "reason": "Sebep",
+      "action": "Háreket",
+      "noResults": "Abonentler tabılmadı"
+    },
+    "actions": {
+      "freeze": "Muzlatıw",
+      "delete": "Óshiriw",
+      "reactivate": "Faallastırıw",
+      "terminal": "Terminal"
+    },
+    "dialog": {
+      "freezeTitle": "Abonentti muzlatıw — sebep kirgiziń",
+      "deleteTitle": "Abonentti óshiriw — sebep kirgiziń",
+      "auditNote": "Sebep audit logqa jazıladı hám ózgertirip bolmaydı.",
+      "placeholder": "Sebep (kemde 3 belgi, audit log ushın saqlanadı)",
+      "minLength": "Sebep kemde 3 belgi",
+      "submit": "Tastıyıqlaw",
+      "submitting": "Jiberildi...",
+      "cancel": "Biykarlaw"
+    },
+    "status": {
+      "TRIAL": "Sınaq",
+      "PENDING": "Kútilmekte",
+      "ACTIVE": "Faal",
+      "FROZEN": "Muzlatılǵan",
+      "DELETED": "Óshirilgen"
+    },
+    "confirmUnfreeze": "Abonentti qayta faallastırıwdı tastıyıqlaysız ba?"
+  },
+  "accessibility": {
+    "skipToContent": "Tiykarǵı kontentke otiw"
+  },
+  "recommendations": {
+    "title": "Sizge usınıs etilgen kitaplar",
+    "subtitle": "AI 4 strategiya tiykarında tanlangan",
+    "empty": "Hazirgi usınıs joq. Kitap oqıwdı baslan'!",
+    "reason": "Sebep",
+    "available": "Bar",
+    "unavailable": "Joq",
+    "loading": "Usınıslar juklenip atır...",
+    "backToProfile": "Profilge qaytu",
+    "findNearby": "Jaqın kitapxanalardan tabıw"
+  },
+  "landing": {
+    "meta": {
+      "title": "SIFAT LIBRARY — Milliy Kitap Oqıw Indeksi",
+      "description": "Ózbekistan Respublikasınıń milliy kitap oqıw monitoringi hám reyting platforması. PQ-9 qararı tiykarında islep shıǵılǵan."
+    },
+    "hero": {
+      "badge": "PQ-9 qararı tiykarında islep atır",
+      "titleTop": "Ózbekistan",
+      "titleAccent": "Kitap Oqıp atır!",
+      "type1": "Keleshek kitap oqıǵan millettiki",
+      "type2": "Hár bir kitap — jańa múmkinshilik",
+      "type3": "Búgin oqıń, erteń jetekshi bolıń",
+      "type4": "Ózbekistan oqıp atır!",
+      "monthlyReads": "kitap usı ayda oqıldı",
+      "searchPlaceholder": "Kitap atı, avtor, ISBN...",
+      "searchButton": "Izlew",
+      "statLibraries": "Kitapxana",
+      "statReaders": "Kitap oqıwshı",
+      "statBooks": "Kitap fondı",
+      "statRI": "Milliy RI balı"
+    },
+    "challenge": {
+      "title": "Oqıw sayaxatıńız usı jerden baslanadı",
+      "goal": "Jılına <b>10 kitap</b> — ózińizge bergen eń sulıw wáde",
+      "cta": "Búgin baslayman"
+    },
+    "live": {
+      "titleLive": "Real waqıt kórsetkishleri",
+      "titleStatic": "Platforma kórsetkishleri",
+      "cardTransactions": "Usı aydaǵı tranzakciyalar",
+      "cardLibraries": "Aktiv kitapxanalar",
+      "cardReaders": "Kitap oqıwshılar",
+      "cardBooks": "Kitap fondı"
+    },
+    "map": {
+      "title": "Aymaqlıq kitapxanalıq indeksi",
+      "subtitle": "14 wálayat boyınsha ortasha ball. Hár kúni jańalanadı.",
+      "score": "{score} bal",
+      "noData": "maǵlıwmat házirshe joq",
+      "legendHigh": "70+ (joqarı)",
+      "legendGood": "60–69 (jaqsı)",
+      "legendMid": "55–59 (ortasha)",
+      "legendLow": "50–54 (tómen)",
+      "legendVeryLow": "<50 (júdá tómen)",
+      "legendNoData": "Maǵlıwmat joq",
+      "legendPending": "Maǵlıwmat júklenip atır yaki házirshe joq",
+      "listTitle": "Wálayatlar reytingi",
+      "emptyTitle": "Reyting jaqında járiyalanadı",
+      "emptyDesc": "Wálayatlar boyınsha kitap oqıw indeksi maǵlıwmatları toplanıp atır.",
+      "pendingCount": "{count} aymaq — maǵlıwmat jıynalmaqta"
+    },
+    "regions": {
+      "andijan": "Andijan",
+      "bukhara": "Buxara",
+      "fergana": "Ferǵana",
+      "jizzakh": "Jizzaq",
+      "namangan": "Namangan",
+      "navoiy": "Nawayı",
+      "kashkadarya": "Qashqadárya",
+      "karakalpakstan": "Qaraqalpaqstan",
+      "samarkand": "Samarqand",
+      "sirdaryo": "Sırdárya",
+      "surkhandarya": "Surxandárya",
+      "tashkent_city": "Tashkent q.",
+      "tashkent": "Tashkent w.",
+      "khorezm": "Xorezm"
+    },
+    "top": {
+      "title": "Aylıq reyting",
+      "subtitle": "Hár aydıń 1-kúni jańalanadı.",
+      "tabReaders": "Kitap oqıwshılar",
+      "tabSchools": "Mektepler",
+      "tabRegions": "Wálayatlar",
+      "tabFamilies": "Shańaraqlar",
+      "age": "{ageGroup} jas",
+      "score": "bal",
+      "emptyTitle": "Reyting jaqında járiyalanadı",
+      "emptyDesc": "Birinshi rásmiy aylıq Top-100 juwmaqlanǵannan keyin jeńimpazlar usı jerde kórsetiledi.",
+      "viewAll": "Tolıq Top-100 di kóriw",
+      "youToo": "Siz de bolıwıńız múmkin!"
+    },
+    "stories": {
+      "title": "Platforma imkaniyatları",
+      "subtitle": "Paydalanıw scenariyleri — úlgi.",
+      "sampleBadge": "Úlgi waqıya",
+      "s1Name": "Dilnoza K.",
+      "s1Meta": "Kitap oqıwshı úlgisi · Tashkent",
+      "s1Quote": "Bir jılda 52 kitap oqıdım. SIFAT LIBRARY arqalı qaysı kitapxanada qaysı kitap barlıǵın bilemen, Reading Index bolsa hár kúni keminde 30 minut oqıwǵa xoshametleydi.",
+      "s2Name": "45-mektep kollektivi",
+      "s2Meta": "Mektep úlgisi · Samarqand",
+      "s2Quote": "Mektep reytingtegi ornın real waqıtta baqlaydı. Oqıwshılar kitap oqıwdı jarıs sıpatında kóredi, Jádidler izinen klubı hár hápte aktiv isleydi.",
+      "s3Name": "Karimovlar shańaraǵı",
+      "s3Meta": "Shańaraq úlgisi · Buxara",
+      "s3Quote": "Shańaraǵımız birgelikte oqıydı — bala da, ata-ana da. Hár bir kitap shańaraq reytingine bal qosadı, balalar kitaptı jaqsı kórip qaldı."
+    },
+    "badges": {
+      "title": "Badgeler hám jetiskenlikler",
+      "subtitle": "Oqıw dawamında avtomat beriledi.",
+      "share": "Beydjlerińizdi doslarıńız benen bólisiń!",
+      "b1Name": "Birinshi kitap",
+      "b1Desc": "Birinshi kitaptı oqıw",
+      "b2Name": "7 kún izbe-iz",
+      "b2Desc": "Izbe-iz 7 kún oqıw",
+      "b3Name": "10 kitap",
+      "b3Desc": "10 kitaptı oqıp tamamlaw",
+      "b4Name": "Top-100",
+      "b4Desc": "Top-100 reytingke kiriw",
+      "b5Name": "Shańaraq oqıydı",
+      "b5Desc": "Shańaraq penen birge oqıw",
+      "b6Name": "100 bal",
+      "b6Desc": "Reading Index 100 bal",
+      "b7Name": "Juldız kitap oqıwshı",
+      "b7Desc": "3 ay izbe-iz Top-100 de",
+      "b8Name": "Legenda",
+      "b8Desc": "1 jılda 100 kitap"
+    },
+    "roles": {
+      "title": "Rolińizdi saylań",
+      "subtitle": "Hár bir rol ushın ayrıqsha imkaniyatlar.",
+      "registerCta": "Dizimge alınıw",
+      "loginCta": "Kiriw",
+      "citizen": {
+        "label": "Puqara",
+        "desc": "Kitap oqıw arqalı ósemen",
+        "f1": "Biypul dizim, QR pasport",
+        "f2": "Reading Index hám reyting",
+        "f3": "Beydj hám jetiskenlikler sisteması"
+      },
+      "student": {
+        "label": "Student",
+        "desc": "JOO yaki mektep oqıwshısı",
+        "f1": "5 ke shekem kitap alıw múmkinshiligi",
+        "f2": "Mektep/JOO reytinginde qatnasıw",
+        "f3": "Jádidler izinen klubı"
+      },
+      "teacher": {
+        "label": "Oqıtıwshı",
+        "desc": "Tálim tarawı xızmetkeri",
+        "f1": "Klub basshısı bolıw múmkinshiligi",
+        "f2": "Oqıwshılar monitoringi",
+        "f3": "PQ-9 esabatı avtomatik"
+      },
+      "employee": {
+        "label": "Xızmetker",
+        "desc": "Mámleket mákemesi xızmetkeri",
+        "f1": "Mákeme ishki reytingi",
+        "f2": "Kitap oqıw saatın esapqa alıw",
+        "f3": "Kásip ádebiyatları dizimi"
+      }
+    },
+    "how": {
+      "title": "Qalay isleydi?",
+      "subtitle": "3 ápiwayı qádemde baslań — barlıǵı biypul",
+      "s1Title": "Dizimge alınıń",
+      "s1Desc": "Telefon nomerin hám jeke maǵlıwmatlarıńızdı kiritiń. SMS tastıyıqlaw arqalı unikal ID hám QR kod alıń.",
+      "s1Time": "~ 2 minut",
+      "s2Title": "Kitapxanaǵa barıń",
+      "s2Desc": "Jaqın kitapxananı tabıń, QR kodıńızdı kórsetiń hám kitaptı alıń. Bron qılıw da múmkin!",
+      "s2Time": "~ 30 sekund",
+      "s3Title": "Bal toplań",
+      "s3Desc": "Kitap oqıń, Reading Index óssin, beydj jıynań hám Top-100 ge kiriw ushın jarısıń!",
+      "s3Time": "Hár kúni"
+    },
+    "b2b": {
+      "eyebrow": "Shólkemler ushın",
+      "titleTop": "PQ-9 minnetlemelerin",
+      "titleAccent": "avtomatlastırıń",
+      "subtitle": "Real waqıt monitoring, avtomat PQ-9 esabatı hám muwapıqlıq baqlawı.",
+      "schools": {
+        "title": "Mektepler",
+        "f1": "PQ-9 esabatı — 1 túyme menen PDF",
+        "f2": "Jádidler izinen klub monitoringi",
+        "f3": "Oqıwshı aktivligi paneli",
+        "f4": "Shereklik avtomatik esabat",
+        "f5": "Mektep reytinginde qatnasıw"
+      },
+      "universities": {
+        "title": "JOOlar",
+        "f1": "Akkreditaciya ushın sanlı kitapxana",
+        "f2": "Studentler Reading Index i",
+        "f3": "5 jaqın kitapxana birlestiriledi",
+        "f4": "Ilimiy ádebiyatlar bólimi",
+        "f5": "Fakultet statistikası"
+      },
+      "orgs": {
+        "title": "Mákemeler",
+        "f1": "Kitap múyeshi hám oqıw saatı",
+        "f2": "Xızmetkerler ishki reytingi",
+        "f3": "PQ-9 minnetlemeleri avtomatik",
+        "f4": "Eń aktiv xızmetkerge sıylıq usınısı",
+        "f5": "Kásip ádebiyatları sisteması"
+      },
+      "demoTitle": "Biypul demo soraw",
+      "demoDesc": "24 saat ishinde qánigemiz siz benen baylanısadı",
+      "demoSchool": "Mektep",
+      "demoUniversity": "JOO",
+      "demoOrg": "Mákeme",
+      "demoMahalla": "Máhelle",
+      "demoCta": "Demo soraw"
+    },
+    "stores": {
+      "title": "Sherik kitap dúkanları",
+      "subtitle": "Satıp alınǵan kitap ta Reading Index ke qosıladı.",
+      "f1Title": "Satıp alıń",
+      "f1Desc": "Izlew betinde sherik dúkanlardaǵı kitaplar hám bahalardı salıstırıń",
+      "f2Title": "ISBN skanerleń",
+      "f2Desc": "Satıp alınǵan kitaptı ISBN arqalı profilińizge qosıń",
+      "f3Title": "Bal toplań",
+      "f3Desc": "Tastıyıqlanǵan satıp alıwlar Reading Index ińizge qosıladı",
+      "browse": "Dúkanlardı kóriw",
+      "connect": "Dúkanıńızdı jalǵań"
+    },
+    "telegram": {
+      "title": "Telegram bot arqalı oqıń!",
+      "f1": "Kúndelikli eslatpa — kitap oqıwdı umıtpaysız",
+      "f2": "Jańa kitap xabarı — birinshiler qatarında bolıń",
+      "f3": "Beydj bildiriwi — jetiskenliklerińizdi bilip barıń",
+      "f4": "Háptelik esabat — Reading Index dinamikası",
+      "f5": "Doslardı mirát etiw — birge oqıw",
+      "qrLabel": "QR KOD",
+      "qrCaption": "Skanerlep botqa ótiń"
+    },
+    "donate": {
+      "title": "Kitapxanalarǵa járdem beriń",
+      "subtitle": "Hár bir sumıńız awıl kitapxanalarına jańa kitaplar alıp keledi",
+      "collected": "sum jıynaldı",
+      "spent": "sum jumsaldı",
+      "donors": "saqıy donatshı",
+      "statsPending": "Donat statistikası házirshe joq — barlıq túsim hám shıǵınlar usı jerde ashıq járiyalanadı.",
+      "cta": "Donat qılıw",
+      "transparent": "Barlıq shıǵınlar ashıq kórsetiledi"
+    },
+    "app": {
+      "title": "Qosımshanı júklep alıń",
+      "desc": "Awıl jerlerinde de isleydi — <b>oflayn 12 saat</b>. Internet kelgende avtomatik sinxronlasadı.",
+      "f1": "Oflayn 12 saat — awılda da isleydi",
+      "f2": "QR skaner menen 2 sekundta kitap alıń",
+      "f3": "Push bildiriwler — múddetti umıtpań",
+      "f4": "2G rejimi — júdá áste internette de isleydi",
+      "iosSub": "iOS ushın",
+      "androidSub": "Android ushın",
+      "apkLabel": "APK júklew",
+      "apkSub": "Tuwrıdan-tuwrı",
+      "mockRI": "Reading Index",
+      "mockToday": "Búgingi kitap",
+      "mockStreak": "7 kúnlik seriya!"
+    },
+    "footer": {
+      "about": "Ózbekistan Respublikasınıń milliy kitap oqıw monitoringi hám reyting platforması. PQ-9 qararı tiykarında islep atır.",
+      "pagesTitle": "Betler",
+      "linkTop": "Top-100 Reyting",
+      "linkDonate": "Donat qılıw",
+      "linkSearch": "Kitap izlew",
+      "linkRegister": "Dizimge alınıw",
+      "linkDemo": "Demo soraw",
+      "contactTitle": "Baylanıs",
+      "privacy": "Maǵlıwmatlar qorǵawı",
+      "copyright": "SIFAT LIBRARY © 2026 · Ózbekistan Jaslar isleri agentligi · PQ-9 tiykarında",
+      "since": "Platforma 2026-jıldan islep atır"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Bet tabılmadı",
+      "description": "Mánzil qáte jazılǵan yaki bet kóshirilgen bolıwı múmkin. Bas bettden dawam etiń yaki kerekli kitaptı izleń."
+    },
+    "serverError": {
+      "title": "Kútilmegen qátelik júz berdi",
+      "description": "Bul bizdiń tárepimizdegi másele — siz qáte hesh nárse islegen joqsız. Betti qayta júkleń, másele qaytalansa azdan keyin urınıp kóriń."
+    },
+    "forbidden": {
+      "title": "Ruqsat joq",
+      "description": "Bul bólimdi kóriw ushın sizdiń rolińizde huqıq joq. Kerek bolsa sistema administratorına múrájat etiń."
+    },
+    "offline": {
+      "title": "Internet baylanısı joq",
+      "description": "Baylanıs tiklengennen keyin maǵlıwmatlar avtomat jańalanadı. Kitapxana katalogı oflayn rejiminde de ashıq."
+    },
+    "actions": {
+      "home": "Bas betke",
+      "search": "Kitap izlew",
+      "retry": "Qayta urınıw",
+      "back": "Artqa qaytıw",
+      "login": "Sistemaǵa kiriw"
+    },
+    "technicalDetail": "Texnikalıq mag'lıwmat (tek dasturshı rejiminde)"
+  }
+}

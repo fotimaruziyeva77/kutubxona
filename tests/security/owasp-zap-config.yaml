@@ -1,0 +1,119 @@
+# SIFAT LIBRARY — OWASP ZAP Baseline Scan Configuration (PERF-02)
+#
+# Run via Docker:
+#   docker run -t ghcr.io/zaproxy/zaproxy zap-baseline.py \
+#     -t http://localhost:3001 \
+#     -c owasp-zap-config.yaml
+#
+# With custom target:
+#   docker run -t ghcr.io/zaproxy/zaproxy zap-baseline.py \
+#     -t http://staging.sifat.uz \
+#     -c owasp-zap-config.yaml
+#
+# WARNING: NEVER target production (sifat.uz) with security scans.
+# Always use localhost, dev.sifat.uz, or staging.sifat.uz.
+
+env:
+  contexts:
+    - name: "SIFAT API Context"
+      urls:
+        - "http://localhost:3001"
+      includePaths:
+        - ".*api.*"
+      excludePaths:
+        - ".*\\.(js|css|png|jpg|svg|ico|woff|woff2|ttf)$"
+        - ".*_next.*"
+        - ".*static.*"
+
+  parameters:
+    failOnError: true
+    progressToStdout: true
+
+# Spider configuration
+spider:
+  maxDuration: 5          # minutes
+  maxDepth: 5
+  maxChildren: 10
+  acceptCookies: true
+  handleODataParametersVisited: false
+  handleParameters: "USE_ALL"
+  requestWaitTime: 200
+
+# Active scan configuration
+activeScan:
+  policy: "API-Scan"
+  strength: "MEDIUM"
+  threshold: "MEDIUM"
+  maxRuleDurationInMins: 5
+  maxScanDurationInMins: 30
+
+# Rule overrides — disable false-positive-prone rules for API-only scan
+rules:
+  # 10015 — Incomplete/No Cache-Control Header
+  # Handled by Nginx reverse proxy in production; not relevant for API scan
+  - id: 10015
+    action: "IGNORE"
+    name: "Incomplete or No Cache-control Header Set"
+
+  # 10027 — Information Disclosure - URL Rewrite
+  # URL rewriting is handled by Next.js App Router; false positive for API
+  - id: 10027
+    action: "IGNORE"
+    name: "Information Disclosure - Suspicious Comments"
+
+  # Enable key security checks
+  - id: 10016
+    action: "WARN"
+    name: "Web Browser XSS Protection Not Enabled"
+
+  - id: 10017
+    action: "WARN"
+    name: "Cross-Domain JavaScript Source File Inclusion"
+
+  - id: 10019
+    action: "WARN"
+    name: "Content-Type Header Missing"
+
+  - id: 10021
+    action: "WARN"
+    name: "X-Content-Type-Options Header Missing"
+
+  - id: 10035
+    action: "WARN"
+    name: "Strict-Transport-Security Header"
+
+  - id: 10036
+    action: "WARN"
+    name: "Server Leaks Version Information via Server HTTP Response Header Field"
+
+  - id: 10038
+    action: "WARN"
+    name: "Content Security Policy (CSP) Header Not Set"
+
+  - id: 10098
+    action: "WARN"
+    name: "Cross-Domain Misconfiguration"
+
+  - id: 10105
+    action: "WARN"
+    name: "Weak Authentication Method"
+
+  - id: 40012
+    action: "WARN"
+    name: "Cross Site Scripting (Reflected)"
+
+  - id: 40014
+    action: "WARN"
+    name: "Cross Site Scripting (Persistent)"
+
+  - id: 40018
+    action: "WARN"
+    name: "SQL Injection"
+
+  - id: 90019
+    action: "WARN"
+    name: "Server Side Code Injection"
+
+  - id: 90020
+    action: "WARN"
+    name: "Remote OS Command Injection"

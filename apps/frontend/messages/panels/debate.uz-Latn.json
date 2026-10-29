@@ -1,0 +1,28 @@
+{
+  "DebatePage": {
+    "backToClub": "Klubga qaytish",
+    "loading": "Debat yuklanmoqda",
+    "notFoundTitle": "Debat topilmadi",
+    "notFoundDesc": "Bu debat o'chirilgan yoki havola noto'g'ri bo'lishi mumkin. Klub sahifasidagi debatlar ro'yxatini tekshiring.",
+    "errorTitle": "Debat yuklanmadi",
+    "errorMessage": "Debat ma'lumotini olib bo'lmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.",
+    "participantCount": "{count} ishtirokchi",
+    "mediaTitle": "Media fayllar ({count}/{max})",
+    "uploadingFile": "Fayl yuklanmoqda",
+    "uploadingProgress": "Yuklanmoqda ({done}/{total})",
+    "addFile": "Fayl qo'shish",
+    "errFilesLeft": "Faqat {remaining} ta fayl qoldi (maksimal {max})",
+    "errTooLarge": "{name}: 50MB dan oshib ketdi",
+    "errUploadFallback": "yuklash xatosi",
+    "mediaLoading": "Media yuklanmoqda",
+    "mediaErrorTitle": "Media fayllar yuklanmadi",
+    "mediaErrorMessage": "Debat media fayllarini olib bo'lmadi. Qayta urinib ko'ring.",
+    "noFiles": "Hali fayl yuklanmagan.",
+    "mediaAlt": "Debat media fayli",
+    "image": "Rasm",
+    "video": "Video",
+    "finalizing": "Tasdiqlanmoqda...",
+    "finalize": "Debatni tasdiqlash",
+    "finalizeHint": "Tasdiqlash uchun hech bo'lmaganda 1 ta media fayl yuklang."
+  }
+}

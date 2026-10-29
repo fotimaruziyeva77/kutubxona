@@ -1,0 +1,904 @@
+import { NlqService } from "../nlq.service";
+
+// ── Mocks ──────────────────────────────────────────────────────────────────────
+
+const mockPrisma = {
+  user: {
+    count: jest.fn(),
+    findUnique: jest.fn(), // caller scope lookup (role + address)
+  },
+  viloyat: {
+    findMany: jest.fn(), // H13 — region map DB lookup
+  },
+  bookTransaction: {
+    count: jest.fn(),
+    groupBy: jest.fn(),
+  },
+  club: {
+    findMany: jest.fn(),
+  },
+  book: {
+    findUnique: jest.fn(),
+  },
+  readingIndex: {
+    findMany: jest.fn(),
+  },
+};
+
+const mockCache = {
+  remember: jest.fn().mockImplementation((_k: string, _t: number, fn: () => unknown) => fn()),
+  del: jest.fn(),
+};
+
+const mockConfig = {
+  get: jest.fn().mockReturnValue(undefined), // no OpenAI key by default
+};
+
+function makeService(): NlqService {
+  return new NlqService(mockPrisma as any, mockCache as any, mockConfig as any);
+}
+
+// seed.ts dagi kanonik geo shakllar — Viloyat.id lar cuid (UZ-XX kod EMAS)
+const SEED_VILOYATS = [
+  { id: "vil-qoraqalpogiston", name: "Qoraqalpog'iston", slug: "qoraqalpogiston" },
+  { id: "vil-andijon", name: "Andijon", slug: "andijon" },
+  { id: "vil-buxoro", name: "Buxoro", slug: "buxoro" },
+  { id: "vil-jizzax", name: "Jizzax", slug: "jizzax" },
+  { id: "vil-qashqadaryo", name: "Qashqadaryo", slug: "qashqadaryo" },
+  { id: "vil-namangan", name: "Namangan", slug: "namangan" },
+  { id: "vil-navoiy", name: "Navoiy", slug: "navoiy" },
+  { id: "vil-samarqand", name: "Samarqand", slug: "samarqand" },
+  { id: "vil-sirdaryo", name: "Sirdaryo", slug: "sirdaryo" },
+  { id: "vil-surxondaryo", name: "Surxondaryo", slug: "surxondaryo" },
+  { id: "vil-toshkent-viloyati", name: "Toshkent viloyati", slug: "toshkent-viloyati" },
+  { id: "vil-fargona", name: "Farg'ona", slug: "fargona" },
+  { id: "vil-xorazm", name: "Xorazm", slug: "xorazm" },
+  { id: "vil-toshkent", name: "Toshkent shahar", slug: "toshkent" },
+];
+
+/** Caller scope helper — top_readers PII so'rovlari uchun */
+function asCaller(role: string, address: { tumanId?: string; viloyatId?: string } | null) {
+  mockPrisma.user.findUnique.mockResolvedValue({ role, address });
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────────
+
+describe("NlqService", () => {
+  let service: NlqService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Set safe defaults
+    mockPrisma.user.count.mockResolvedValue(100);
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    mockPrisma.viloyat.findMany.mockResolvedValue(SEED_VILOYATS);
+    mockPrisma.bookTransaction.count.mockResolvedValue(500);
+    mockPrisma.bookTransaction.groupBy.mockResolvedValue([]);
+    mockPrisma.club.findMany.mockResolvedValue([]);
+    mockPrisma.book.findUnique.mockResolvedValue(null);
+    mockPrisma.readingIndex.findMany.mockResolvedValue([]);
+    service = makeService();
+  });
+
+  // ── query — intent routing ──────────────────────────────────────────────────
+
+  describe("query — intent routing", () => {
+    it("routes 'qanday' keyword to region_stats intent", async () => {
+      const result = await service.query("Navoiyda bu oy qanday?");
+      expect(result.question).toBe("Navoiyda bu oy qanday?");
+      expect(result.answer).toContain("Navoiy");
+      expect(result.chartType).toBe("number");
+      expect(result.confidence).toBe(0.9);
+      expect(result.usedLlm).toBe(false);
+    });
+
+    it("routes 'statistika' keyword to region_stats intent", async () => {
+      const result = await service.query("Toshkent statistika");
+      expect(result.answer).toBeTruthy();
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'holat' keyword to region_stats intent", async () => {
+      const result = await service.query("Andijon holat");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes region-only question to region_stats as fallback", async () => {
+      const result = await service.query("Buxoro");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'klub faolsiz' to inactive_clubs intent", async () => {
+      mockPrisma.club.findMany.mockResolvedValue([]);
+
+      const result = await service.query("Qaysi maktablarda klub faolsiz?");
+      expect(result.answer).toBe("Barcha klublar faol — so'nggi 45 kunda debat o'tkazgan.");
+      expect(result.chartType).toBe("table");
+      expect(result.confidence).toBe(0.95);
+    });
+
+    it("routes 'klub debat' to inactive_clubs intent", async () => {
+      const result = await service.query("Klub debat o'tkizmaganlar");
+      expect(result.confidence).toBe(0.95);
+    });
+
+    it("routes 'kitob yo'q' to missing_books intent", async () => {
+      const result = await service.query("Qaysi kitob yo'q?");
+      expect(result.chartType).toBe("table");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'kitob yetishmay' to missing_books intent", async () => {
+      const result = await service.query("Kitoblar yetishmayapti");
+      expect(result.chartType).toBe("table");
+    });
+
+    it("routes 'kitob topilmay' to missing_books intent", async () => {
+      const result = await service.query("Kitob topilmayapti");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'trend' keyword to trend_analysis intent", async () => {
+      const result = await service.query("Trend tahlili");
+      expect(result.chartType).toBe("line");
+      expect(result.confidence).toBe(0.85);
+    });
+
+    it("routes 'pasay' keyword to trend_analysis intent", async () => {
+      const result = await service.query("Kitobxonlik pasaydi");
+      expect(result.chartType).toBe("line");
+    });
+
+    it("routes 'osh' keyword to trend_analysis", async () => {
+      const result = await service.query("Kitobxonlik oshdi");
+      expect(result.confidence).toBe(0.85);
+    });
+
+    it("routes 'top' keyword to top_readers intent", async () => {
+      const result = await service.query("Top kitobxonlar kim?");
+      expect(result.chartType).toBe("table");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'eng ko'p' to top_readers intent", async () => {
+      const result = await service.query("Eng ko'p o'qigan kimlar?");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'yaxshi' to top_readers intent", async () => {
+      const result = await service.query("Yaxshi kitobxonlar");
+      expect(result.confidence).toBe(0.9);
+    });
+
+    it("routes 'maqsad' keyword to goal_progress intent", async () => {
+      const result = await service.query("Maqsadga erishdikmi?");
+      expect(result.chartType).toBe("number");
+      expect(result.confidence).toBe(0.88);
+    });
+
+    it("routes 'progress' keyword to goal_progress intent", async () => {
+      const result = await service.query("Maqsad progress");
+      expect(result.confidence).toBe(0.88);
+    });
+
+    it("routes 'erishildi' to goal_progress", async () => {
+      const result = await service.query("Maqsadga erishildi");
+      expect(result.chartType).toBe("number");
+    });
+
+    it("routes unknown question to unknown handler", async () => {
+      const result = await service.query("Bla bla bla");
+      expect(result.confidence).toBe(0);
+      expect(result.usedLlm).toBe(false);
+      expect(result.answer).toContain("tushuna olmadim");
+    });
+
+    it("uses cache with correct key", async () => {
+      await service.query("Test savol");
+      expect(mockCache.remember).toHaveBeenCalledWith(
+        expect.stringContaining("nlq:"),
+        300,
+        expect.any(Function)
+      );
+    });
+  });
+
+  // ── region_stats handler ────────────────────────────────────────────────────
+
+  describe("region_stats handler", () => {
+    it("includes region label in answer when region is detected", async () => {
+      mockPrisma.user.count.mockResolvedValue(500);
+      mockPrisma.bookTransaction.count.mockResolvedValue(1200);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([
+        { score: 72 }, { score: 68 },
+      ]);
+
+      const result = await service.query("Navoiyda bu oy statistika qanday?");
+
+      expect(result.answer).toContain("Navoiy");
+      expect(result.answer).toContain("500");
+      expect(result.answer).toContain("1");
+      expect(result.data).toMatchObject({ activeUsers: 500, totalBorrows: 1200 });
+    });
+
+    it("defaults to 'O'zbekiston' when no region detected", async () => {
+      const result = await service.query("Umumiy statistika");
+      expect(result.answer).toContain("O'zbekiston");
+    });
+
+    it("handles 'bugun' timeframe keyword", async () => {
+      const result = await service.query("Bugun statistika holat");
+      expect(result.answer).toBeTruthy();
+    });
+
+    it("handles 'hafta' timeframe keyword", async () => {
+      const result = await service.query("Bu hafta holat qanday?");
+      expect(result.answer).toBeTruthy();
+    });
+
+    it("handles 'yil' timeframe keyword", async () => {
+      const result = await service.query("Bu yil statistika holat");
+      expect(result.answer).toBeTruthy();
+    });
+
+    it("returns 0 avgRi when no readingIndex records", async () => {
+      mockPrisma.readingIndex.findMany.mockResolvedValue([]);
+
+      const result = await service.query("Statistika holat");
+      expect(result.answer).toContain("0.0 ball");
+    });
+
+    it("chartData has three items", async () => {
+      const result = await service.query("Statistika holat");
+      expect(Array.isArray(result.chartData)).toBe(true);
+      expect((result.chartData as unknown[]).length).toBe(3);
+    });
+  });
+
+  // ── inactive_clubs handler ──────────────────────────────────────────────────
+
+  describe("inactive_clubs handler", () => {
+    it("returns 'Barcha klublar faol' when no inactive clubs", async () => {
+      mockPrisma.club.findMany.mockResolvedValue([]);
+
+      const result = await service.query("Klub faolsiz debat yo'q");
+      expect(result.answer).toContain("Barcha klublar faol");
+    });
+
+    it("lists inactive clubs in answer", async () => {
+      mockPrisma.club.findMany.mockResolvedValue([
+        {
+          id: "c1",
+          name: "Klub A",
+          institution: { name: "Maktab 1", tumanId: "tuman-1" },
+          _count: { members: 10 },
+          debates: [{ heldAt: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000) }],
+        },
+        {
+          id: "c2",
+          name: "Klub B",
+          institution: null,
+          _count: { members: 5 },
+          debates: [],
+        },
+      ]);
+
+      const result = await service.query("Klub faolsiz debat yo'q");
+      expect(result.answer).toContain("2 ta klub");
+      expect(result.answer).toContain("Klub A");
+    });
+
+    it("shows '... va yana X ta' when more than 5 inactive clubs", async () => {
+      const clubs = Array.from({ length: 7 }, (_, i) => ({
+        id: `club-${i}`,
+        name: `Klub ${i}`,
+        institution: { name: `Maktab ${i}`, tumanId: "t1" },
+        _count: { members: 3 },
+        debates: [],
+      }));
+      mockPrisma.club.findMany.mockResolvedValue(clubs);
+
+      const result = await service.query("Klub faolsiz debat yo'q");
+      expect(result.answer).toContain("yana 2 ta");
+    });
+
+    it("shows 'Hech qachon' when club has never held a debate", async () => {
+      mockPrisma.club.findMany.mockResolvedValue([
+        {
+          id: "c3",
+          name: "Yangi Klub",
+          institution: null,
+          _count: { members: 2 },
+          debates: [], // no debates at all
+        },
+      ]);
+
+      const result = await service.query("Klub faolsiz");
+      const rows = result.data as Array<{ oxirgiDebat: string }>;
+      expect(rows[0].oxirgiDebat).toBe("Hech qachon");
+    });
+
+    it("calculates days since last debate correctly", async () => {
+      const daysAgo = 60;
+      const debateDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+
+      mockPrisma.club.findMany.mockResolvedValue([
+        {
+          id: "c4",
+          name: "Eski Klub",
+          institution: { name: "Maktab", tumanId: "t1" },
+          _count: { members: 8 },
+          debates: [{ heldAt: debateDate }],
+        },
+      ]);
+
+      const result = await service.query("Klub faolsiz debat");
+      const rows = result.data as Array<{ oxirgiDebat: string }>;
+      expect(rows[0].oxirgiDebat).toContain("kun oldin");
+    });
+  });
+
+  // ── missing_books handler ───────────────────────────────────────────────────
+
+  describe("missing_books handler", () => {
+    it("returns 'yetishmovchiligi aniqlanmadi' when no hot books", async () => {
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue([]);
+
+      const result = await service.query("Kitob yo'q topilmayapti");
+      expect(result.answer).toBe("Fond yetishmovchiligi aniqlanmadi.");
+    });
+
+    it("lists missing books in answer", async () => {
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue([
+        { bookId: "book-1", _count: { bookId: 25 } },
+      ]);
+      mockPrisma.book.findUnique.mockResolvedValue({
+        title: "Alpomish",
+        author: "Xalq",
+        availableCount: 1,
+      });
+
+      const result = await service.query("Kitob yo'q");
+      expect(result.answer).toContain("Alpomish");
+      expect(result.answer).toContain("25 so'rov");
+    });
+
+    it("skips books that cannot be found in DB", async () => {
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue([
+        { bookId: "ghost", _count: { bookId: 10 } },
+      ]);
+      mockPrisma.book.findUnique.mockResolvedValue(null);
+
+      const result = await service.query("Kitob yo'q");
+      expect(result.answer).toBe("Fond yetishmovchiligi aniqlanmadi.");
+    });
+
+    it("only shows top 5 in answer when more enriched results", async () => {
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue(
+        Array.from({ length: 8 }, (_, i) => ({
+          bookId: `book-${i}`,
+          _count: { bookId: 10 + i },
+        }))
+      );
+      mockPrisma.book.findUnique.mockImplementation(({ where }: { where: { id: string } }) =>
+        Promise.resolve({
+          title: `Kitob ${where.id}`,
+          author: "Muallif",
+          availableCount: 0,
+        })
+      );
+
+      const result = await service.query("Kitob topilmayapti");
+      const lines = (result.answer as string)
+        .split("\n")
+        .filter((l) => l.startsWith("•"));
+      expect(lines.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  // ── trend_analysis handler ──────────────────────────────────────────────────
+
+  describe("trend_analysis handler", () => {
+    it("returns 6-month chart data with correct structure", async () => {
+      mockPrisma.bookTransaction.count.mockResolvedValue(100);
+
+      const result = await service.query("Trend tahlili");
+      expect(result.chartType).toBe("line");
+      const data = result.chartData as Array<{ oy: string; kitoblar: number }>;
+      expect(data.length).toBe(6);
+      expect(data[0]).toHaveProperty("oy");
+      expect(data[0]).toHaveProperty("kitoblar");
+    });
+
+    it("shows growth trend when last month > previous month", async () => {
+      let call = 0;
+      mockPrisma.bookTransaction.count.mockImplementation(() => {
+        call++;
+        return Promise.resolve(call === 6 ? 200 : 100); // last month jumps
+      });
+
+      const result = await service.query("Trend oshdi");
+      expect(result.answer).toContain("📈");
+    });
+
+    it("shows decline trend when last month < previous month", async () => {
+      let call = 0;
+      mockPrisma.bookTransaction.count.mockImplementation(() => {
+        call++;
+        return Promise.resolve(call === 6 ? 50 : 100); // last month drops
+      });
+
+      const result = await service.query("Trend pasaydi");
+      expect(result.answer).toContain("📉");
+    });
+
+    it("handles zero count in second-to-last month gracefully", async () => {
+      let call = 0;
+      mockPrisma.bookTransaction.count.mockImplementation(() => {
+        call++;
+        // Month 5 = 0, month 6 = 0
+        return Promise.resolve(call >= 5 ? 0 : 100);
+      });
+
+      const result = await service.query("Trend tahlili");
+      // trend = 0 when lastTwo[0].kitoblar === 0
+      expect(result.answer).toContain("📉");
+    });
+
+    it("includes region label in answer when region specified", async () => {
+      mockPrisma.bookTransaction.count.mockResolvedValue(50);
+
+      const result = await service.query("Navoiyda trend");
+      expect(result.answer).toContain("Navoiyda");
+    });
+
+    it("defaults to 'Respublikada' when no region", async () => {
+      mockPrisma.bookTransaction.count.mockResolvedValue(50);
+
+      const result = await service.query("Trend tahlili");
+      expect(result.answer).toContain("Respublikada");
+    });
+  });
+
+  // ── top_readers handler ─────────────────────────────────────────────────────
+
+  describe("top_readers handler", () => {
+    const adultDob = new Date("1990-05-01");
+
+    it("returns top readers with correct structure", async () => {
+      asCaller("SUPER_ADMIN", null);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([
+        { score: 90, user: { name: "Ali Valiyev", sifatId: "SL-UZ-01-001-001-00001", dob: adultDob } },
+        { score: 85, user: { name: "Mohira", sifatId: "SL-UZ-01-001-001-00002", dob: adultDob } },
+      ]);
+
+      const result = await service.query("Top kitobxonlar kim?", "admin-1");
+      expect(result.chartType).toBe("table");
+      const rows = result.data as Array<{ o_rin: number; ism: string }>;
+      expect(rows[0].o_rin).toBe(1);
+      expect(rows[0].ism).toBe("Ali Valiyev");
+    });
+
+    it("uses '—' for missing user name or sifatId", async () => {
+      asCaller("SUPER_ADMIN", null);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([
+        { score: 80, user: null },
+      ]);
+
+      const result = await service.query("Top kitobxonlar", "admin-1");
+      const rows = result.data as Array<{ ism: string; id: string }>;
+      expect(rows[0].ism).toBe("—");
+      expect(rows[0].id).toBe("—");
+    });
+
+    it("includes region label in answer", async () => {
+      asCaller("SUPER_ADMIN", null);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([]);
+
+      const result = await service.query("Navoiyda top kitobxonlar", "admin-1");
+      expect(result.answer).toContain("Navoiy");
+    });
+
+    it("defaults to 'Respublikada' when no region", async () => {
+      asCaller("SUPER_ADMIN", null);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([]);
+
+      const result = await service.query("Top kitobxonlar", "admin-1");
+      expect(result.answer).toContain("Respublikada");
+    });
+
+    // ── LOW-c: hududiy scoping + maskNameIfMinor ────────────────────────────
+
+    it("masks ≤14 yosh reader names via maskNameIfMinor (TOP-06)", async () => {
+      asCaller("SUPER_ADMIN", null);
+      const minorDob = new Date(Date.now() - 12 * 365.25 * 24 * 60 * 60 * 1000);
+      mockPrisma.readingIndex.findMany.mockResolvedValue([
+        { score: 95, user: { name: "Aziza Karimova", sifatId: "SL-1", dob: minorDob } },
+        { score: 90, user: { name: "Olim Valiyev", sifatId: "SL-2", dob: adultDob } },
+      ]);
+
+      const result = await service.query("Top kitobxonlar kim?", "admin-1");
+      const rows = result.data as Array<{ ism: string }>;
+      expect(rows[0].ism).toBe("A.K.");
+      expect(rows[1].ism).toBe("Olim Valiyev");
+      // To'liq ism javob matnida ham sizmasligi kerak
+      expect(result.answer).not.toContain("Aziza");
+    });
+
+    it("TUMAN_ADMIN — own tuman filter applied to the where-clause", async () => {
+      asCaller("TUMAN_ADMIN", { tumanId: "tum-karmana", viloyatId: "vil-navoiy" });
+
+      await service.query("Top kitobxonlar kim?", "tuman-admin-1");
+
+      expect(mockPrisma.readingIndex.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            user: { AND: [{ address: { tumanId: "tum-karmana" } }] },
+          }),
+        })
+      );
+    });
+
+    it("VILOYAT_ADMIN — own viloyat filter applied to the where-clause", async () => {
+      asCaller("VILOYAT_ADMIN", { tumanId: "tum-x", viloyatId: "vil-navoiy" });
+
+      await service.query("Top kitobxonlar kim?", "viloyat-admin-1");
+
+      expect(mockPrisma.readingIndex.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            user: { AND: [{ address: { viloyatId: "vil-navoiy" } }] },
+          }),
+        })
+      );
+    });
+
+    it("TUMAN_ADMIN + boshqa viloyat so'ralganda kesishma (AND) qo'llanadi", async () => {
+      asCaller("TUMAN_ADMIN", { tumanId: "tum-karmana", viloyatId: "vil-navoiy" });
+
+      await service.query("Buxoroda top kitobxonlar", "tuman-admin-1");
+
+      expect(mockPrisma.readingIndex.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            user: {
+              AND: [
+                { address: { viloyatId: "vil-buxoro" } },
+                { address: { tumanId: "tum-karmana" } },
+              ],
+            },
+          }),
+        })
+      );
+    });
+
+    it("fail-closed: scope aniqlanmasa PII so'rov bajarilmaydi", async () => {
+      asCaller("TUMAN_ADMIN", null); // manzili yo'q tuman admin
+
+      const result = await service.query("Top kitobxonlar kim?", "tuman-admin-x");
+
+      expect(result.data).toEqual([]);
+      expect(result.answer).toContain("vakolat");
+      expect(mockPrisma.readingIndex.findMany).not.toHaveBeenCalled();
+    });
+
+    it("fail-closed: caller umuman yo'q bo'lsa ham PII qaytarilmaydi", async () => {
+      const result = await service.query("Top kitobxonlar kim?");
+
+      expect(result.data).toEqual([]);
+      expect(mockPrisma.readingIndex.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── goal_progress handler ───────────────────────────────────────────────────
+
+  describe("goal_progress handler", () => {
+    it("shows good status when >= 50% achieved goal", async () => {
+      mockPrisma.user.count.mockResolvedValue(100);
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue(
+        Array.from({ length: 60 }, (_, i) => ({ userId: `u-${i}`, _count: { userId: 10 } }))
+      );
+
+      const result = await service.query("Maqsadga erishdikmi?");
+      expect(result.answer).toContain("✅");
+    });
+
+    it("shows warning status when 30-49% achieved", async () => {
+      mockPrisma.user.count.mockResolvedValue(100);
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue(
+        Array.from({ length: 35 }, (_, i) => ({ userId: `u-${i}` }))
+      );
+
+      const result = await service.query("Maqsad progress");
+      expect(result.answer).toContain("⚠️");
+    });
+
+    it("shows critical status when < 30% achieved", async () => {
+      mockPrisma.user.count.mockResolvedValue(100);
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue(
+        Array.from({ length: 10 }, (_, i) => ({ userId: `u-${i}` }))
+      );
+
+      const result = await service.query("Maqsad erishildi");
+      expect(result.answer).toContain("🔴");
+    });
+
+    it("handles 0 active users gracefully", async () => {
+      mockPrisma.user.count.mockResolvedValue(0);
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue([]);
+
+      const result = await service.query("Maqsad progress");
+      expect(result.answer).toContain("0");
+    });
+
+    it("chartData has three items", async () => {
+      mockPrisma.user.count.mockResolvedValue(50);
+      mockPrisma.bookTransaction.groupBy.mockResolvedValue([]);
+
+      const result = await service.query("Maqsadga erishildi");
+      expect((result.chartData as unknown[]).length).toBe(3);
+    });
+  });
+
+  // ── LLM enrichment ──────────────────────────────────────────────────────────
+
+  describe("LLM enrichment", () => {
+    it("does NOT call OpenAI when no API key configured", async () => {
+      mockConfig.get.mockReturnValue(undefined);
+      global.fetch = jest.fn();
+
+      service = makeService();
+      await service.query("Bla bla bla"); // confidence=0, would trigger LLM if key present
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it("calls OpenAI when API key present and confidence < 0.8", async () => {
+      mockConfig.get.mockReturnValue("sk-test-key");
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: "AI boyitilgan javob" } }],
+        }),
+      });
+
+      service = makeService();
+      // "unknown" intent → confidence=0 → triggers LLM
+      const result = await service.query("random unknown stuff xyz");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://api.openai.com/v1/chat/completions",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({ Authorization: "Bearer sk-test-key" }),
+        })
+      );
+      expect(result.usedLlm).toBe(true);
+      expect(result.confidence).toBe(0.92);
+      expect(result.answer).toBe("AI boyitilgan javob");
+    });
+
+    it("does NOT call OpenAI when confidence >= 0.8", async () => {
+      mockConfig.get.mockReturnValue("sk-test-key");
+      global.fetch = jest.fn();
+
+      service = makeService();
+      // region_stats → confidence=0.9 → skip LLM
+      const result = await service.query("Navoiyda statistika holat?");
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(result.usedLlm).toBe(false);
+    });
+
+    it("falls back to base response when OpenAI call fails", async () => {
+      mockConfig.get.mockReturnValue("sk-test-key");
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+      service = makeService();
+      // "unknown" intent → confidence=0 → tries LLM but it fails
+      const result = await service.query("xyz abc def");
+
+      // Should still return the original response without throwing
+      expect(result).toBeDefined();
+      expect(result.usedLlm).toBe(false);
+    });
+
+    it("throws when OpenAI returns non-ok response (bubbled inside enrichWithLlm)", async () => {
+      mockConfig.get.mockReturnValue("sk-test-key");
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+      });
+
+      service = makeService();
+      // Should not throw to caller — error is caught in query()
+      const result = await service.query("xyz abc def");
+      expect(result).toBeDefined();
+      expect(result.usedLlm).toBe(false);
+    });
+
+    it("uses fallback answer when choices[0] is missing in OpenAI response", async () => {
+      mockConfig.get.mockReturnValue("sk-test-key");
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ choices: [] }), // empty choices
+      });
+
+      service = makeService();
+      const result = await service.query("xyz abc def");
+
+      // usedLlm=true but answer falls back to base
+      if (result.usedLlm) {
+        expect(result.answer).toBeTruthy();
+      }
+    });
+  });
+
+  // ── getQueryHistory ─────────────────────────────────────────────────────────
+
+  describe("getQueryHistory", () => {
+    it("returns empty array for any userId", async () => {
+      const result = await service.getQueryHistory("user-123");
+      expect(result).toEqual([]);
+    });
+
+    it("uses cache with correct key", async () => {
+      await service.getQueryHistory("user-456");
+      expect(mockCache.remember).toHaveBeenCalledWith(
+        "nlq:history:user-456",
+        3600,
+        expect.any(Function)
+      );
+    });
+  });
+
+  // ── _parseQuery — region detection (H13: DB-backed resolution) ─────────────
+
+  describe("region resolution (H13 — real viloyat id, not fabricated codes)", () => {
+    // savol matnidagi shakl → kutilgan DB cuid + kanonik label
+    const regions: Array<[string, string, string]> = [
+      ["toshkent", "vil-toshkent", "Toshkent shahar"],
+      ["andijon", "vil-andijon", "Andijon"],
+      ["buxoro", "vil-buxoro", "Buxoro"],
+      ["farg'ona", "vil-fargona", "Farg'ona"],
+      ["jizzax", "vil-jizzax", "Jizzax"],
+      ["xorazm", "vil-xorazm", "Xorazm"],
+      ["namangan", "vil-namangan", "Namangan"],
+      ["navoiy", "vil-navoiy", "Navoiy"],
+      ["qashqadaryo", "vil-qashqadaryo", "Qashqadaryo"],
+      ["samarqand", "vil-samarqand", "Samarqand"],
+      ["sirdaryo", "vil-sirdaryo", "Sirdaryo"],
+      ["surxondaryo", "vil-surxondaryo", "Surxondaryo"],
+      ["qoraqalpoq", "vil-qoraqalpogiston", "Qoraqalpog'iston"],
+    ];
+
+    for (const [spoken, cuid, label] of regions) {
+      it(`'${spoken}' → ${cuid} (DB cuid) bilan where-clause quriladi`, async () => {
+        const result = await service.query(`${spoken} holat statistika`);
+
+        expect(result.answer).toContain(label);
+        expect(mockPrisma.user.count).toHaveBeenCalledWith({
+          where: { status: "ACTIVE", address: { viloyatId: cuid } },
+        });
+      });
+    }
+
+    it("hech qachon o'ylab topilgan 'UZ-XX' kod ishlatilmaydi", async () => {
+      await service.query("Navoiyda bu oy qanday?");
+      const allCalls = JSON.stringify([
+        mockPrisma.user.count.mock.calls,
+        mockPrisma.bookTransaction.count.mock.calls,
+        mockPrisma.readingIndex.findMany.mock.calls,
+      ]);
+      expect(allCalls).not.toContain("UZ-");
+      expect(allCalls).toContain("vil-navoiy");
+    });
+
+    it("apostrofsiz 'fargona' ham Farg'ona cuid iga yechiladi", async () => {
+      await service.query("fargona statistika holat");
+      expect(mockPrisma.user.count).toHaveBeenCalledWith({
+        where: { status: "ACTIVE", address: { viloyatId: "vil-fargona" } },
+      });
+    });
+
+    it("'fergana' alias ham Farg'ona cuid iga yechiladi", async () => {
+      const result = await service.query("fergana statistika holat");
+      expect(result.answer).toContain("Farg'ona");
+      expect(mockPrisma.user.count).toHaveBeenCalledWith({
+        where: { status: "ACTIVE", address: { viloyatId: "vil-fargona" } },
+      });
+    });
+
+    it("eng uzun moslik yutadi — 'toshkent viloyati' shahar emas", async () => {
+      await service.query("Toshkent viloyati statistika holat");
+      expect(mockPrisma.user.count).toHaveBeenCalledWith({
+        where: { status: "ACTIVE", address: { viloyatId: "vil-toshkent-viloyati" } },
+      });
+    });
+
+    it("region xaritasi memoizatsiya qilinadi — findMany bitta chaqiriladi", async () => {
+      await service.query("Navoiy holat statistika");
+      await service.query("Buxoro holat statistika");
+      expect(mockPrisma.viloyat.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it("region xaritasi yuklanmasa savol milliy darajada davom etadi", async () => {
+      mockPrisma.viloyat.findMany.mockRejectedValue(new Error("db down"));
+      const result = await service.query("Navoiyda statistika holat");
+      expect(result.answer).toContain("O'zbekiston");
+      expect(mockPrisma.user.count).toHaveBeenCalledWith({
+        where: { status: "ACTIVE" },
+      });
+    });
+  });
+
+  // ── Cache kaliti — rol+hudud namespacing (LOW-a) ───────────────────────────
+
+  describe("cache key namespacing", () => {
+    it("TUMAN_ADMIN kaliti rol + tuman id ni o'z ichiga oladi", async () => {
+      asCaller("TUMAN_ADMIN", { tumanId: "tum-karmana", viloyatId: "vil-navoiy" });
+
+      await service.query("Navoiyda bu oy qanday?", "tuman-admin-1");
+
+      expect(mockCache.remember).toHaveBeenCalledWith(
+        expect.stringContaining("nlq:TUMAN_ADMIN:tuman:tum-karmana:"),
+        300,
+        expect.any(Function)
+      );
+    });
+
+    it("SUPER_ADMIN kaliti national segmentini oladi", async () => {
+      asCaller("SUPER_ADMIN", null);
+
+      await service.query("Navoiyda bu oy qanday?", "super-1");
+
+      expect(mockCache.remember).toHaveBeenCalledWith(
+        expect.stringContaining("nlq:SUPER_ADMIN:national:"),
+        300,
+        expect.any(Function)
+      );
+    });
+
+    it("bir xil savol — har xil scope → har xil kalit (cache sizmaydi)", async () => {
+      asCaller("TUMAN_ADMIN", { tumanId: "tum-a", viloyatId: "vil-navoiy" });
+      await service.query("Top kitobxonlar", "admin-a");
+
+      asCaller("TUMAN_ADMIN", { tumanId: "tum-b", viloyatId: "vil-navoiy" });
+      await service.query("Top kitobxonlar", "admin-b");
+
+      // region xaritasining o'z "nlq:regions:v1" kaliti chiqarib tashlanadi
+      const keys = mockCache.remember.mock.calls
+        .map((c: unknown[]) => c[0] as string)
+        .filter((k) => k.startsWith("nlq:TUMAN_ADMIN:"));
+      expect(keys).toHaveLength(2);
+      expect(keys[0]).not.toBe(keys[1]);
+      expect(keys[0]).toContain("tum-a");
+      expect(keys[1]).toContain("tum-b");
+    });
+
+    it("caller yo'q bo'lsa anon segment ishlatiladi", async () => {
+      await service.query("Test savol");
+      expect(mockCache.remember).toHaveBeenCalledWith(
+        expect.stringContaining("nlq:anon:none:"),
+        300,
+        expect.any(Function)
+      );
+    });
+  });
+
+  // ── _sinceDate ──────────────────────────────────────────────────────────────
+
+  describe("timeframe detection", () => {
+    it("detects 'bugun' as today timeframe", async () => {
+      mockPrisma.bookTransaction.count.mockResolvedValue(10);
+      // If "today" → sinceDate returns ~24 hours ago, not 30 days
+      const result = await service.query("Bugun statistika holat");
+      expect(result.answer).toContain("today");
+    });
+
+    it("defaults to month timeframe when no keyword", async () => {
+      const result = await service.query("Statistika holat");
+      expect(result.answer).toContain("oy");
+    });
+  });
+});

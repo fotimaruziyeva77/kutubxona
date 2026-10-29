@@ -1,0 +1,125 @@
+{
+  "TxPanel": {
+    "title": "Kitob jarayonlari",
+    "subtitle": "Bron, kitob berish, qaytarish va muddati o'tganlar",
+    "newReader": "Yangi kitobxon",
+    "selectLibraryLabel": "Kutubxona tanlash",
+    "selectLibraryPlaceholder": "Kutubxona tanlang",
+    "selectLibraryPrompt": "Boshqarish uchun kutubxona tanlang",
+    "closeNotification": "Bildirishnomani yopish",
+    "loading": "Yuklanmoqda",
+    "tabs": {
+      "issue": "Kitob berish",
+      "brons": "Bronlar",
+      "borrowed": "Berilgan",
+      "overdue": "Muddati o'tgan"
+    },
+    "toasts": {
+      "bronConfirmed": "Bron tasdiqlandi",
+      "bronCancelled": "Bron bekor qilindi",
+      "bookIssued": "Kitob berildi",
+      "bookReturned": "Kitob qaytarildi",
+      "bookReturnedLate": "Kitob qaytarildi ({days} kun kechikkan)",
+      "readerAdded": "Kitobxon qo'shildi"
+    },
+    "errors": {
+      "confirmFailed": "Tasdiqlab bo'lmadi",
+      "cancelFailed": "Bekor qilib bo'lmadi",
+      "borrowFailed": "Kitob berib bo'lmadi",
+      "returnFailed": "Qaytarib bo'lmadi",
+      "readerAddFailed": "Kitobxon qo'shilmadi",
+      "bronsLoadTitle": "Bronlarni yuklab bo'lmadi",
+      "bronsLoadMsg": "Bronlar ro'yxati serverdan kelmadi. Internet aloqasini tekshirib, qayta urining.",
+      "borrowedLoadTitle": "Berilgan kitoblarni yuklab bo'lmadi",
+      "borrowedLoadMsg": "Berilgan kitoblar ro'yxati serverdan kelmadi. Internet aloqasini tekshirib, qayta urining.",
+      "overdueLoadTitle": "Muddati o'tganlarni yuklab bo'lmadi",
+      "overdueLoadMsg": "Muddati o'tgan kitoblar ro'yxati serverdan kelmadi. Internet aloqasini tekshirib, qayta urining."
+    },
+    "brons": {
+      "dueDateLabel": "Qaytarish muddati:",
+      "dueDateHint": "bron tasdiqlab \"Berish\"da shu muddat bilan beriladi",
+      "emptyTitle": "Aktiv bronlar yo'q",
+      "emptyDesc": "Kitobxon bron qilganda shu yerda ko'rinadi. Kelgan kitobxonga bronsiz ham darhol kitob berishingiz mumkin.",
+      "reader": "Kitobxon:",
+      "deadline": "muhlat: {date}",
+      "confirm": "Tasdiqlash",
+      "issue": "Kitob berish",
+      "cancel": "Bekor qilish"
+    },
+    "borrowed": {
+      "colBook": "Kitob",
+      "colReader": "Kitobxon",
+      "colIssued": "Berilgan",
+      "colDue": "Qaytarish muddati",
+      "colActions": "Amallar",
+      "empty": "Berilgan kitob yo'q",
+      "return": "Qaytarish"
+    },
+    "overdue": {
+      "emptyTitle": "Muddati o'tgan kitob yo'q",
+      "emptyDesc": "Barcha kitoblar muddatida — kitobxonlaringiz intizomli.",
+      "lateInfo": "{days} kun kechikmoqda · Muddat: {date}",
+      "return": "Qaytarish"
+    },
+    "returnModal": {
+      "title": "Kitob qaytarish",
+      "reader": "Kitobxon: {name}",
+      "libraryLabel": "Qaytarish kutubxonasi (boshqa kutubxonada qaytarish mumkin)",
+      "current": "(joriy)",
+      "otherLibHint": "Boshqa kutubxonada qaytarish — asl kutubxonaga bildirishnoma yuboriladi",
+      "cancel": "Bekor qilish",
+      "returning": "Qaytarilmoqda…",
+      "confirm": "Tasdiqlash"
+    },
+    "issue": {
+      "findLabel": "Kitobxonni SifatID orqali toping",
+      "qrScanner": "QR skaner",
+      "search": "Qidirish",
+      "notActive": "Kitobxon faol emas — kitob berib bo'lmaydi",
+      "notFound": "Kitobxon topilmadi (SifatID ni tekshiring)",
+      "trust": "Ishonch: {score}",
+      "chooseTitle": "Kitob tanlang va bering",
+      "bookSearchLabel": "Kitob qidirish",
+      "bookSearchPlaceholder": "Kitob qidirish...",
+      "dueDateLabel": "Qaytarish muddati:",
+      "dueDateHint": "har \"Berish\" shu muddat bilan beriladi",
+      "loadingBooks": "Yuklanmoqda…",
+      "noBooks": "Mavjud kitob yo'q",
+      "available": "{count} ta mavjud",
+      "give": "Berish"
+    },
+    "register": {
+      "title": "Yangi kitobxon qo'shish",
+      "name": "Ism familiya",
+      "phone": "Telefon",
+      "gender": "Jins",
+      "male": "Erkak",
+      "female": "Ayol",
+      "region": "Hudud (kitobxon manzili)",
+      "viloyat": "Viloyat",
+      "tuman": "Tuman",
+      "mahalla": "Mahalla",
+      "viloyatPh": "Viloyat tanlang",
+      "tumanPh": "Tuman tanlang",
+      "mahallaPh": "Mahalla tanlang",
+      "errName": "Ism kiriting",
+      "errPhone": "Telefon raqamini to'g'ri kiriting",
+      "errRegion": "Hudud (viloyat → tuman → mahalla) tanlang",
+      "cancel": "Bekor",
+      "adding": "Qo'shilmoqda…",
+      "add": "Qo'shish"
+    },
+    "cred": {
+      "title": "Kitobxon qo'shildi",
+      "info": "Kitobxonga bu ma'lumotlarni bering. Parolni keyin o'zi o'zgartiradi.",
+      "phone": "Telefon",
+      "password": "Parol",
+      "show": "Ko'rsatish",
+      "hide": "Yashirish",
+      "onceWarning": "Bu parol faqat bir marta ko'rsatiladi — yopishdan oldin nusxalab oling yoki kitobxonga yozib bering.",
+      "copy": "Nusxalash",
+      "copied": "Nusxalandi",
+      "close": "Yopish"
+    }
+  }
+}

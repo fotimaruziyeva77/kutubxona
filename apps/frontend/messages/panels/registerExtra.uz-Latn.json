@@ -1,0 +1,119 @@
+{
+  "RegisterPage": {
+    "steps": {
+      "phone": "Telefon",
+      "personal": "Ma'lumotlar",
+      "address": "Manzil",
+      "who": "Kim siz?",
+      "done": "Tayyor"
+    },
+    "types": {
+      "CITIZEN": {
+        "label": "Oddiy fuqaro",
+        "desc": "Hech qanday qo'shimcha tasdiq kerak emas"
+      },
+      "STUDENT_SCHOOL": {
+        "label": "Maktab o'quvchisi",
+        "desc": "Maktab admin tomonidan 1 kunda tasdiqlanadi"
+      },
+      "STUDENT_UNIVERSITY": {
+        "label": "Talaba",
+        "desc": "OTM admin tomonidan 1 kunda tasdiqlanadi"
+      },
+      "GOVERNMENT_EMPLOYEE": {
+        "label": "Davlat xizmatchisi",
+        "desc": "Idora HR admin tomonidan 2 kunda tasdiqlanadi"
+      },
+      "TEACHER": {
+        "label": "O'qituvchi",
+        "desc": "Muassasa admin tomonidan 1 kunda tasdiqlanadi"
+      }
+    },
+    "freeTextHint": "Erkin matn — admin tasdiqlashda tekshiriladi",
+    "back": "Orqaga",
+    "continue": "Davom etish",
+    "step1": {
+      "titlePhone": "Telefon raqamingizni tasdiqlang",
+      "titleOtp": "SMS kodni kiriting",
+      "titlePassword": "Parol o'rnating",
+      "phoneLabel": "Telefon raqam",
+      "passwordLabel": "Parol",
+      "passwordPlaceholder": "Kamida 8 ta belgi",
+      "confirmLabel": "Parolni tasdiqlang",
+      "confirmPlaceholder": "Parolni qayta kiriting",
+      "continue": "Davom etish →",
+      "continuing": "Davom etilmoqda...",
+      "sendSms": "SMS yuborish",
+      "sending": "Yuborilmoqda...",
+      "otpSentTo": "<strong>{phone}</strong> raqamiga 6 raqamli kod yuborildi",
+      "otpLabel": "Tasdiqlash kodi",
+      "verify": "Tasdiqlash",
+      "verifying": "Tekshirilmoqda...",
+      "changeNumber": "← Raqamni o'zgartirish",
+      "resend": "Qayta yuborish",
+      "resendIn": "Qayta yuborish ({seconds}s)",
+      "phoneVerified": "Telefon tasdiqlandi. Endi kirish parolini o'rnating."
+    },
+    "step2": {
+      "title": "Shaxsiy ma'lumotlar",
+      "nameLabel": "Ism Familiya",
+      "namePlaceholder": "Alisher Navoiy",
+      "dobLabel": "Tug'ilgan sana",
+      "genderLabel": "Jins",
+      "male": "Erkak",
+      "female": "Ayol"
+    },
+    "step3": {
+      "title": "Yashash manzilingiz",
+      "geoError": "Hududlar ro'yxati yuklanmadi.",
+      "retry": "Qayta urinish",
+      "viloyat": "Viloyat",
+      "tuman": "Tuman / Shahar",
+      "mahalla": "Mahalla / MFY",
+      "select": "Tanlang…",
+      "street": "Ko'cha",
+      "streetPlaceholder": "Mustaqillik ko'chasi",
+      "house": "Uy №",
+      "apartment": "Xonadon №",
+      "privateHouse": "Xususiy uyda yashayman (xonadon raqami yo'q)"
+    },
+    "step4": {
+      "title": "Siz kim sifatida ro'yxatdan o'tyapsiz?",
+      "school": "Maktab nomi",
+      "schoolPlaceholder": "Navoiy 8-maktab",
+      "class": "Sinf",
+      "classPlaceholder": "9-A",
+      "university": "OTM nomi",
+      "universityPlaceholder": "Navoiy davlat universiteti",
+      "faculty": "Fakultet",
+      "facultyPlaceholder": "Filologiya",
+      "direction": "Yo'nalish",
+      "directionPlaceholder": "O'zbek tili va adabiyoti",
+      "course": "Kurs",
+      "organization": "Vazirlik / Muassasa",
+      "organizationPlaceholder": "Yoshlar ishlari agentligi",
+      "department": "Bo'lim",
+      "departmentPlaceholder": "Axborot xizmati",
+      "position": "Lavozim",
+      "positionPlaceholder": "Bosh mutaxassis",
+      "submitting": "Saqlanmoqda...",
+      "submit": "Ro'yxatdan o'tish"
+    },
+    "errors": {
+      "phoneIncomplete": "Telefon raqamni to'liq kiriting: +998 XX XXX XX XX",
+      "otpLength": "6 raqamli kodni kiriting",
+      "generic": "Xato yuz berdi",
+      "wrongCode": "Noto'g'ri kod",
+      "passwordMin": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+      "passwordMismatch": "Parollar mos emas",
+      "nameRequired": "Ism familiyangizni kiriting",
+      "dobRequired": "Tug'ilgan sanangizni kiriting",
+      "regionRequired": "Viloyat, tuman va mahallani tanlang",
+      "streetRequired": "Ko'cha nomini kiriting",
+      "houseRequired": "Uy raqamini kiriting",
+      "apartmentRequired": "Xonadon raqamini kiriting yoki \"Xususiy uy\" ni belgilang"
+    },
+    "haveAccount": "Allaqachon ro'yxatdan o'tganmisiz?",
+    "login": "Kirish"
+  }
+}

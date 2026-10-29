@@ -1,0 +1,28 @@
+{
+  "DebatePage": {
+    "backToClub": "Klubqa qaytıw",
+    "loading": "Debat júklenbekte",
+    "notFoundTitle": "Debat tabılmadı",
+    "notFoundDesc": "Bul debat óshirilgen yamasa silteme nadurıs bolıwı múmkin. Klub betindegi debatlar dizimin tekseriń.",
+    "errorTitle": "Debat júklenbedi",
+    "errorMessage": "Debat maǵlıwmatın alıp bolmadı. Internet baylanısın tekserip, qayta urınıp kóriń.",
+    "participantCount": "{count} qatnasıwshı",
+    "mediaTitle": "Media fayllar ({count}/{max})",
+    "uploadingFile": "Fayl júklenbekte",
+    "uploadingProgress": "Júklenbekte ({done}/{total})",
+    "addFile": "Fayl qosıw",
+    "errFilesLeft": "Tek {remaining} fayl qaldı (maksimal {max})",
+    "errTooLarge": "{name}: 50MB dan asıp ketti",
+    "errUploadFallback": "júklew qátesi",
+    "mediaLoading": "Media júklenbekte",
+    "mediaErrorTitle": "Media fayllar júklenbedi",
+    "mediaErrorMessage": "Debat media fayların alıp bolmadı. Qayta urınıp kóriń.",
+    "noFiles": "Ele fayl júklenbegen.",
+    "mediaAlt": "Debat media faylı",
+    "image": "Súwret",
+    "video": "Video",
+    "finalizing": "Tastıyıqlanbaqta...",
+    "finalize": "Debattı tastıyıqlaw",
+    "finalizeHint": "Tastıyıqlaw ushın keminde 1 media fayl júkleń."
+  }
+}

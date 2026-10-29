@@ -1,0 +1,119 @@
+{
+  "RegisterPage": {
+    "steps": {
+      "phone": "Телефон",
+      "personal": "Данные",
+      "address": "Адрес",
+      "who": "Кто вы?",
+      "done": "Готово"
+    },
+    "types": {
+      "CITIZEN": {
+        "label": "Обычный гражданин",
+        "desc": "Дополнительное подтверждение не требуется"
+      },
+      "STUDENT_SCHOOL": {
+        "label": "Ученик школы",
+        "desc": "Подтверждается администратором школы в течение 1 дня"
+      },
+      "STUDENT_UNIVERSITY": {
+        "label": "Студент",
+        "desc": "Подтверждается администратором вуза в течение 1 дня"
+      },
+      "GOVERNMENT_EMPLOYEE": {
+        "label": "Государственный служащий",
+        "desc": "Подтверждается HR-администратором организации в течение 2 дней"
+      },
+      "TEACHER": {
+        "label": "Учитель",
+        "desc": "Подтверждается администратором учреждения в течение 1 дня"
+      }
+    },
+    "freeTextHint": "Свободный текст — проверяется при подтверждении администратором",
+    "back": "Назад",
+    "continue": "Продолжить",
+    "step1": {
+      "titlePhone": "Подтвердите номер телефона",
+      "titleOtp": "Введите код из SMS",
+      "titlePassword": "Установите пароль",
+      "phoneLabel": "Номер телефона",
+      "passwordLabel": "Пароль",
+      "passwordPlaceholder": "Не менее 8 символов",
+      "confirmLabel": "Подтвердите пароль",
+      "confirmPlaceholder": "Введите пароль ещё раз",
+      "continue": "Продолжить →",
+      "continuing": "Продолжение...",
+      "sendSms": "Отправить SMS",
+      "sending": "Отправка...",
+      "otpSentTo": "На номер <strong>{phone}</strong> отправлен 6-значный код",
+      "otpLabel": "Код подтверждения",
+      "verify": "Подтвердить",
+      "verifying": "Проверка...",
+      "changeNumber": "← Изменить номер",
+      "resend": "Отправить снова",
+      "resendIn": "Отправить снова ({seconds}с)",
+      "phoneVerified": "Телефон подтверждён. Теперь установите пароль для входа."
+    },
+    "step2": {
+      "title": "Личные данные",
+      "nameLabel": "Имя и фамилия",
+      "namePlaceholder": "Алишер Навои",
+      "dobLabel": "Дата рождения",
+      "genderLabel": "Пол",
+      "male": "Мужской",
+      "female": "Женский"
+    },
+    "step3": {
+      "title": "Адрес проживания",
+      "geoError": "Список регионов не загрузился.",
+      "retry": "Повторить",
+      "viloyat": "Область",
+      "tuman": "Район / Город",
+      "mahalla": "Махалля / МСГ",
+      "select": "Выберите…",
+      "street": "Улица",
+      "streetPlaceholder": "улица Мустакиллик",
+      "house": "Дом №",
+      "apartment": "Квартира №",
+      "privateHouse": "Живу в частном доме (нет номера квартиры)"
+    },
+    "step4": {
+      "title": "Кем вы регистрируетесь?",
+      "school": "Название школы",
+      "schoolPlaceholder": "Школа №8, г. Навои",
+      "class": "Класс",
+      "classPlaceholder": "9-А",
+      "university": "Название вуза",
+      "universityPlaceholder": "Навоийский государственный университет",
+      "faculty": "Факультет",
+      "facultyPlaceholder": "Филология",
+      "direction": "Направление",
+      "directionPlaceholder": "Узбекский язык и литература",
+      "course": "Курс",
+      "organization": "Министерство / Учреждение",
+      "organizationPlaceholder": "Агентство по делам молодёжи",
+      "department": "Отдел",
+      "departmentPlaceholder": "Информационная служба",
+      "position": "Должность",
+      "positionPlaceholder": "Главный специалист",
+      "submitting": "Сохранение...",
+      "submit": "Зарегистрироваться"
+    },
+    "errors": {
+      "phoneIncomplete": "Введите номер телефона полностью: +998 XX XXX XX XX",
+      "otpLength": "Введите 6-значный код",
+      "generic": "Произошла ошибка",
+      "wrongCode": "Неверный код",
+      "passwordMin": "Пароль должен содержать не менее 8 символов",
+      "passwordMismatch": "Пароли не совпадают",
+      "nameRequired": "Введите имя и фамилию",
+      "dobRequired": "Введите дату рождения",
+      "regionRequired": "Выберите область, район и махаллю",
+      "streetRequired": "Введите название улицы",
+      "houseRequired": "Введите номер дома",
+      "apartmentRequired": "Введите номер квартиры или отметьте «Частный дом»"
+    },
+    "haveAccount": "Уже зарегистрированы?",
+    "login": "Войти"
+  }
+}

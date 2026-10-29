@@ -1,0 +1,99 @@
+{
+  "SchoolPanel": {
+    "title": "Mektep paneli",
+    "subtitle": "Oqıwshılar, statistika hám PQ-9 sáykeslik",
+    "selectSchool": "Mektepti tańlań",
+    "selectSchoolPlaceholder": "— Mektepti tańlań —",
+    "selectSchoolHint": "Statistikanı kóriw ushın mektepti tańlań",
+    "approve": "Tastıyıqlaw",
+    "reject": "Biykarlaw",
+    "cancel": "Biykar etiw",
+    "riTitle": "Oqıw indeksi",
+    "points": "{value} ball",
+    "tabs": {
+      "overview": "Ulıwma",
+      "students": "Oqıwshılar",
+      "rankings": "Reyting"
+    },
+    "pdf": {
+      "button": "PQ-9 esabatı",
+      "preparing": "Tayarlanbaqta…",
+      "error": "PQ-9 esabatın júklep bolmadı. Qayta urınıp kóriń.",
+      "subscriptionRequired": "Jazılıw talap etiledi"
+    },
+    "rejectModal": {
+      "title": "Oqıwshını biykarlaw",
+      "desc": "biykarlanbaqta. Sebebin kiritiń (keminde 3 belgi).",
+      "reasonPlaceholder": "Biykarlaw sebebi...",
+      "minError": "Sebep keminde 3 belgiden ibarat bolıwı kerek"
+    },
+    "overview": {
+      "loading": "Statistika júklenbekte",
+      "errorTitle": "Statistika júklenbedi",
+      "errorMessage": "Mektep statistikasın alıp bolmadı. Internet baylanısın tekserip, qayta urınıp kóriń.",
+      "totalStudents": "Barlıq oqıwshılar",
+      "activeCount": "{count} aktiv",
+      "coverage": "Qamtıw dárejesi",
+      "coverageSub": "Aktiv / Barlıǵı",
+      "avgRi": "Ortasha oqıw indeksi",
+      "avgRiSub": "Oqıwshılar ortashası",
+      "goal20": "20 kitap maqseti",
+      "achievedPeople": "{count} adam",
+      "achievedRate": "{rate}% eristi",
+      "goalProgress": "Maqset progressi",
+      "goal20Annual": "20 kitap (jıllıq)",
+      "studentCoverage": "Oqıwshı qamtıwı",
+      "activeClubs": "Aktiv klub",
+      "monthlyTransactions": "Usı aydaǵı tranzakciyalar",
+      "byClass": "Klass boyınsha oqıwshılar",
+      "noClassData": "Klass maǵlıwmatı joq",
+      "classLabel": "{name}-klass",
+      "studentCount": "{count} oqıwshı",
+      "kAnonTitle": "Jasırınlıq shegi (k<5) — oqıw indeksi jasırılǵan",
+      "kAnonText": "Klass kishi — oqıwshı jasırınlıǵı ushın jasırıldı",
+      "riValue": "RI: {value}"
+    },
+    "students": {
+      "classFilterLabel": "Klass filtri",
+      "classFilterPlaceholder": "Klass filtri (mısalı: 9A)",
+      "statusFilterLabel": "Jaǵday filtri",
+      "allStatuses": "Barlıq jaǵdaylar",
+      "perPage": "Bette:",
+      "thName": "Atı",
+      "thClass": "Klass",
+      "thStatus": "Jaǵday",
+      "thRi": "Oqıw indeksi",
+      "thAction": "Ámel",
+      "noId": "ID joq",
+      "notCalculated": "Esaplanbaǵan",
+      "empty": "Oqıwshılar tabılmadı",
+      "pageInfo": "{first}–{last} / {total} oqıwshı",
+      "prevPage": "Aldınǵı bet",
+      "nextPage": "Keyingi bet"
+    },
+    "rankings": {
+      "title": "Respublika mektep reytingi",
+      "loading": "Reyting júklenbekte",
+      "errorTitle": "Reyting júklenbedi",
+      "errorMessage": "Mektep reytingin alıp bolmadı. Qayta urınıp kóriń.",
+      "emptyTitle": "Reyting ele qáliplespegen",
+      "emptyDesc": "Mektepler aktivligi jıynalǵannan keyin respublika reytingi usı jerde kórinedi.",
+      "thRank": "Orın",
+      "thSchool": "Mektep",
+      "thCoverage": "Qamtıw %",
+      "thAvgRi": "Ortasha RI",
+      "avgRiTitle": "Ortasha oqıw indeksi",
+      "thClubActivity": "Klub aktivligi",
+      "thTotal": "Ulıwma ball"
+    },
+    "pq9": {
+      "title": "PQ-9 sáykeslik jaǵdayı",
+      "summary": "{pass}/{total} talapqa sáykes",
+      "met": "Sáykes",
+      "notMet": "Sáykes emes",
+      "clubCriterion": "Aktiv Jádidler izinen klubı",
+      "unitPoints": "ball",
+      "unitClub": "klub"
+    }
+  }
+}

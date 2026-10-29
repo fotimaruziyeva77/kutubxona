@@ -1,0 +1,30 @@
+{
+  "name": "sifatlibrary",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SIFAT LIBRARY monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w apps/backend\" \"npm run dev -w apps/frontend\"",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@nestjs/bullmq": "^11.0.4",
+    "@types/multer": "^2.1.0"
+  },
+  "overrides": {
+    "multer": "2.1.1"
+  }
+}

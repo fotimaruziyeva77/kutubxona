@@ -1,0 +1,73 @@
+{
+  "LibrariesPanel": {
+    "title": "Kutubxonalar",
+    "subtitleLibrarian": "Sizga biriktirilgan kutubxona(lar) — boshqaruv Super adminda",
+    "subtitleRegion": "Hududingizdagi kutubxonalar (kuzatuv) — boshqaruv Super adminda",
+    "newLibrary": "Yangi kutubxona",
+    "filterAll": "Barchasi",
+    "loading": "Yuklanmoqda…",
+    "cancel": "Bekor qilish",
+    "loadError": {
+      "title": "Kutubxonalarni yuklab bo'lmadi",
+      "message": "Kutubxonalar ro'yxati serverdan kelmadi. Internet aloqasini tekshirib, qayta urining."
+    },
+    "table": {
+      "code": "Kod",
+      "name": "Nomi",
+      "type": "Turi",
+      "status": "Holati",
+      "fund": "Fond",
+      "actions": "Amallar"
+    },
+    "actions": {
+      "approveTuman": "Tuman darajasida tasdiqlash",
+      "approveSuper": "Super admin tasdiqi",
+      "freeze": "Muzlat",
+      "unfreeze": "Ochish",
+      "inventory": "Inventar",
+      "delete": "O'chirish"
+    },
+    "inventoryRow": {
+      "loading": "Inventar hisoboti yuklanmoqda…",
+      "notFound": "Inventar hisoboti topilmadi"
+    },
+    "empty": "Kutubxona topilmadi",
+    "freezeModal": {
+      "title": "Muzlatish sababi",
+      "prompt": "<b>{name}</b> kutubxonasini muzlatish uchun sabab kiriting:",
+      "placeholder": "Muzlatish sababi…",
+      "confirm": "Muzlat"
+    },
+    "deleteModal": {
+      "titleNamed": "\"{name}\" kutubxonasini o'chirish",
+      "title": "Kutubxonani o'chirish",
+      "description": "Kutubxona tizimdan o'chiriladi va ma'lumotlari 90 kun arxivda saqlanadi. Bu amalni qaytarib bo'lmaydi.",
+      "confirm": "O'chirish"
+    },
+    "inv": {
+      "mismatch": "Farq bor",
+      "match": "Moslik",
+      "declared": "E'lon qilingan:",
+      "inSystem": "Tizimda:",
+      "available": "Mavjud:",
+      "borrowed": "Berilgan:",
+      "discrepancy": "Farq:"
+    },
+    "createModal": {
+      "typeLabel": "Turi *",
+      "nameLabel": "Nomi *",
+      "namePlaceholder": "Karmana tuman kutubxonasi",
+      "viloyat": "Viloyat",
+      "select": "Tanlang",
+      "tuman": "Tuman *",
+      "address": "Manzil",
+      "addressPlaceholder": "Markaziy ko'cha 1",
+      "phone": "Telefon",
+      "phonePlaceholder": "+998 XX XXX XX XX",
+      "workHours": "Ish vaqti",
+      "workHoursPlaceholder": "09:00-18:00, Du-Sh",
+      "saving": "Saqlanmoqda…",
+      "create": "Yaratish"
+    }
+  }
+}

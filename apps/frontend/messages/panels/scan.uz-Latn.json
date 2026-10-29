@@ -1,0 +1,76 @@
+{
+  "ScanPage": {
+    "title": "Skaner",
+    "qrTab": "QR Skan",
+    "isbnTab": "ISBN Skan",
+    "cameraDenied": "Kamera ruxsati berilmadi.",
+    "checking": "Tekshirilmoqda…",
+    "search": "Qidirish",
+    "retry": "Qayta urinish",
+    "cancel": "Bekor qilish",
+    "userTypes": {
+      "CITIZEN": "Fuqaro",
+      "STUDENT_SCHOOL": "O'quvchi",
+      "STUDENT_UNIVERSITY": "Talaba",
+      "GOVERNMENT_EMPLOYEE": "Davlat xizmatchisi",
+      "TEACHER": "O'qituvchi"
+    },
+    "qr": {
+      "unsupported": "Brauzeringiz kamera orqali skanerlashni qo'llamaydi — SifatID ni qo'lda kiriting.",
+      "resolveError": "QR tekshirishda xatolik",
+      "notFound": "Foydalanuvchi topilmadi. QR noto'g'ri yoki eskirgan.",
+      "startCamera": "Kamerani yoqish",
+      "stopCamera": "Kamerani o'chirish",
+      "manualLabel": "Yoki SifatID ni qo'lda kiriting"
+    },
+    "isbnPanel": {
+      "unsupported": "Brauzeringiz kamera orqali skanerlashni qo'llamaydi — ISBN raqamini qo'lda kiriting.",
+      "scanError": "ISBN skan xatolik",
+      "testFetchError": "Test savollarini olishda xatolik",
+      "testSubmitError": "Test yuborishda xatolik",
+      "intro": "Sotib olingan kitobning ISBN barkodini skanlang — O'qish indeksiga qo'shiladi",
+      "scanButton": "ISBN skanlash",
+      "manualLabel": "Yoki ISBN ni qo'lda kiriting",
+      "holdBarcode": "Kitob orqa tomonidagi barkodni kameraga tutib turing",
+      "testTitle": "Kitobni tushunish testi",
+      "attemptsLeft": "Urinishlar qoldi: {count}",
+      "wrongAnswers": "Noto'g'ri. To'g'ri: {correct}/{total}. Urinishlar qoldi: {left}",
+      "submitAnswers": "Javoblarni yuborish",
+      "bookAdded": "Kitob qo'shildi",
+      "bookAddedExcl": "Kitob qo'shildi!",
+      "indexUpdated": "O'qish indeksingiz yangilandi",
+      "scanNew": "Yangi kitob skanlash",
+      "exhaustedTitle": "Urinishlar tugadi",
+      "exhaustedDesc": "Test 3 marta muvaffaqiyatsiz — bu kitob Reading Indexga qo'shilmaydi"
+    },
+    "card": {
+      "canIssue": "Kitob berish mumkin",
+      "cannotIssue": "Kitob berib bo'lmaydi — {status}",
+      "liveQr": "Jonli QR",
+      "staticWarning": "Statik QR/ID ishlatildi. Kitobxondan profil sahifasidagi yangilanuvchi QR kodni ko'rsatishni so'rang — u har 5 daqiqada almashadi va skrinshot orqali soxtalashtirib bo'lmaydi.",
+      "trustScore": "Ishonch reytingi:",
+      "currentBooks": "Joriy kitoblar ({count}):",
+      "noBooks": "Hozirda kitob yo'q",
+      "daysLate": "{days} kun kechikkan",
+      "due": "Muddat: {date}",
+      "issueBook": "Kitob berish",
+      "newScan": "Yangi skan"
+    },
+    "readingHour": {
+      "title": "Kitob o'qish soati",
+      "loading": "Tasdiqlanmoqda...",
+      "missingToken": "QR token topilmadi. QR kodni qaytadan skan qiling.",
+      "success": "Tadbirga qatnashganingiz qayd etildi. Rahmat!",
+      "time": "Vaqt: {time}",
+      "duplicate": "Siz allaqachon ushbu tadbirga qatnashgansiz.",
+      "expired": "QR muddati o'tdi. Yangi QR ni so'rang.",
+      "expiredHint": "QR har 5 daqiqada yangilanadi — administrator ekranidan yangi kodni oling.",
+      "forbidden": "Sizning idoraga tegishli emas.",
+      "authRequired": "Tadbirga qatnashish uchun avval tizimga kiring.",
+      "login": "Kirish",
+      "error": "Xato: {message}",
+      "unexpectedError": "Kutilmagan xato",
+      "networkError": "Tarmoq xatosi"
+    }
+  }
+}

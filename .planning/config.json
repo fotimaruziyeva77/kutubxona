@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "project": {
+    "code": "SIFAT",
+    "title": "Sifat Library"
+  },
+  "mode": "yolo",
+  "granularity": "standard",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "quality",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "nyquist_validation": true,
+    "auto_advance": true,
+    "use_worktrees": false,
+    "_auto_chain_active": false
+  },
+  "models": {
+    "researcher": "opus",
+    "synthesizer": "opus",
+    "roadmapper": "opus",
+    "planner": "opus",
+    "executor": "opus",
+    "mapper": "sonnet"
+  }
+}

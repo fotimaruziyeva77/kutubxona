@@ -1,0 +1,496 @@
+##############################################################################
+# SIFAT LIBRARY — Production Docker Compose
+#
+# Ishga tushurish:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# Muhim:
+#   - .env.prod faylini to'ldiring (barcha secretlar)
+#   - O'zbekiston serverlarida joylashtirilishi shart (ma'lumotlar lokalizatsiyasi)
+##############################################################################
+
+services:
+
+  # ── Nginx (Reverse Proxy + SSL) ────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sifat-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Backend (NestJS) ───────────────────────────────────────────────────────
+  # E'TIBOR:
+  #   - container_name YO'Q: Compose v2 nomlangan containerni scale qila olmaydi
+  #     (deploy.replicas bilan hard-error). Containerlar sifat-backend-1..3 bo'ladi.
+  #   - deploy.update_config / rollback_config olib tashlandi: ular Swarm-only va
+  #     plain compose'da indamay e'tiborsiz qolar edi. Rolling deploy
+  #     .github/workflows/deploy-prod.yml skriptida bajariladi
+  #     (pull → migrate (yangi image) → up -d → nginx reload).
+  backend:
+    image: ${REGISTRY:-ghcr.io}/sifat-library/backend:${VERSION:-latest}
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Cron jadvallar Asia/Tashkent (UTC+5) bo'yicha ishlashi uchun (INFRA-05)
+      TZ: Asia/Tashkent
+      # BullMQ / lock / OTP uchun alohida noeviction Redis (pastdagi redis-queue).
+      # Kod REDIS_QUEUE_URL ?? REDIS_URL tartibida o'qiydi.
+      REDIS_QUEUE_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis-queue:6379
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ── Frontend (Next.js) ────────────────────────────────────────────────────
+  # container_name YO'Q (replicas: 2 bilan ziddiyat); update_config Swarm-only —
+  # rolling deploy workflow skriptida (deploy-prod.yml).
+  frontend:
+    image: ${REGISTRY:-ghcr.io}/sifat-library/frontend:${VERSION:-latest}
+    restart: always
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # ── PostgreSQL (Primary) ──────────────────────────────────────────────────
+  # Plan 01-06 INFRA-09/10:
+  #   - Application traffic (Prisma queries) flows through `pgbouncer:6432`
+  #     in transaction-pool mode (see backend DATABASE_URL).
+  #   - Prisma migrations bypass the pooler via DIRECT_DATABASE_URL pointing
+  #     directly at `postgres:5432` (PgBouncer transaction mode breaks
+  #     prepared statements during DDL).
+  #   - The `postgres-replica` service streams WAL from this primary; only
+  #     analytics / leaderboard reads may be routed to the replica
+  #     (never auth/transaction reads — replication lag causes
+  #     read-after-write bugs; T-06-04 mitigation).
+  postgres:
+    image: postgres:15-alpine
+    container_name: sifat-postgres
+    restart: always
+    env_file: .env.prod
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sifat}
+      POSTGRES_USER: ${DB_USER:-sifat}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      # Streaming replication: replica connects as this role
+      POSTGRES_REPLICATION_USER: ${DB_REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${DB_REPLICATION_PASSWORD:?DB_REPLICATION_PASSWORD is required}
+    command: >
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby=on
+    volumes:
+      # postgres.conf/backup.sh mountlari olib tashlandi: postgres `-c config_file` bermaydi
+      # (fayl o'qilmasdi), backup.sh esa faqat `backup` service'da kerak
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sifat} -d ${DB_NAME:-sifat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Portni ochiq qoldirma — faqat ichki tarmoq
+    expose:
+      - "5432"
+
+  # ── PgBouncer (Connection Pooling) — INFRA-09 ─────────────────────────────
+  # Transaction pool mode. Backend DATABASE_URL points here. Migrations bypass
+  # via DIRECT_DATABASE_URL -> postgres:5432 (RESEARCH PITFALLS Pitfall 4:
+  # Prisma + PgBouncer prepared-statement issue requires `?pgbouncer=true`
+  # on the connection string AND transaction mode AND directUrl for migrate).
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    container_name: sifat-pgbouncer
+    restart: always
+    environment:
+      DB_USER: ${DB_USER:-sifat}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-sifat}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 3
+      SERVER_RESET_QUERY: DISCARD ALL
+      # Transaction mode requires this OFF — Prisma sends per-tx prepared
+      # statements which PgBouncer can't share across pooled connections.
+      # `?pgbouncer=true` on the DATABASE_URL disables Prisma's caching.
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits
+      LISTEN_PORT: 6432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -U ${DB_USER:-sifat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - "6432"
+
+  # ── PostgreSQL (Read Replica) — INFRA-10 ──────────────────────────────────
+  # Streaming standby of the primary. Use ONLY for stats/leaderboard reads —
+  # never for auth or transactional reads (replication lag -> read-after-write
+  # bugs; T-06-04 mitigation). Application read-routing wiring (2nd Prisma
+  # client or @prisma/extension-read-replicas) is deferred to Phase 2/5 where
+  # the heavy read paths actually live. This plan only provisions the
+  # infrastructure + DATABASE_REPLICA_URL connection string.
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: sifat-postgres-replica
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-sifat}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-sifat}
+      PGUSER: ${DB_REPLICATION_USER:-replicator}
+      PGPASSWORD: ${DB_REPLICATION_PASSWORD:?DB_REPLICATION_PASSWORD is required}
+      # Standby connects to the primary on first boot via pg_basebackup.
+      # This is a minimal config; production should swap to a managed-replica
+      # operator or repmgr for failover. INFRA-10 acceptance criteria require
+      # the service to exist + DATABASE_REPLICA_URL to be defined — heavy
+      # operational hardening is Phase 7 scope.
+      PRIMARY_HOST: postgres
+      PRIMARY_PORT: 5432
+      REPLICATION_USER: ${DB_REPLICATION_USER:-replicator}
+      REPLICATION_PASSWORD: ${DB_REPLICATION_PASSWORD:?DB_REPLICATION_PASSWORD is required}
+    command: >
+      bash -c '
+      if [ ! -s "/var/lib/postgresql/data/PG_VERSION" ]; then
+        until pg_basebackup -h "$$PRIMARY_HOST" -p "$$PRIMARY_PORT" -D /var/lib/postgresql/data -U "$$REPLICATION_USER" -Fp -Xs -P -R; do
+          echo "Waiting for primary to accept replication..."; sleep 2;
+        done;
+        chmod 0700 /var/lib/postgresql/data;
+      fi;
+      exec postgres -c hot_standby=on
+      '
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sifat} -d ${DB_NAME:-sifat}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    expose:
+      - "5432"
+
+  # ── Redis (Cache + Socket.IO adapter) ─────────────────────────────────────
+  # FAQAT cache/pubsub uchun — allkeys-lru bu yerda to'g'ri.
+  # BullMQ/lock/OTP trafigi pastdagi redis-queue ga boradi (noeviction).
+  redis:
+    image: redis:7-alpine
+    container_name: sifat-redis
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    expose:
+      - "6379"
+
+  # ── Redis Queue (BullMQ + lock + OTP) ─────────────────────────────────────
+  # BullMQ noeviction TALAB qiladi: allkeys-lru rejimida job/lock/OTP kalitlari
+  # xotira to'lganda indamay o'chirib yuboriladi (yo'qolgan to'lov timeoutlari,
+  # yo'qolgan SMS kodlar). Shu sabab cache redis'idan alohida instance.
+  # Backend bunga REDIS_QUEUE_URL orqali ulanadi. Faqat ichki tarmoq (expose).
+  redis-queue:
+    image: redis:7-alpine
+    container_name: sifat-redis-queue
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      --maxmemory 1gb
+      --maxmemory-policy noeviction
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      # Lokal named volume — agar /srv/sifat/data/redis-queue bind kerak bo'lsa,
+      # avval hostda katalog yaratib, redis_data kabi driver_opts qo'shing.
+      - redis_queue_data:/data
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    expose:
+      - "6379"
+
+  # ── Elasticsearch ─────────────────────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: sifat-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required}
+      - "ES_JAVA_OPTS=-Xms1g -Xmx2g"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    expose:
+      - "9200"
+
+  # ── Kafka ─────────────────────────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: sifat-kafka
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168     # 7 kun
+      KAFKA_LOG_SEGMENT_BYTES: 104857600 # 100MB
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+    networks:
+      - sifat-net
+    expose:
+      - "9092"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: sifat-zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    volumes:
+      - zk_data:/var/lib/zookeeper/data
+    networks:
+      - sifat-net
+    expose:
+      - "2181"
+
+  # ── MinIO (Fayl saqlash — O'zbekistonda) ──────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: sifat-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:?MINIO_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?MINIO_PASSWORD is required}
+    volumes:
+      - minio_data:/data
+    networks:
+      - sifat-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    expose:
+      - "9000"
+      - "9001"
+
+  # ── Prometheus + Grafana (Monitoring) ────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sifat-prometheus
+    restart: always
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.path=/prometheus"
+    volumes:
+      # Haqiqiy yo'l: infra/monitoring/prometheus/ (infra/prometheus/ mavjud emas)
+      - ./infra/monitoring/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - sifat-net
+    expose:
+      - "9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sifat-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}
+      GF_SERVER_DOMAIN: grafana.sifat.uz
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com:587}
+      GF_SMTP_USER: ${SMTP_USER}
+      GF_SMTP_PASSWORD: ${SMTP_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Haqiqiy yo'l: infra/monitoring/grafana/ (infra/grafana/ mavjud emas)
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - sifat-net
+    expose:
+      - "3000"
+
+  # ── Backup Service (Kunlik avtomatik) ────────────────────────────────────
+  backup:
+    image: postgres:15-alpine
+    container_name: sifat-backup
+    restart: "no"
+    env_file: .env.prod
+    volumes:
+      - ./infra/postgres/backup.sh:/backup.sh:ro
+      - backup_data:/backups
+    networks:
+      - sifat-net
+    # Har kuni 02:00 da. Eslatma: avvalgi entrypoint+command kombinatsiyasi crond'ga
+    # yaroqsiz qo'shimcha argumentlar berardi (backup hech qachon ishlamagan) — endi
+    # bitta sh -c crontab'ni o'rnatib crond'ni foreground'da ishga tushiradi.
+    command: >
+      sh -c 'echo "0 2 * * * /backup.sh" | crontab - && exec crond -f -d 8'
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/data/postgres
+  postgres_replica_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/data/postgres-replica
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/data/redis
+  redis_queue_data:
+    driver: local
+  es_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/data/elasticsearch
+  kafka_data:
+    driver: local
+  zk_data:
+    driver: local
+  minio_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/data/minio
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  nginx_cache:
+    driver: local
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/sifat/backups
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  sifat-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

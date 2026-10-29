@@ -1,0 +1,83 @@
+name: Deploy → staging.sifat.uz
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-staging:
+    name: Build & Deploy to staging.sifat.uz
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ── Backend build ──────────────────────────────────────────
+      - name: Install backend deps
+        working-directory: apps/backend
+        run: npm install
+
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: npx prisma generate
+
+      - name: Build backend
+        working-directory: apps/backend
+        run: npm run build
+
+      # ── Frontend build ─────────────────────────────────────────
+      - name: Install frontend deps
+        working-directory: apps/frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: apps/frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://staging.sifat.uz/api
+
+      # ── SSH Deploy ─────────────────────────────────────────────
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H staging.sifat.uz >> ~/.ssh/known_hosts
+
+      - name: Deploy to staging server
+        run: bash infra/scripts/deploy.sh staging ${{ github.sha }}
+
+      # ── Smoke test ─────────────────────────────────────────────
+      - name: Smoke test
+        run: |
+          sleep 5
+          curl -sf https://staging.sifat.uz/api/docs > /dev/null
+          echo "✅ staging.sifat.uz ishlamoqda"
+
+      # ── Lighthouse CI ─────────────────────────────────────────
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            https://staging.sifat.uz/uz-Latn
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ staging.sifat.uz deploy muvaffaqiyatsiz! SHA: ${{ github.sha }}'
+            })

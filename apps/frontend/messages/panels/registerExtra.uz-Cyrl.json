@@ -1,0 +1,119 @@
+{
+  "RegisterPage": {
+    "steps": {
+      "phone": "Телефон",
+      "personal": "Маълумотлар",
+      "address": "Манзил",
+      "who": "Ким сиз?",
+      "done": "Тайёр"
+    },
+    "types": {
+      "CITIZEN": {
+        "label": "Оддий фуқаро",
+        "desc": "Ҳеч қандай қўшимча тасдиқ керак эмас"
+      },
+      "STUDENT_SCHOOL": {
+        "label": "Мактаб ўқувчиси",
+        "desc": "Мактаб админ томонидан 1 кунда тасдиқланади"
+      },
+      "STUDENT_UNIVERSITY": {
+        "label": "Талаба",
+        "desc": "ОТМ админ томонидан 1 кунда тасдиқланади"
+      },
+      "GOVERNMENT_EMPLOYEE": {
+        "label": "Давлат хизматчиси",
+        "desc": "Идора HR админ томонидан 2 кунда тасдиқланади"
+      },
+      "TEACHER": {
+        "label": "Ўқитувчи",
+        "desc": "Муассаса админ томонидан 1 кунда тасдиқланади"
+      }
+    },
+    "freeTextHint": "Эркин матн — админ тасдиқлашда текширилади",
+    "back": "Орқага",
+    "continue": "Давом этиш",
+    "step1": {
+      "titlePhone": "Телефон рақамингизни тасдиқланг",
+      "titleOtp": "SMS кодни киритинг",
+      "titlePassword": "Парол ўрнатинг",
+      "phoneLabel": "Телефон рақам",
+      "passwordLabel": "Парол",
+      "passwordPlaceholder": "Камида 8 та белги",
+      "confirmLabel": "Паролни тасдиқланг",
+      "confirmPlaceholder": "Паролни қайта киритинг",
+      "continue": "Давом этиш →",
+      "continuing": "Давом этилмоқда...",
+      "sendSms": "SMS юбориш",
+      "sending": "Юборилмоқда...",
+      "otpSentTo": "<strong>{phone}</strong> рақамига 6 рақамли код юборилди",
+      "otpLabel": "Тасдиқлаш коди",
+      "verify": "Тасдиқлаш",
+      "verifying": "Текширилмоқда...",
+      "changeNumber": "← Рақамни ўзгартириш",
+      "resend": "Қайта юбориш",
+      "resendIn": "Қайта юбориш ({seconds}с)",
+      "phoneVerified": "Телефон тасдиқланди. Энди кириш паролини ўрнатинг."
+    },
+    "step2": {
+      "title": "Шахсий маълумотлар",
+      "nameLabel": "Исм Фамилия",
+      "namePlaceholder": "Алишер Навоий",
+      "dobLabel": "Туғилган сана",
+      "genderLabel": "Жинс",
+      "male": "Эркак",
+      "female": "Аёл"
+    },
+    "step3": {
+      "title": "Яшаш манзилингиз",
+      "geoError": "Ҳудудлар рўйхати юкланмади.",
+      "retry": "Қайта уриниш",
+      "viloyat": "Вилоят",
+      "tuman": "Туман / Шаҳар",
+      "mahalla": "Маҳалла / МФЙ",
+      "select": "Танланг…",
+      "street": "Кўча",
+      "streetPlaceholder": "Мустақиллик кўчаси",
+      "house": "Уй №",
+      "apartment": "Хонадон №",
+      "privateHouse": "Хусусий уйда яшайман (хонадон рақами йўқ)"
+    },
+    "step4": {
+      "title": "Сиз ким сифатида рўйхатдан ўтяпсиз?",
+      "school": "Мактаб номи",
+      "schoolPlaceholder": "Навоий 8-мактаб",
+      "class": "Синф",
+      "classPlaceholder": "9-А",
+      "university": "ОТМ номи",
+      "universityPlaceholder": "Навоий давлат университети",
+      "faculty": "Факультет",
+      "facultyPlaceholder": "Филология",
+      "direction": "Йўналиш",
+      "directionPlaceholder": "Ўзбек тили ва адабиёти",
+      "course": "Курс",
+      "organization": "Вазирлик / Муассаса",
+      "organizationPlaceholder": "Ёшлар ишлари агентлиги",
+      "department": "Бўлим",
+      "departmentPlaceholder": "Ахборот хизмати",
+      "position": "Лавозим",
+      "positionPlaceholder": "Бош мутахассис",
+      "submitting": "Сақланмоқда...",
+      "submit": "Рўйхатдан ўтиш"
+    },
+    "errors": {
+      "phoneIncomplete": "Телефон рақамни тўлиқ киритинг: +998 XX XXX XX XX",
+      "otpLength": "6 рақамли кодни киритинг",
+      "generic": "Хато юз берди",
+      "wrongCode": "Нотўғри код",
+      "passwordMin": "Парол камида 8 та белгидан иборат бўлиши керак",
+      "passwordMismatch": "Пароллар мос эмас",
+      "nameRequired": "Исм фамилиянгизни киритинг",
+      "dobRequired": "Туғилган санангизни киритинг",
+      "regionRequired": "Вилоят, туман ва маҳаллани танланг",
+      "streetRequired": "Кўча номини киритинг",
+      "houseRequired": "Уй рақамини киритинг",
+      "apartmentRequired": "Хонадон рақамини киритинг ёки \"Хусусий уй\" ни белгиланг"
+    },
+    "haveAccount": "Аллақачон рўйхатдан ўтганмисиз?",
+    "login": "Кириш"
+  }
+}

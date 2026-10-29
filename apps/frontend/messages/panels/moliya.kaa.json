@@ -1,0 +1,307 @@
+{
+  "SubsPanel": {
+    "title": "Jazılıwlar",
+    "subtitle": "Admin basqarıw — muzlatıw, aktivlestiriw, óshiriw",
+    "forbidden": "Bul bet tek bas administrator hám buxgalter ushın.",
+    "genericError": "Qátelik júz berdi",
+    "statusLabel": "Jaǵday:",
+    "filter": {
+      "all": "Barlıǵı",
+      "trial": "Sınaq",
+      "pending": "Kútilmekte",
+      "active": "Aktiv",
+      "frozen": "Muzlatılǵan",
+      "deleted": "Óshirilgen"
+    },
+    "total": "Jámi: {count}",
+    "loadErrorTitle": "Jazılıwlar júklenbedi",
+    "loadErrorMsg": "Dizimdi alıwda qátelik júz berdi.",
+    "emptyTitle": "Jazılıwlar tabılmadı",
+    "emptyDesc": "Házirshe birde-bir jazılıw ashılmaǵan.",
+    "table": {
+      "library": "Kitapxana",
+      "plan": "Tarif",
+      "status": "Jaǵday",
+      "ends": "Tamamlanadı",
+      "reason": "Sebep",
+      "action": "Ámel"
+    },
+    "actions": {
+      "freeze": "Muzlatıw",
+      "delete": "Óshiriw",
+      "unfreeze": "Aktivlestiriw",
+      "deletedNoAction": "Óshirilgen — ámel joq"
+    },
+    "dialog": {
+      "freezeTitle": "Jazılıwdı muzlatıw — sebep kiritiń",
+      "deleteTitle": "Jazılıwdı óshiriw — sebep kiritiń",
+      "auditNote": "Sebep audit jurnalına jazıladı hám ózgertip bolmaydı.",
+      "reasonLabel": "Sebep",
+      "reasonPlaceholder": "Keminde 3 belgi — audit jurnalı ushın saqlanadı",
+      "reasonMin": "Sebep keminde 3 belgi",
+      "cancel": "Biykar etiw",
+      "submitting": "Jiberilmekte…",
+      "confirm": "Tastıyıqlaw"
+    },
+    "unfreeze": {
+      "title": "Jazılıwdı aktivlestiriw",
+      "desc": "Jazılıw qayta ACTIVE jaǵdayǵa ótedi hám kitapxana kiriwi tiklenedi."
+    }
+  },
+  "BillingPanel": {
+    "authRequired": {
+      "title": "Kiriw kerek",
+      "desc": "Esaptı kóriw ushın aldın kiriń."
+    },
+    "titleSuper": "Kitapxana jazılıwı",
+    "titleMine": "Meniń jazılıwım",
+    "selectLibrary": "Kitapxananı saylań",
+    "selectLibraryOption": "— Kitapxananı saylań —",
+    "noActiveLibraries": "Aktiv kitapxana tabılmadı",
+    "selectPrompt": "Jazılıwdı kóriw ushın kitapxananı saylań",
+    "loadErrorTitle": "Jazılıwdı júklep bolmadı",
+    "loadErrorMsg": "Maǵlıwmattı alıwda qátelik júz berdi.",
+    "noAffiliation": "Sizge kitapxana bekitilmegen — administrator menen baylanısıń",
+    "sum": "{amount} som",
+    "noSub": {
+      "title": "Jazılıw ele baslanbaǵan",
+      "libraryLine": "{name} · {type} kitapxanası.",
+      "chooseCta": "Tómendegi tarifti saylap jazılıwdı baslań.",
+      "adminOnly": "Tarif tómende. Jazılıw hám tólemdi mákeme administratorı baslaydı.",
+      "noPlans": "Bul kitapxana túri ushın tarif tabılmadı.",
+      "free": "Biypul",
+      "price": "{price} som",
+      "perYear": " / jıl",
+      "freeNote": "Mámleket byudjeti esabınan — tólem talap etilmeydi.",
+      "paidNote": "Jıllıq abonent tólemi · 30 kún biypul sınaq.",
+      "activate": "Jazılıwdı aktivlestiriw",
+      "startTrial": "Jazılıwdı baslaw (30 kún sınaq)",
+      "manageNote": "Tólem hám jazılıw basqarıwı mákeme administratorı yamasa buxgalter arqalı ámelge asırıladı."
+    },
+    "notice": {
+      "invoiceCreated": "Faktura jaratıldı. Bank ótkermesi ushın tómennen shártnama hám fakturanı júklep alıń.",
+      "renewed": "Jazılıw jańalandı.",
+      "payFailed": "Tólemdi baslap bolmadı. Birazdan soń qayta urınıp kóriń.",
+      "contractFailed": "Shártnamanı júklep bolmadı.",
+      "invoiceFailed": "Fakturanı júklep bolmadı."
+    },
+    "details": {
+      "plan": "Tarif",
+      "pricePerYear": "{price} som / jıl",
+      "freeBudget": "Biypul (mámleket byudjeti)",
+      "trialEnds": "Sınaq tamamlanadı",
+      "daysLeft": "(qalǵan {count} kún)",
+      "dueLabel": "Tólem múddeti:",
+      "amountLabel": "Summa:",
+      "nextDue": "Keyingi tólem múddeti",
+      "frozen": "Jazılıw muzlatılǵan",
+      "frozenReason": "Sebep: {reason}",
+      "deleted": "Jazılıw óshirilgen"
+    },
+    "pay": {
+      "method": "Tólem usılı",
+      "viaPayme": "Payme arqalı",
+      "viaClick": "Click arqalı",
+      "bankTransfer": "Bank ótkermesi",
+      "downloadContract": "Shártnamanı júklep alıw",
+      "downloadInvoice": "Fakturanı júklep alıw",
+      "hint": "Karta arqalı (Payme / Click) tólem betine ótesiz — tólem tastıyıqlanǵannan soń jazılıw avtomat aktivlesedi. Bank ótkermesi ushın shártnama hám fakturanı júklep alıń; tólem túskennen soń administrator aktivlestiredi.",
+      "freeNoPay": "Bul tarif biypul (mámleket byudjeti) — tólem talap etilmeydi."
+    },
+    "invoices": {
+      "title": "Fakturalar tariyxı",
+      "invoice": "Faktura",
+      "amount": "Summa",
+      "due": "Múddet",
+      "status": "Jaǵday"
+    }
+  },
+  "BuxgalterPanel": {
+    "title": "Buxgalter paneli",
+    "subtitle": "Tólemler, fakturalar hám jazılıwlar",
+    "dateFrom": "Baslanıw sánesi",
+    "dateTo": "Tamamlanıw sánesi",
+    "export": {
+      "xlsx": "Excel (.xlsx)",
+      "xlsxTitle": "Excel formatında júklep alıw",
+      "csv": "CSV",
+      "csvTitle": "Ápiwayı CSV (Excel de qabıl etedi)",
+      "oneC": "1C eksport",
+      "oneCTitle": "1C-Buxgalteriya eksport formatı (11 baǵana, ;)"
+    },
+    "tabs": {
+      "overview": "Ulıwma kórinis",
+      "invoices": "Fakturalar",
+      "subscriptions": "Jazılıwlar"
+    },
+    "sum": {
+      "billion": "{value} mlrd som",
+      "million": "{value} mln som",
+      "plain": "{value} som",
+      "mlnShort": "{value} mln"
+    },
+    "kpi": {
+      "totalRevenue": "Jámi túsim",
+      "totalInvoices": "Jámi fakturalar",
+      "paidInvoices": "Tólengen fakturalar",
+      "pendingInvoices": "Kútilip atırǵan fakturalar"
+    },
+    "charts": {
+      "monthlyTrend": "Aylıq túsim trendi",
+      "revenue": "Túsim",
+      "monthLabel": "{month} ay",
+      "byMethod": "Tólem usılı boyınsha",
+      "noPayments": "Házirshe tólemler joq.",
+      "noPaymentsHint": "Tólem bolǵanda usıl boyınsha (Payme / Click / Bank) bólistiriw kórinedi.",
+      "subStatus": "Jazılıw jaǵdayı",
+      "subStatsError": "Jazılıw statistikası júklenbedi.",
+      "noSubs": "Házirshe jazılıwlar joq.",
+      "noSubsHint": "Jazılıw ashılǵanda jaǵday bólistiriwi usı jerde kórinedi.",
+      "countPct": "{count} dana ({pct}%)"
+    },
+    "retry": "Qayta urınıw",
+    "errors": {
+      "statsTitle": "Finans statistikası júklenbedi",
+      "statsMsg": "Tólem kórsetkishlerin alıwda qátelik júz berdi.",
+      "invoicesTitle": "Fakturalar júklenbedi",
+      "invoicesMsg": "Fakturalar dizimin alıwda qátelik júz berdi.",
+      "subsTitle": "Jazılıwlar júklenbedi",
+      "subsMsg": "Jazılıwlar dizimin alıwda qátelik júz berdi."
+    },
+    "invoiceStatus": {
+      "paid": "Tólengen",
+      "pending": "Kútilmekte",
+      "failed": "Qátelik",
+      "refunded": "Qaytarılǵan"
+    },
+    "method": {
+      "payme": "Payme",
+      "click": "Click",
+      "bank": "Bank",
+      "cash": "Qolma-qol"
+    },
+    "invoicesTab": {
+      "filterAria": "Faktura jaǵdayı boyınsha filtr",
+      "allStatuses": "Barlıq statuslar",
+      "totalCount": "{count} faktura",
+      "code": "Ishki kod",
+      "library": "Kitapxana",
+      "plan": "Tarif",
+      "amount": "Summa",
+      "due": "Múddet",
+      "method": "Usıl",
+      "status": "Status",
+      "actions": "Ámeller",
+      "paidOn": "Tólendi: {date}",
+      "pdfTitle": "PDF júklep alıw",
+      "empty": "Fakturalar tabılmadı"
+    },
+    "totalLabel": "Jámi: {count}",
+    "pagination": {
+      "prev": "← Aldıńǵı",
+      "next": "Keyingi →"
+    },
+    "subsTab": {
+      "filterAria": "Jazılıw jaǵdayı boyınsha filtr",
+      "all": "Barlıǵı",
+      "trial": "Sınaq",
+      "active": "Aktiv",
+      "pending": "Kútilmekte",
+      "frozen": "Muzlatılǵan",
+      "countShort": "{count} dana",
+      "library": "Kitapxana",
+      "type": "Túr",
+      "plan": "Tarif",
+      "start": "Baslanıw",
+      "end": "Tamamlanıw",
+      "lastInvoice": "Sońǵı faktura",
+      "status": "Status",
+      "empty": "Jazılıwlar tabılmadı"
+    }
+  },
+  "DonationsPanel": {
+    "title": "Donat basqarıwı",
+    "subtitle": "DONAT-03: ashıq finans esabatı · SUPER_ADMIN + BUXGALTER",
+    "kpi": {
+      "collected": "Jámi jıynalǵan",
+      "spent": "Sarplanǵan",
+      "remaining": "Qalǵan",
+      "donors": "Donatshılar"
+    },
+    "sum": "{amount} som",
+    "loading": "Júklenbekte…",
+    "purpose": {
+      "libraryBooks": "Kitapxana kitapları",
+      "schoolBooks": "Mektep kitapları",
+      "general": "Ulıwma"
+    },
+    "charts": {
+      "byPurpose": "Maqset boyınsha bólistiriw",
+      "noData": "Ele maǵlıwmat joq",
+      "sumCount": "{amount} som · {count} dana",
+      "topTargets": "Top-10 maqset (targetName boyınsha)",
+      "noSpending": "Ele sarplanbaǵan"
+    },
+    "table": {
+      "title": "Barlıq sarplawlar",
+      "name": "Maqset atı",
+      "total": "Jámi muǵdar",
+      "transactions": "Tranzakciyalar",
+      "unassigned": "Belgilenbegen"
+    }
+  },
+  "DemoReqPanel": {
+    "title": "Demo sorawlar",
+    "subtitle": "Mákemelerden kelgen B2B múrájatlar. Telefon nomerine basıp dárhal qońıraw etiń.",
+    "forbidden": {
+      "title": "Ruxsat joq",
+      "desc": "Demo sorawlar paneli tek Super Admin ushın."
+    },
+    "badges": {
+      "new": "{count} jańa",
+      "inProgress": "{count} processte"
+    },
+    "filter": {
+      "all": "Hámmesi",
+      "new": "Jańa",
+      "inProgress": "Processte",
+      "closed": "Jabılǵan"
+    },
+    "org": {
+      "maktab": "Mektep",
+      "otm": "JOO",
+      "idora": "Mákeme",
+      "mahalla": "Máhálle",
+      "other": "Basqa"
+    },
+    "status": {
+      "pending": "Kútilmekte",
+      "contacted": "Baylanısıldı",
+      "closed": "Jabıldı"
+    },
+    "errors": {
+      "forbidden": "Bul bet tek Super Admin ushın",
+      "loadFailed": "Dizimdi júklep bolmadı"
+    },
+    "retry": "Qayta urınıw",
+    "loading": "Júklenbekte…",
+    "empty": {
+      "none": "Ele demo soraw joq",
+      "noneInStatus": "Bul jaǵdayda soraw joq"
+    },
+    "shownOf": "{shown} / {total} kórsetilmekte",
+    "loadMore": "Jáne 50 danasın júklew",
+    "note": {
+      "label": "Qońıraw nátiyjesi / keyingi qádem",
+      "placeholder": "Máselen: direktor menen sóylestim, 15-avgustta demo kelisildi.",
+      "save": "Saqlaw",
+      "cancel": "Biykar etiw"
+    },
+    "card": {
+      "contacted": "Baylanıstım",
+      "editNote": "Kommentariydi ózgertiw",
+      "addNote": "Kommentariy qosıw",
+      "close": "Jabıw"
+    }
+  }
+}

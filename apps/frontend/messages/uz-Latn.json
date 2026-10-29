@@ -1,0 +1,670 @@
+{
+  "common": {
+    "search": "Qidirish",
+    "login": "Kirish",
+    "register": "Ro'yhatdan o'tish",
+    "logout": "Chiqish",
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "confirm": "Tasdiqlash",
+    "back": "Orqaga",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "close": "Yopish",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "submit": "Yuborish",
+    "download": "Yuklab olish",
+    "refresh": "Yangilash",
+    "filter": "Filtr",
+    "all": "Hammasi",
+    "noData": "Ma'lumot yo'q",
+    "total": "Jami",
+    "active": "Faol",
+    "inactive": "Nofaol"
+  },
+  "nav": {
+    "home": "Bosh sahifa",
+    "libraries": "Kutubxonalar",
+    "books": "Kitoblar",
+    "ratings": "Reytinglar",
+    "profile": "Profil",
+    "dashboard": "Boshqaruv paneli",
+    "stats": "Statistika",
+    "alerts": "Ogohlantirishlar",
+    "transactions": "Tranzaksiyalar",
+    "donate": "Donat"
+  },
+  "register": {
+    "devBypass": {
+      "title": "Telefon va parol o'rnatish",
+      "banner": "DEV rejimi: SMS OTP o'chirilgan. Telefon va parolni kiriting."
+    }
+  },
+  "login": {
+    "devBypassReset": {
+      "title": "Parolni tiklash",
+      "banner": "DEV rejimi: SMS OTP o'chirilgan. Telefon va yangi parolni kiriting."
+    }
+  },
+  "auth": {
+    "phone": "Telefon raqam",
+    "phonePlaceholder": "+998 XX XXX XX XX",
+    "sendOtp": "SMS kod yuborish",
+    "otpCode": "SMS kod",
+    "otpPlaceholder": "4 xonali kod",
+    "verifyOtp": "Tasdiqlash",
+    "otpSent": "SMS kod yuborildi",
+    "resendIn": "{seconds} soniyadan keyin qayta yuborish",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "birthDate": "Tug'ilgan sana",
+    "gender": "Jins",
+    "male": "Erkak",
+    "female": "Ayol",
+    "userType": "Foydalanuvchi turi",
+    "citizen": "Oddiy fuqaro",
+    "student": "O'quvchi",
+    "university": "Talaba",
+    "employee": "Davlat xizmatchisi",
+    "teacher": "O'qituvchi",
+    "viloyat": "Viloyat",
+    "tuman": "Tuman",
+    "mahalla": "Mahalla",
+    "street": "Ko'cha",
+    "house": "Uy raqami",
+    "apartment": "Xonadon raqami"
+  },
+  "home": {
+    "hero": "Milliy Kitobxonlik Platformasi",
+    "heroDesc": "O'zbekistondagi barcha kutubxonalar bir tizimda",
+    "searchPlaceholder": "Kitob, muallif yoki janr qidiring...",
+    "stats": {
+      "libraries": "Kutubxona",
+      "readers": "Kitobxon",
+      "books": "Kitob",
+      "todayRead": "Bugun o'qildi",
+      "activeLibraries": "Faol kutubxona"
+    },
+    "b2b": {
+      "title": "Muassasalar uchun",
+      "desc": "PQ-9 majburiyatlarini avtomatik bajaring",
+      "demoBtn": "Demo so'rash",
+      "priceBtn": "Narxlar"
+    },
+    "howItWorks": {
+      "title": "Qanday ishlaydi",
+      "step1": "Ro'yhatdan o'ting",
+      "step2": "Yaqin kutubxonani toping",
+      "step3": "O'qing va ball to'plang"
+    }
+  },
+  "library": {
+    "available": "Mavjud",
+    "notAvailable": "Mavjud emas",
+    "reserve": "Bron qilish",
+    "distance": "{km} km uzoqda",
+    "fund": "Fond",
+    "workingHours": "Ish vaqti",
+    "address": "Manzil",
+    "type": {
+      "GOV": "Davlat kutubxonasi",
+      "SCH": "Maktab kutubxonasi",
+      "UNI": "OTM kutubxonasi",
+      "ORG": "Idora kutubxonasi",
+      "MAH": "Mahalla kutubxonasi"
+    },
+    "billing": {
+      "title": "Mening obunam",
+      "loading": "Yuklanmoqda...",
+      "loadError": "Yuklab bo'lmadi: {err}",
+      "noSub": "Obuna topilmadi",
+      "noLogin": "Kirish kerak",
+      "noLoginDesc": "Hisob ko'rish uchun avval kiring.",
+      "planLabel": "Tarif",
+      "trialEnds": "Sinov tugaydi",
+      "daysLeft": "(qolgan {n} kun)",
+      "nextDue": "Keyingi to'lov muddati",
+      "dueLabel": "To'lov muddati:",
+      "amountLabel": "Summa:",
+      "frozenTitle": "Obuna muzlatilgan",
+      "frozenReason": "Sabab: {reason}",
+      "deletedTitle": "Obuna o'chirilgan",
+      "payNow": "Hozir to'lash",
+      "submitting": "Yuborilmoqda...",
+      "invoiceCreated": "Faktura yaratildi: {id}",
+      "renewed": "Obuna yangilandi. Sahifa qayta yuklanadi.",
+      "historyTitle": "Fakturalar tarixi",
+      "history": {
+        "id": "Faktura",
+        "amount": "Summa",
+        "due": "Muddat",
+        "status": "Holat"
+      }
+    }
+  },
+  "reading": {
+    "index": "O'qish indeksi",
+    "booksRead": "O'qilgan kitoblar",
+    "streak": "Ketma-ket kunlar",
+    "history": "Indeks tarixi",
+    "leaderboard": "Liderlar jadvali",
+    "myIndex": "Mening indeksim",
+    "components": {
+      "booksCount": "Kitoblar soni",
+      "consistency": "Muntazamlik",
+      "diversity": "Janr xilma-xilligi",
+      "discipline": "Qaytarish intizomi",
+      "activity": "Faollik"
+    },
+    "sources": {
+      "library": "Kutubxona",
+      "isbn": "ISBN skan",
+      "store": "Kitob do'koni",
+      "mutolaa": "Mutolaa platformasi",
+      "ebook": "Elektron kitob"
+    }
+  },
+  "transaction": {
+    "status": {
+      "PENDING": "Kutilmoqda",
+      "RESERVED": "Bron qilingan",
+      "BORROWED": "Olingan",
+      "RETURNED": "Qaytarilgan",
+      "CANCELLED": "Bekor qilingan",
+      "OVERDUE": "Muddati o'tgan"
+    },
+    "type": {
+      "RESERVE": "Bron",
+      "BORROW": "Olish",
+      "RETURN": "Qaytarish"
+    },
+    "borrowedAt": "Olingan sana",
+    "dueDate": "Qaytarish muddati",
+    "returnedAt": "Qaytarilgan sana",
+    "overdueDays": "{days} kun kechikdi",
+    "extendDue": "Muddatni uzaytirish",
+    "extendNote": "Faqat 1 marta uzaytirish mumkin (+7 kun)",
+    "noActiveBooks": "Hozir olingan kitob yo'q",
+    "history": "Kitob tarixi",
+    "myBooks": "Mening kitoblarim",
+    "reserveSuccess": "Muvaffaqiyatli bron qilindi",
+    "borrowSuccess": "Kitob berildi",
+    "returnSuccess": "Kitob qaytarildi",
+    "limitReached": "Kitob limitiga yetdingiz",
+    "alreadyReserved": "Bu kitob allaqachon bronlangan",
+    "scanQr": "QR kodni skan qilish",
+    "isbnScan": "ISBN skan",
+    "isbnScanDesc": "Sotib olingan kitob ISBN kodini skan qiling"
+  },
+  "top": {
+    "title": "Ochiq reytinglar",
+    "categories": {
+      "all": "Umumiy Top-100",
+      "male": "Erkaklar Top-100",
+      "female": "Ayollar Top-100",
+      "students": "O'quvchilar Top-100",
+      "university": "Talabalar Top-100",
+      "families": "Top oilalar",
+      "mahallas": "Top mahallalar",
+      "schools": "Top maktablar",
+      "orgs": "Top idoralar",
+      "districts": "Top tumanlar",
+      "regions": "Top viloyatlar",
+      "donors": "Donat qilganlar"
+    },
+    "rank": "O'rin",
+    "score": "Ball",
+    "books": "Kitob",
+    "region": "Hudud",
+    "updatedAt": "Yangilandi",
+    "monthly": "Oylik",
+    "daily": "Kunlik",
+    "weekly": "Haftalik",
+    "realtime": "Real vaqt",
+    "selectMonth": "Oy tanlang",
+    "noEntries": "Hali reytingda hech kim yo'q"
+  },
+  "donate": {
+    "title": "Donat qilish",
+    "desc": "Mablag'laringiz kutubxona fondlarini boyitishga sarflanadi",
+    "amount": "Miqdor (so'm)",
+    "purpose": "Maqsad",
+    "purposes": {
+      "books": "Kitob xaridi",
+      "equipment": "Jihozlar",
+      "general": "Umumiy fond"
+    },
+    "topDonors": "Top donatchilar",
+    "totalCollected": "Jami yig'ilgan",
+    "totalSpent": "Sarflangan",
+    "remaining": "Qolgan",
+    "donateBtn": "Donat qilish",
+    "anonymous": "Anonim donat",
+    "thankYou": "Rahmat! Donatiz qabul qilindi",
+    "transparency": "Shaffoflik hisoboti",
+    "spentOn": "Qayerga sarflandi"
+  },
+  "stats": {
+    "title": "Statistika",
+    "national": "Milliy statistika",
+    "viloyat": "Viloyat statistikasi",
+    "tuman": "Tuman statistikasi",
+    "mahalla": "Mahalla statistikasi",
+    "readingIndex": "Kitobxonlik indeksi",
+    "activeReaders": "Faol kitobxonlar",
+    "totalBooks": "Jami kitoblar",
+    "totalLibraries": "Jami kutubxonalar",
+    "transactionsMonth": "Bu oy tranzaksiyalar",
+    "growth": "O'sish",
+    "genres": "Janr tahlili",
+    "shortage": "Kitob yetishmovchiligi",
+    "mapTitle": "Kitobxonlik indeksi xaritasi",
+    "mapLegend": {
+      "high": "Yuqori (70–100)",
+      "medium": "O'rta (50–69)",
+      "low": "Past (30–49)",
+      "veryLow": "Juda past (<30)"
+    },
+    "period": {
+      "today": "Bugun",
+      "week": "Shu hafta",
+      "month": "Shu oy",
+      "year": "Shu yil"
+    }
+  },
+  "alerts": {
+    "title": "Ogohlantirishlar",
+    "noAlerts": "Hech qanday ogohlantirish yo'q",
+    "severity": {
+      "CRITICAL": "Kritik",
+      "WARNING": "Ogohlantirish",
+      "INFO": "Ma'lumot"
+    },
+    "resolve": "Hal qilindi",
+    "resolvedAt": "Hal qilingan vaqt",
+    "active": "Faol ogohlantirishlar",
+    "resolved": "Hal qilinganlar"
+  },
+  "admin": {
+    "dashboard": "Boshqaruv paneli",
+    "users": "Foydalanuvchilar",
+    "pendingUsers": "Kutilayotganlar",
+    "approveUser": "Tasdiqlash",
+    "rejectUser": "Rad etish",
+    "auditLogs": "Audit loglari",
+    "riskLogs": "Risk loglari",
+    "demoRequests": "Demo so'rovlar",
+    "reports": "Hisobotlar",
+    "downloadReport": "PDF hisobot yuklab olish",
+    "reportMonth": "Oylik hisobot",
+    "userStatus": {
+      "ACTIVE": "Faol",
+      "PENDING": "Kutilmoqda",
+      "BLOCKED": "Bloklangan",
+      "INACTIVE": "Nofaol"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "myId": "Mening ID",
+    "downloadQr": "QR yuklab olish",
+    "readingIndex": "O'qish indeksi",
+    "badges": "Yutuqlar",
+    "editProfile": "Profilni tahrirlash",
+    "joinDate": "Ro'yhat sanasi",
+    "trustScore": "Ishonch bali",
+    "family": "Oila",
+    "familyMembers": "Oila a'zolari",
+    "joinFamily": "Oilaga qo'shilish"
+  },
+  "offline": {
+    "banner": "Internet aloqasi yo'q. Kesh ma'lumotlar ko'rsatilmoqda.",
+    "syncPending": "Ma'lumotlar internet kelganda sinxronlanadi",
+    "lastSync": "Oxirgi sinxronlash: {time}"
+  },
+  "subscriptions": {
+    "title": "Obunalar — Admin boshqaruv",
+    "statusLabel": "Holat:",
+    "all": "Barchasi",
+    "totalLabel": "Jami: {n}",
+    "noPermission": "Ruxsat yo'q",
+    "noPermissionDesc": "Bu sahifaga faqat SUPER_ADMIN va BUXGALTER kira oladi.",
+    "table": {
+      "library": "Kutubxona",
+      "plan": "Tarif",
+      "status": "Holat",
+      "endDate": "Tugaydi",
+      "reason": "Sabab",
+      "action": "Amal",
+      "noResults": "Obunalar topilmadi"
+    },
+    "actions": {
+      "freeze": "Muzlatish",
+      "delete": "O'chirish",
+      "reactivate": "Faollashtirish",
+      "terminal": "Terminal"
+    },
+    "dialog": {
+      "freezeTitle": "Obunani muzlatish — sabab kiriting",
+      "deleteTitle": "Obunani o'chirish — sabab kiriting",
+      "auditNote": "Sabab audit logga yoziladi va o'zgartirib bo'lmaydi.",
+      "placeholder": "Sabab (kamida 3 belgi, audit log uchun saqlanadi)",
+      "minLength": "Sabab kamida 3 belgi",
+      "submit": "Tasdiqlash",
+      "submitting": "Yuborilmoqda...",
+      "cancel": "Bekor qilish"
+    },
+    "status": {
+      "TRIAL": "Sinov",
+      "PENDING": "Kutilmoqda",
+      "ACTIVE": "Faol",
+      "FROZEN": "Muzlatilgan",
+      "DELETED": "O'chirilgan"
+    },
+    "confirmUnfreeze": "Obunani qayta faollashtirishni tasdiqlaysizmi?"
+  },
+  "accessibility": {
+    "skipToContent": "Asosiy kontentga o'tish"
+  },
+  "recommendations": {
+    "title": "Sizga tavsiya etilgan kitoblar",
+    "subtitle": "AI 4 ta strategiya asosida tanlangan",
+    "empty": "Hozircha tavsiya yo'q. Kitob o'qishni boshlang!",
+    "reason": "Sabab",
+    "available": "Mavjud",
+    "unavailable": "Mavjud emas",
+    "loading": "Tavsiyalar yuklanmoqda...",
+    "backToProfile": "Profilga qaytish",
+    "findNearby": "Yaqin kutubxonalardan topish"
+  },
+  "landing": {
+    "meta": {
+      "title": "SIFAT LIBRARY — Milliy Kitobxonlik Indeksi",
+      "description": "O'zbekiston Respublikasining milliy kitobxonlik monitoring va reyting platformasi. PQ-9 qarori asosida ishlab chiqilgan."
+    },
+    "hero": {
+      "badge": "PQ-9 qarori asosida ishlamoqda",
+      "titleTop": "O'zbekiston",
+      "titleAccent": "Kitob O'qiyapti!",
+      "type1": "Kelajak kitob o'qigan millatniki",
+      "type2": "Har bir kitob — yangi imkoniyat",
+      "type3": "Bugun o'qing, ertaga yetakchi bo'ling",
+      "type4": "O'zbekiston o'qiyapti!",
+      "monthlyReads": "kitob shu oyda o'qildi",
+      "searchPlaceholder": "Kitob nomi, muallif, ISBN...",
+      "searchButton": "Qidirish",
+      "statLibraries": "Kutubxona",
+      "statReaders": "Kitobxon",
+      "statBooks": "Kitob fondi",
+      "statRI": "Milliy RI ball"
+    },
+    "challenge": {
+      "title": "O'qish sayohatingiz shu yerdan boshlanadi",
+      "goal": "Yiliga <b>10 ta kitob</b> — o'zingizga bergan eng chiroyli va'da",
+      "cta": "Bugun boshlayman"
+    },
+    "live": {
+      "titleLive": "Real vaqt ko'rsatkichlar — jonli",
+      "titleStatic": "Platforma ko'rsatkichlari",
+      "cardTransactions": "Bu oy tranzaksiyalar",
+      "cardLibraries": "Faol kutubxonalar",
+      "cardReaders": "Kitobxonlar",
+      "cardBooks": "Kitob fondi"
+    },
+    "map": {
+      "title": "Hududiy kitobxonlik indeksi",
+      "subtitle": "14 viloyat bo‘yicha o‘rtacha ball. Har kuni yangilanadi.",
+      "score": "{score} ball",
+      "noData": "ma'lumot hozircha yo'q",
+      "legendHigh": "70+ (yuqori)",
+      "legendGood": "60–69 (yaxshi)",
+      "legendMid": "55–59 (o'rta)",
+      "legendLow": "50–54 (past)",
+      "legendVeryLow": "<50 (juda past)",
+      "legendNoData": "Ma'lumot yo'q",
+      "legendPending": "Ma'lumot yuklanmoqda yoki hozircha mavjud emas",
+      "listTitle": "Viloyatlar reytingi",
+      "emptyTitle": "Reyting tez orada e'lon qilinadi",
+      "emptyDesc": "Viloyatlar kesimidagi kitobxonlik indeksi ma'lumotlari to'planmoqda.",
+      "pendingCount": "{count} ta hudud — ma'lumot to'planmoqda"
+    },
+    "regions": {
+      "andijan": "Andijon",
+      "bukhara": "Buxoro",
+      "fergana": "Farg'ona",
+      "jizzakh": "Jizzax",
+      "namangan": "Namangan",
+      "navoiy": "Navoiy",
+      "kashkadarya": "Qashqadaryo",
+      "karakalpakstan": "Qoraqalpog'iston",
+      "samarkand": "Samarqand",
+      "sirdaryo": "Sirdaryo",
+      "surkhandarya": "Surxondaryo",
+      "tashkent_city": "Toshkent sh.",
+      "tashkent": "Toshkent v.",
+      "khorezm": "Xorazm"
+    },
+    "top": {
+      "title": "Oylik reyting",
+      "subtitle": "Har oyning 1-kuni yangilanadi.",
+      "tabReaders": "Kitobxonlar",
+      "tabSchools": "Maktablar",
+      "tabRegions": "Viloyatlar",
+      "tabFamilies": "Oilalar",
+      "age": "{ageGroup} yosh",
+      "score": "ball",
+      "emptyTitle": "Reyting tez orada e'lon qilinadi",
+      "emptyDesc": "Birinchi rasmiy oylik Top-100 yakunlangach, g'oliblar shu yerda ko'rsatiladi.",
+      "viewAll": "To'liq Top-100 ko'rish",
+      "youToo": "Siz ham bo'lishingiz mumkin!"
+    },
+    "stories": {
+      "title": "Platforma imkoniyatlari",
+      "subtitle": "Foydalanish ssenariylari — namunaviy.",
+      "sampleBadge": "Namunaviy hikoya",
+      "s1Name": "Dilnoza K.",
+      "s1Meta": "Kitobxon namunasi · Toshkent",
+      "s1Quote": "Bir yilda 52 ta kitob o'qidim. SIFAT LIBRARY orqali qaysi kutubxonada qaysi kitob borligini bilaman, Reading Index esa har kuni kamida 30 daqiqa o'qishga undaydi.",
+      "s2Name": "45-maktab jamoasi",
+      "s2Meta": "Maktab namunasi · Samarqand",
+      "s2Quote": "Maktabimiz reytingdagi o'rnini real vaqtda kuzatadi. O'quvchilar kitob o'qishni raqobat sifatida ko'radi, Jadidlar izidan klubimiz har hafta faol ishlaydi.",
+      "s3Name": "Karimovlar oilasi",
+      "s3Meta": "Oila namunasi · Buxoro",
+      "s3Quote": "Oilamiz birgalikda o'qiydi — bola ham, ota-ona ham. Har bir kitob oila reytingiga ball qo'shadi, bolalar kitobni yaxshi ko'rib qoldi."
+    },
+    "badges": {
+      "title": "Badgelar va yutuqlar",
+      "subtitle": "O‘qish davomida avtomatik beriladi.",
+      "share": "Badgelaringizni do'stlaringiz bilan ulashing!",
+      "b1Name": "Birinchi kitob",
+      "b1Desc": "Birinchi kitobni o'qish",
+      "b2Name": "7 kun streak",
+      "b2Desc": "Ketma-ket 7 kun o'qish",
+      "b3Name": "10 ta kitob",
+      "b3Desc": "10 ta kitob o'qib bitirish",
+      "b4Name": "Top-100",
+      "b4Desc": "Top-100 reytingga kirish",
+      "b5Name": "Oila o'qiydi",
+      "b5Desc": "Oila bilan birga o'qish",
+      "b6Name": "100 ball",
+      "b6Desc": "Reading Index 100 ball",
+      "b7Name": "Yulduz kitobxon",
+      "b7Desc": "3 oy ketma-ket Top-100",
+      "b8Name": "Legend",
+      "b8Desc": "1 yilda 100 ta kitob"
+    },
+    "roles": {
+      "title": "Rolingizni tanlang",
+      "subtitle": "Har bir rol uchun alohida imkoniyatlar.",
+      "registerCta": "Ro'yhatdan o'tish",
+      "loginCta": "Kirish",
+      "citizen": {
+        "label": "Fuqaro",
+        "desc": "Kitob o'qish orqali o'saman",
+        "f1": "Bepul ro'yhat, QR pasport",
+        "f2": "Reading Index va reyting",
+        "f3": "Badge va yutuqlar tizimi"
+      },
+      "student": {
+        "label": "Talaba",
+        "desc": "OTM yoki maktab o'quvchisi",
+        "f1": "5 tagacha kitob olish imkoni",
+        "f2": "Maktab/OTM reytingida ishtirok",
+        "f3": "Jadidlar izidan klubi"
+      },
+      "teacher": {
+        "label": "O'qituvchi",
+        "desc": "Ta'lim sektori xodimi",
+        "f1": "Klub rahbari bo'lish imkoni",
+        "f2": "O'quvchilar monitoringi",
+        "f3": "PQ-9 hisobot avtomatik"
+      },
+      "employee": {
+        "label": "Xizmatchi",
+        "desc": "Davlat idorasi xodimi",
+        "f1": "Idora ichki reytingi",
+        "f2": "Kitob o'qish soati qayd",
+        "f3": "Kasb adabiyotlar ro'yhati"
+      }
+    },
+    "how": {
+      "title": "Qanday ishlaydi?",
+      "subtitle": "3 oddiy qadamda boshlang — hammasi bepul",
+      "s1Title": "Ro'yhatdan o'ting",
+      "s1Desc": "Telefon raqam va shaxsiy ma'lumotlaringizni kiriting. SMS tasdiqlash orqali unikal ID va QR kod oling.",
+      "s1Time": "~ 2 daqiqa",
+      "s2Title": "Kutubxonaga boring",
+      "s2Desc": "Yaqin kutubxonani toping, QR kodingizni ko'rsating va kitobni oling. Bron qilish ham mumkin!",
+      "s2Time": "~ 30 soniya",
+      "s3Title": "Ball to'plang",
+      "s3Desc": "Kitob o'qing, Reading Index o'ssin, badge yig'ing va Top-100 ga kirish uchun bellashing!",
+      "s3Time": "Har kuni"
+    },
+    "b2b": {
+      "eyebrow": "Muassasalar uchun",
+      "titleTop": "PQ-9 majburiyatlarini",
+      "titleAccent": "avtomatlashtiring",
+      "subtitle": "Real vaqt monitoring, avtomatik PQ-9 hisoboti va muvofiqlik nazorati.",
+      "schools": {
+        "title": "Maktablar",
+        "f1": "PQ-9 hisoboti — 1 tugma bilan PDF",
+        "f2": "Jadidlar izidan klub monitoring",
+        "f3": "O'quvchi faollik paneli",
+        "f4": "Choraklik avtomatik hisobot",
+        "f5": "Maktab reytingida ishtirok"
+      },
+      "universities": {
+        "title": "OTMlar",
+        "f1": "Akkreditatsiya uchun raqamli kutubxona",
+        "f2": "Talabalar Reading Index",
+        "f3": "5 ta yaqin kutubxona birlashtiriladi",
+        "f4": "Ilmiy adabiyotlar bo'limi",
+        "f5": "Fakultet statistikasi"
+      },
+      "orgs": {
+        "title": "Idoralar",
+        "f1": "Kitob burchagi va o'qish soati",
+        "f2": "Xodimlar ichki reytingi",
+        "f3": "PQ-9 majburiyatlari avtomatik",
+        "f4": "Eng faol xodimga mukofot taklifi",
+        "f5": "Kasb adabiyotlari tizimi"
+      },
+      "demoTitle": "Bepul demo so'rash",
+      "demoDesc": "24 soat ichida mutaxassisimiz siz bilan bog'lanadi",
+      "demoSchool": "Maktab",
+      "demoUniversity": "OTM",
+      "demoOrg": "Idora",
+      "demoMahalla": "Mahalla",
+      "demoCta": "Demo so'rash"
+    },
+    "stores": {
+      "title": "Hamkor kitob do‘konlari",
+      "subtitle": "Sotib olingan kitob ham Reading Index ga qo‘shiladi.",
+      "f1Title": "Sotib oling",
+      "f1Desc": "Qidiruv sahifasida hamkor do'konlardagi kitoblar va narxlarni taqqoslang",
+      "f2Title": "ISBN skan qiling",
+      "f2Desc": "Sotib olingan kitobni ISBN orqali profilingizga qo'shing",
+      "f3Title": "Ball to'plang",
+      "f3Desc": "Tasdiqlangan xaridlar Reading Index hisobingizga qo'shiladi",
+      "browse": "Do'konlarni ko'rish",
+      "connect": "Do'koningizni ulang"
+    },
+    "telegram": {
+      "title": "Telegram bot orqali o'qing!",
+      "f1": "Kunlik eslatma — kitob o'qishni unutmaysiz",
+      "f2": "Yangi kitob xabari — birinchilar qatorida bo'ling",
+      "f3": "Badge bildirishnoma — yutuqlaringizni bilib boring",
+      "f4": "Haftalik hisobot — Reading Index dinamikasi",
+      "f5": "Do'stlarni taklif qilish — birga o'qish",
+      "qrLabel": "QR KOD",
+      "qrCaption": "Skan qilib botga o'ting"
+    },
+    "donate": {
+      "title": "Kutubxonalarga yordam bering",
+      "subtitle": "Har bir so'mingiz qishloq kutubxonalariga yangi kitoblar olib keladi",
+      "collected": "so'm yig'ildi",
+      "spent": "so'm sarflandi",
+      "donors": "saxiy donatchi",
+      "statsPending": "Donat statistikasi hozircha mavjud emas — barcha tushum va sarflar shu yerda ochiq e'lon qilinadi.",
+      "cta": "Donat qilish",
+      "transparent": "Barcha sarflar shaffof ko'rsatiladi"
+    },
+    "app": {
+      "title": "Ilovani yuklab oling",
+      "desc": "Qishloq joylarda ham ishlaydi — <b>offline 12 soat</b>. Internet kelganda avtomatik sinxronlashadi.",
+      "f1": "Offline 12 soat — qishloqda ham ishlaydi",
+      "f2": "QR skan bilan 2 soniyada kitob oling",
+      "f3": "Push bildirishnomalar — muddatni unutmang",
+      "f4": "2G rejim — juda sekin internetda ham ishlaydi",
+      "iosSub": "iOS uchun",
+      "androidSub": "Android uchun",
+      "apkLabel": "APK yuklash",
+      "apkSub": "To'g'ridan-to'g'ri",
+      "mockRI": "Reading Index",
+      "mockToday": "Bugungi kitob",
+      "mockStreak": "7 kunlik streak!"
+    },
+    "footer": {
+      "about": "O'zbekiston Respublikasining milliy kutubxonlik monitoring va reyting platformasi. PQ-9 qarori asosida ishlamoqda.",
+      "pagesTitle": "Sahifalar",
+      "linkTop": "Top-100 Reyting",
+      "linkDonate": "Donat qilish",
+      "linkSearch": "Kitob qidirish",
+      "linkRegister": "Ro'yhatdan o'tish",
+      "linkDemo": "Demo so'rash",
+      "contactTitle": "Bog'lanish",
+      "privacy": "Ma'lumotlar himoyasi",
+      "copyright": "SIFAT LIBRARY © 2026 · O'zbekiston Yoshlar ishlari agentligi · PQ-9 asosida",
+      "since": "Platforma 2026 yildan ishlamoqda"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Sahifa topilmadi",
+      "description": "Manzil noto'g'ri yozilgan yoki sahifa ko'chirilgan bo'lishi mumkin. Bosh sahifadan davom eting yoki kerakli kitobni qidiring."
+    },
+    "serverError": {
+      "title": "Kutilmagan xatolik yuz berdi",
+      "description": "Bu bizning tomondagi muammo — siz noto'g'ri hech narsa qilmadingiz. Sahifani qayta yuklab ko'ring, muammo takrorlansa birozdan so'ng urinib ko'ring."
+    },
+    "forbidden": {
+      "title": "Ruxsat yo'q",
+      "description": "Bu bo'limni ko'rish uchun sizning rolingizda huquq yo'q. Kerak bo'lsa tizim administratoriga murojaat qiling."
+    },
+    "offline": {
+      "title": "Internet aloqasi yo'q",
+      "description": "Ulanish tiklangach ma'lumotlar avtomatik yangilanadi. Kutubxona katalogi oflayn rejimda ham ochiq."
+    },
+    "actions": {
+      "home": "Bosh sahifaga",
+      "search": "Kitob qidirish",
+      "retry": "Qayta urinish",
+      "back": "Orqaga qaytish",
+      "login": "Tizimga kirish"
+    },
+    "technicalDetail": "Texnik tafsilot (faqat dasturchi rejimida)"
+  }
+}

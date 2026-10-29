@@ -1,0 +1,93 @@
+{
+  "MuassasaPanel": {
+    "title": "Mákeme paneli",
+    "subtitle": "Óz kitapxanańızdı basqarıw, fond hám paydalanıwshılardı qadaǵalaw",
+    "types": {
+      "GOV": "Mámleket",
+      "SCH": "Mektep",
+      "UNI": "JOO",
+      "ORG": "Mákeme",
+      "MAH": "Máhálle"
+    },
+    "userTypes": {
+      "CITIZEN": "Puqara",
+      "STUDENT_SCHOOL": "Oqıwshı",
+      "STUDENT_UNIVERSITY": "Student",
+      "GOVERNMENT_EMPLOYEE": "Mámleket xızmetkeri",
+      "TEACHER": "Oqıtıwshı"
+    },
+    "subStatus": {
+      "TRIAL": "Sınaw (30 kún)",
+      "ACTIVE": "Aktiv",
+      "PENDING": "Tólem kútilmekte",
+      "FROZEN": "Muzlatılǵan",
+      "DELETED": "Óshirilgen"
+    },
+    "libsError": {
+      "title": "Kitapxanalar dizimi júklenbedi",
+      "message": "Bul sizge kitapxana bekitilmegen degeni EMES. Qayta urınıp kóriń."
+    },
+    "selectLibrary": "Kitapxana tańlań",
+    "loading": "Júklenbekte…",
+    "noAssignedLibrary": "Sizge bekitilgen kitapxana tabılmadı.",
+    "selectPlaceholder": "— Tańlań —",
+    "emptyPrompt": {
+      "title": "Baslaw ushın joqarıdan kitapxana tańlań",
+      "subtitle": "Fond, jazılıw hám arzalar usı jerde kórinedi"
+    },
+    "libError": {
+      "title": "Kitapxana maǵlıwmatı júklenbedi",
+      "message": "Server juwap bermedi. Qayta urınıp kóriń."
+    },
+    "stats": {
+      "readers": "Kitap oqıwshıları",
+      "totalBooks": "Barlıq kitaplar",
+      "available": "Bar",
+      "borrowed": "Berilgen",
+      "genres": "Túrler"
+    },
+    "subscription": {
+      "title": "Jazılıw jaǵdayı",
+      "plan": "Tarif:",
+      "start": "Baslanıwı:",
+      "end": "Tamamlanıwı:",
+      "trialEnds": "Sınaw múddeti tamamlanadı:",
+      "pendingNote": "Tólem kútilmekte. Faktura elektron pochtańızǵa jiberildi.",
+      "notFound": "Jazılıw maǵlıwmatı tabılmadı"
+    },
+    "inventory": {
+      "loadError": "Inventarizaciya esabatın júklep bolmadı — betti jańalap kóriń.",
+      "title": "Inventarizaciya esabatı",
+      "alertBadge": "Parq {pct}% — Tekseriw kerek",
+      "declared": "Járiyalanǵan",
+      "inSystem": "Sistemada",
+      "available": "Bar",
+      "borrowed": "Berilgen",
+      "discrepancy": "Parq"
+    },
+    "fund": {
+      "title": "Kitap fondı",
+      "summary": "{titles} atama, barlıǵı {copies} nusqa",
+      "errorTitle": "Fond júklenbedi",
+      "errorMessage": "Bul fond bos degeni EMES. Qayta urınıp kóriń.",
+      "empty": "Fond bos",
+      "total": "Barlıǵı {count}",
+      "available": "Bar {count}",
+      "badgeNone": "Bar emes",
+      "badgeLow": "Az qaldı",
+      "badgeAvailable": "Bar",
+      "moreHidden": "{count} kitap kórsetilmedi —",
+      "goToBooks": "Kitap fondı betine ótiw"
+    },
+    "pending": {
+      "title": "Tastıyıqlawdı kútip atırǵanlar",
+      "countBadge": "{count} adam",
+      "loadError": "Arzalar dizimin júklep bolmadı — bul arza joq degeni EMES. Betti jańalań.",
+      "empty": "Tastıyıqlaw ushın jańa arza joq",
+      "unknownName": "Belgisiz",
+      "appliedAt": "Arza: {date}",
+      "approve": "Tastıyıqlaw",
+      "reject": "Biykarlaw"
+    }
+  }
+}

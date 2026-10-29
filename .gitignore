@@ -1,0 +1,31 @@
+node_modules/
+.pnpm-store/
+.yarn/
+dist/
+build/
+.next/
+coverage/
+.env
+.env.*
+!.env.example
+!.env.prod.example
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+tmp/
+docker-data/
+
+# Misol env fayllar repoda qoladi (.env.* qoidasidan istisno)
+!.env.local.example
+
+# Lokal zaxira arxivlari va Next SWC keshi
+backup/
+.swc/
+
+# Agent worktree qoldiqlari va Node compile keshi (tasodifiy nomli papka ichida)
+.claude/worktrees/
+node-compile-cache/

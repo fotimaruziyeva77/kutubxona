@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SIFAT LIBRARY — Prometheus PRODUCTION konfiguratsiyasi
+#
+# docker-compose.prod.yml dagi `prometheus` servisi shu faylni
+# /etc/prometheus/prometheus.yml sifatida mount qiladi.
+# (Dev varianti: prometheus.yml — host.docker.internal ga qaragan, prodda yaroqsiz.)
+#
+# Backend metrics yo'li: main.ts -> app.setGlobalPrefix("api", { exclude: ["health","/"] })
+# + PrometheusModule.register({ path: "/metrics" })  =>  http://backend:4000/api/metrics
+# ─────────────────────────────────────────────────────────────────────────────
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: sifat-library
+    env: production
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  # Prometheus o'zini o'zi kuzatadi
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Backend (NestJS) — deploy.replicas: 3.
+  # dns_sd_configs `backend` service nomining BARCHA A-yozuvlarini (har bir
+  # replica IP'sini) olib, har birini alohida scrape qiladi. Static target
+  # ishlatilsa Docker DNS round-robin har safar tasodifiy bitta replicani
+  # ko'rsatib, metrikalarni aralashtirib yuborar edi.
+  - job_name: "sifat-backend"
+    metrics_path: /api/metrics
+    scrape_interval: 10s
+    dns_sd_configs:
+      - names: ["backend"]
+        type: A
+        port: 4000
+
+  # Eslatma: postgres/redis/kafka uchun to'g'ridan-to'g'ri DB portini scrape
+  # qilish ishlamaydi (ular Prometheus formatini gapirmaydi). Kerak bo'lsa
+  # postgres_exporter / redis_exporter / kafka_exporter servislarini qo'shing.

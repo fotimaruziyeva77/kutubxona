@@ -1,0 +1,307 @@
+{
+  "SubsPanel": {
+    "title": "Obunalar",
+    "subtitle": "Admin boshqaruv — muzlatish, faollashtirish, o'chirish",
+    "forbidden": "Bu sahifa faqat bosh administrator va buxgalter uchun.",
+    "genericError": "Xato sodir bo'ldi",
+    "statusLabel": "Holat:",
+    "filter": {
+      "all": "Barchasi",
+      "trial": "Sinov",
+      "pending": "Kutilmoqda",
+      "active": "Faol",
+      "frozen": "Muzlatilgan",
+      "deleted": "O'chirilgan"
+    },
+    "total": "Jami: {count}",
+    "loadErrorTitle": "Obunalar yuklanmadi",
+    "loadErrorMsg": "Ro'yxatni olishda xatolik yuz berdi.",
+    "emptyTitle": "Obunalar topilmadi",
+    "emptyDesc": "Hozircha birorta ham obuna ochilmagan.",
+    "table": {
+      "library": "Kutubxona",
+      "plan": "Tarif",
+      "status": "Holat",
+      "ends": "Tugaydi",
+      "reason": "Sabab",
+      "action": "Amal"
+    },
+    "actions": {
+      "freeze": "Muzlatish",
+      "delete": "O'chirish",
+      "unfreeze": "Faollashtirish",
+      "deletedNoAction": "O'chirilgan — amal yo'q"
+    },
+    "dialog": {
+      "freezeTitle": "Obunani muzlatish — sabab kiriting",
+      "deleteTitle": "Obunani o'chirish — sabab kiriting",
+      "auditNote": "Sabab audit logga yoziladi va o'zgartirib bo'lmaydi.",
+      "reasonLabel": "Sabab",
+      "reasonPlaceholder": "Kamida 3 belgi — audit log uchun saqlanadi",
+      "reasonMin": "Sabab kamida 3 belgi",
+      "cancel": "Bekor qilish",
+      "submitting": "Yuborilmoqda…",
+      "confirm": "Tasdiqlash"
+    },
+    "unfreeze": {
+      "title": "Obunani faollashtirish",
+      "desc": "Obuna qayta ACTIVE holatga o'tadi va kutubxona kirishi tiklanadi."
+    }
+  },
+  "BillingPanel": {
+    "authRequired": {
+      "title": "Kirish kerak",
+      "desc": "Hisob ko'rish uchun avval kiring."
+    },
+    "titleSuper": "Kutubxona obunasi",
+    "titleMine": "Mening obunam",
+    "selectLibrary": "Kutubxona tanlang",
+    "selectLibraryOption": "— Kutubxona tanlang —",
+    "noActiveLibraries": "Faol kutubxona topilmadi",
+    "selectPrompt": "Obunani ko'rish uchun kutubxona tanlang",
+    "loadErrorTitle": "Obunani yuklab bo'lmadi",
+    "loadErrorMsg": "Ma'lumotni olishda xatolik yuz berdi.",
+    "noAffiliation": "Sizga kutubxona biriktirilmagan — administrator bilan bog'laning",
+    "sum": "{amount} so'm",
+    "noSub": {
+      "title": "Obuna hali boshlanmagan",
+      "libraryLine": "{name} · {type} kutubxonasi.",
+      "chooseCta": "Quyidagi tarifni tanlab obunani boshlang.",
+      "adminOnly": "Tarif quyida. Obuna va to'lovni muassasa administratori boshlaydi.",
+      "noPlans": "Bu kutubxona turi uchun tarif topilmadi.",
+      "free": "Bepul",
+      "price": "{price} so'm",
+      "perYear": " / yil",
+      "freeNote": "Davlat byudjeti hisobidan — to'lov talab qilinmaydi.",
+      "paidNote": "Yillik abonent to'lovi · 30 kun bepul sinov.",
+      "activate": "Obunani faollashtirish",
+      "startTrial": "Obunani boshlash (30 kun sinov)",
+      "manageNote": "To'lov va obuna boshqaruvi muassasa administratori yoki buxgalter orqali amalga oshiriladi."
+    },
+    "notice": {
+      "invoiceCreated": "Faktura yaratildi. Bank o'tkazmasi uchun quyidan shartnoma va fakturani yuklab oling.",
+      "renewed": "Obuna yangilandi.",
+      "payFailed": "To'lovni boshlab bo'lmadi. Birozdan so'ng qayta urinib ko'ring.",
+      "contractFailed": "Shartnomani yuklab bo'lmadi.",
+      "invoiceFailed": "Fakturani yuklab bo'lmadi."
+    },
+    "details": {
+      "plan": "Tarif",
+      "pricePerYear": "{price} so'm / yil",
+      "freeBudget": "Bepul (davlat byudjeti)",
+      "trialEnds": "Sinov tugaydi",
+      "daysLeft": "(qolgan {count} kun)",
+      "dueLabel": "To'lov muddati:",
+      "amountLabel": "Summa:",
+      "nextDue": "Keyingi to'lov muddati",
+      "frozen": "Obuna muzlatilgan",
+      "frozenReason": "Sabab: {reason}",
+      "deleted": "Obuna o'chirilgan"
+    },
+    "pay": {
+      "method": "To'lov usuli",
+      "viaPayme": "Payme orqali",
+      "viaClick": "Click orqali",
+      "bankTransfer": "Bank o'tkazma",
+      "downloadContract": "Shartnoma yuklab olish",
+      "downloadInvoice": "Faktura yuklab olish",
+      "hint": "Karta orqali (Payme / Click) to'lov sahifasiga o'tasiz — to'lov tasdiqlangach obuna avtomat faollashadi. Bank o'tkazmasi uchun shartnoma va fakturani yuklab oling; to'lov tushgach administrator faollashtiradi.",
+      "freeNoPay": "Bu tarif bepul (davlat byudjeti) — to'lov talab qilinmaydi."
+    },
+    "invoices": {
+      "title": "Fakturalar tarixi",
+      "invoice": "Faktura",
+      "amount": "Summa",
+      "due": "Muddat",
+      "status": "Holat"
+    }
+  },
+  "BuxgalterPanel": {
+    "title": "Buxgalter paneli",
+    "subtitle": "To'lovlar, fakturalar va obunalar",
+    "dateFrom": "Boshlanish sanasi",
+    "dateTo": "Tugash sanasi",
+    "export": {
+      "xlsx": "Excel (.xlsx)",
+      "xlsxTitle": "Excel formatida yuklab olish",
+      "csv": "CSV",
+      "csvTitle": "Oddiy CSV (Excel ham qabul qiladi)",
+      "oneC": "1C eksport",
+      "oneCTitle": "1C-Bukhgalteriya eksport formati (11 ustun, ;)"
+    },
+    "tabs": {
+      "overview": "Umumiy ko'rinish",
+      "invoices": "Fakturalar",
+      "subscriptions": "Obunalar"
+    },
+    "sum": {
+      "billion": "{value} mlrd so'm",
+      "million": "{value} mln so'm",
+      "plain": "{value} so'm",
+      "mlnShort": "{value} mln"
+    },
+    "kpi": {
+      "totalRevenue": "Jami tushum",
+      "totalInvoices": "Jami fakturalar",
+      "paidInvoices": "To'langan fakturalar",
+      "pendingInvoices": "Kutilayotgan fakturalar"
+    },
+    "charts": {
+      "monthlyTrend": "Oylik tushum trendi",
+      "revenue": "Tushum",
+      "monthLabel": "{month} oy",
+      "byMethod": "To'lov usuli bo'yicha",
+      "noPayments": "Hozircha to'lovlar mavjud emas.",
+      "noPaymentsHint": "To'lov bo'lganda usul bo'yicha (Payme / Click / Bank) taqsimot ko'rinadi.",
+      "subStatus": "Obuna holati",
+      "subStatsError": "Obuna statistikasi yuklanmadi.",
+      "noSubs": "Hozircha obunalar mavjud emas.",
+      "noSubsHint": "Obuna ochilganda holat taqsimoti shu yerda ko'rinadi.",
+      "countPct": "{count} ta ({pct}%)"
+    },
+    "retry": "Qayta urinish",
+    "errors": {
+      "statsTitle": "Moliyaviy statistika yuklanmadi",
+      "statsMsg": "To'lov ko'rsatkichlarini olishda xatolik yuz berdi.",
+      "invoicesTitle": "Fakturalar yuklanmadi",
+      "invoicesMsg": "Fakturalar ro'yxatini olishda xatolik yuz berdi.",
+      "subsTitle": "Obunalar yuklanmadi",
+      "subsMsg": "Obunalar ro'yxatini olishda xatolik yuz berdi."
+    },
+    "invoiceStatus": {
+      "paid": "To'langan",
+      "pending": "Kutilmoqda",
+      "failed": "Xato",
+      "refunded": "Qaytarilgan"
+    },
+    "method": {
+      "payme": "Payme",
+      "click": "Click",
+      "bank": "Bank",
+      "cash": "Naqd"
+    },
+    "invoicesTab": {
+      "filterAria": "Faktura holati bo'yicha filtr",
+      "allStatuses": "Barcha statuslar",
+      "totalCount": "{count} ta faktura",
+      "code": "Ichki kod",
+      "library": "Kutubxona",
+      "plan": "Tarif",
+      "amount": "Summa",
+      "due": "Muddat",
+      "method": "Usul",
+      "status": "Status",
+      "actions": "Amallar",
+      "paidOn": "To'landi: {date}",
+      "pdfTitle": "PDF yuklab olish",
+      "empty": "Fakturalar topilmadi"
+    },
+    "totalLabel": "Jami: {count}",
+    "pagination": {
+      "prev": "← Oldingi",
+      "next": "Keyingi →"
+    },
+    "subsTab": {
+      "filterAria": "Obuna holati bo'yicha filtr",
+      "all": "Barcha",
+      "trial": "Sinov",
+      "active": "Faol",
+      "pending": "Kutilmoqda",
+      "frozen": "Muzlatilgan",
+      "countShort": "{count} ta",
+      "library": "Kutubxona",
+      "type": "Tur",
+      "plan": "Tarif",
+      "start": "Boshlanish",
+      "end": "Tugash",
+      "lastInvoice": "Oxirgi faktura",
+      "status": "Status",
+      "empty": "Obunalar topilmadi"
+    }
+  },
+  "DonationsPanel": {
+    "title": "Donat boshqaruvi",
+    "subtitle": "DONAT-03: shaffof moliyaviy hisobot · SUPER_ADMIN + BUXGALTER",
+    "kpi": {
+      "collected": "Jami yig'ilgan",
+      "spent": "Sarflangan",
+      "remaining": "Qolgan",
+      "donors": "Donatchilar"
+    },
+    "sum": "{amount} so'm",
+    "loading": "Yuklanmoqda…",
+    "purpose": {
+      "libraryBooks": "Kutubxona kitoblari",
+      "schoolBooks": "Maktab kitoblari",
+      "general": "Umumiy"
+    },
+    "charts": {
+      "byPurpose": "Maqsad bo'yicha taqsimot",
+      "noData": "Hali ma'lumot yo'q",
+      "sumCount": "{amount} so'm · {count} ta",
+      "topTargets": "Top-10 maqsad (targetName bo'yicha)",
+      "noSpending": "Hali sarflanmagan"
+    },
+    "table": {
+      "title": "Barcha sarflashlar",
+      "name": "Maqsad nomi",
+      "total": "Jami miqdor",
+      "transactions": "Tranzaksiyalar",
+      "unassigned": "Belgilanmagan"
+    }
+  },
+  "DemoReqPanel": {
+    "title": "Demo so'rovlar",
+    "subtitle": "Muassasalardan kelgan B2B murojaatlar. Telefon raqamiga bosib darhol qo'ng'iroq qiling.",
+    "forbidden": {
+      "title": "Ruxsat yo'q",
+      "desc": "Demo so'rovlar paneli faqat Super Admin uchun."
+    },
+    "badges": {
+      "new": "{count} yangi",
+      "inProgress": "{count} jarayonda"
+    },
+    "filter": {
+      "all": "Hammasi",
+      "new": "Yangi",
+      "inProgress": "Jarayonda",
+      "closed": "Yopilgan"
+    },
+    "org": {
+      "maktab": "Maktab",
+      "otm": "OTM",
+      "idora": "Idora",
+      "mahalla": "Mahalla",
+      "other": "Boshqa"
+    },
+    "status": {
+      "pending": "Kutilmoqda",
+      "contacted": "Bog'lanildi",
+      "closed": "Yopildi"
+    },
+    "errors": {
+      "forbidden": "Bu sahifa faqat Super Admin uchun",
+      "loadFailed": "Ro'yxatni yuklab bo'lmadi"
+    },
+    "retry": "Qayta urinish",
+    "loading": "Yuklanmoqda…",
+    "empty": {
+      "none": "Hali demo so'rov yo'q",
+      "noneInStatus": "Bu holatda so'rov yo'q"
+    },
+    "shownOf": "{shown} / {total} ko'rsatilmoqda",
+    "loadMore": "Yana 50 tasini yuklash",
+    "note": {
+      "label": "Qo'ng'iroq natijasi / keyingi qadam",
+      "placeholder": "Masalan: direktor bilan gaplashdim, 15-avgustda demo kelishildi.",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish"
+    },
+    "card": {
+      "contacted": "Bog'landim",
+      "editNote": "Izohni tahrirlash",
+      "addNote": "Izoh qo'shish",
+      "close": "Yopish"
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "LibrariesPanel": {
+    "title": "Kitapxanalar",
+    "subtitleLibrarian": "Sizge bekitilgen kitapxana(lar) — basqarıw Super adminde",
+    "subtitleRegion": "Aymaǵıńızdaǵı kitapxanalar (baqlaw) — basqarıw Super adminde",
+    "newLibrary": "Jańa kitapxana",
+    "filterAll": "Barlıǵı",
+    "loading": "Júklenbekte…",
+    "cancel": "Biykar etiw",
+    "loadError": {
+      "title": "Kitapxanalardı júklep bolmadı",
+      "message": "Kitapxanalar dizimi serverden kelmedi. Internet baylanısın tekserip, qayta urınıń."
+    },
+    "table": {
+      "code": "Kod",
+      "name": "Atı",
+      "type": "Túri",
+      "status": "Jaǵdayı",
+      "fund": "Fond",
+      "actions": "Ámeller"
+    },
+    "actions": {
+      "approveTuman": "Rayon dárejesinde tastıyıqlaw",
+      "approveSuper": "Super admin tastıyıǵı",
+      "freeze": "Muzlatıw",
+      "unfreeze": "Ashıw",
+      "inventory": "Inventar",
+      "delete": "Óshiriw"
+    },
+    "inventoryRow": {
+      "loading": "Inventar esabatı júklenbekte…",
+      "notFound": "Inventar esabatı tabılmadı"
+    },
+    "empty": "Kitapxana tabılmadı",
+    "freezeModal": {
+      "title": "Muzlatıw sebebi",
+      "prompt": "<b>{name}</b> kitapxanasın muzlatıw ushın sebep kiritiń:",
+      "placeholder": "Muzlatıw sebebi…",
+      "confirm": "Muzlatıw"
+    },
+    "deleteModal": {
+      "titleNamed": "\"{name}\" kitapxanasın óshiriw",
+      "title": "Kitapxananı óshiriw",
+      "description": "Kitapxana sistemadan óshiriledi hám maǵlıwmatları 90 kún arxivte saqlanadı. Bul ámeldi qaytarıp bolmaydı.",
+      "confirm": "Óshiriw"
+    },
+    "inv": {
+      "mismatch": "Parq bar",
+      "match": "Sáykeslik",
+      "declared": "Járiyalanǵan:",
+      "inSystem": "Sistemada:",
+      "available": "Bar:",
+      "borrowed": "Berilgen:",
+      "discrepancy": "Parq:"
+    },
+    "createModal": {
+      "typeLabel": "Túri *",
+      "nameLabel": "Atı *",
+      "namePlaceholder": "Karmana rayon kitapxanası",
+      "viloyat": "Wálayat",
+      "select": "Tańlań",
+      "tuman": "Rayon *",
+      "address": "Mánzil",
+      "addressPlaceholder": "Oraylıq kóshe 1",
+      "phone": "Telefon",
+      "phonePlaceholder": "+998 XX XXX XX XX",
+      "workHours": "Jumıs waqtı",
+      "workHoursPlaceholder": "09:00-18:00, Dú-Sh",
+      "saving": "Saqlanbaqta…",
+      "create": "Jaratıw"
+    }
+  }
+}

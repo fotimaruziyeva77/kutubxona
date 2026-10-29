@@ -1,0 +1,22 @@
+{
+  "name": "SIFAT LIBRARY",
+  "short_name": "Sifat",
+  "description": "Milliy kitobxonlik indeksi platformasi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/brand/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "QR Skan", "short_name": "Skan", "description": "Foydalanuvchi QR kodini skan qilish", "url": "/uz-Latn/scan", "icons": [{ "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Kitob qidirish", "short_name": "Qidirish", "url": "/uz-Latn/search", "icons": [{ "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ],
+  "categories": ["education", "books"],
+  "lang": "uz"
+}

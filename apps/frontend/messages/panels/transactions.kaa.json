@@ -1,0 +1,125 @@
+{
+  "TxPanel": {
+    "title": "Kitap ámelleri",
+    "subtitle": "Bron, kitap beriw, qaytarıw hám múddeti ótkenler",
+    "newReader": "Jańa kitap oqıwshısı",
+    "selectLibraryLabel": "Kitapxana tańlaw",
+    "selectLibraryPlaceholder": "Kitapxana tańlań",
+    "selectLibraryPrompt": "Basqarıw ushın kitapxana tańlań",
+    "closeNotification": "Xabarlamanı jabıw",
+    "loading": "Júklenbekte",
+    "tabs": {
+      "issue": "Kitap beriw",
+      "brons": "Bronlar",
+      "borrowed": "Berilgen",
+      "overdue": "Múddeti ótken"
+    },
+    "toasts": {
+      "bronConfirmed": "Bron tastıyıqlandı",
+      "bronCancelled": "Bron biykar etildi",
+      "bookIssued": "Kitap berildi",
+      "bookReturned": "Kitap qaytarıldı",
+      "bookReturnedLate": "Kitap qaytarıldı ({days} kún keshikken)",
+      "readerAdded": "Kitap oqıwshısı qosıldı"
+    },
+    "errors": {
+      "confirmFailed": "Tastıyıqlap bolmadı",
+      "cancelFailed": "Biykar etip bolmadı",
+      "borrowFailed": "Kitap berip bolmadı",
+      "returnFailed": "Qaytarıp bolmadı",
+      "readerAddFailed": "Kitap oqıwshısı qosılmadı",
+      "bronsLoadTitle": "Bronlardı júklep bolmadı",
+      "bronsLoadMsg": "Bronlar dizimi serverden kelmedi. Internet baylanısın tekserip, qayta urınıń.",
+      "borrowedLoadTitle": "Berilgen kitaplardı júklep bolmadı",
+      "borrowedLoadMsg": "Berilgen kitaplar dizimi serverden kelmedi. Internet baylanısın tekserip, qayta urınıń.",
+      "overdueLoadTitle": "Múddeti ótkenlerdi júklep bolmadı",
+      "overdueLoadMsg": "Múddeti ótken kitaplar dizimi serverden kelmedi. Internet baylanısın tekserip, qayta urınıń."
+    },
+    "brons": {
+      "dueDateLabel": "Qaytarıw múddeti:",
+      "dueDateHint": "bron tastıyıqlanıp \"Beriw\" basılǵanda usı múddet penen beriledi",
+      "emptyTitle": "Aktiv bronlar joq",
+      "emptyDesc": "Kitap oqıwshısı bron qılǵanda usı jerde kórinedi. Kelgen oqıwshıǵa bronsız da birden kitap beriwińiz múmkin.",
+      "reader": "Kitap oqıwshısı:",
+      "deadline": "múddet: {date}",
+      "confirm": "Tastıyıqlaw",
+      "issue": "Kitap beriw",
+      "cancel": "Biykar etiw"
+    },
+    "borrowed": {
+      "colBook": "Kitap",
+      "colReader": "Kitap oqıwshısı",
+      "colIssued": "Berilgen",
+      "colDue": "Qaytarıw múddeti",
+      "colActions": "Ámeller",
+      "empty": "Berilgen kitap joq",
+      "return": "Qaytarıw"
+    },
+    "overdue": {
+      "emptyTitle": "Múddeti ótken kitap joq",
+      "emptyDesc": "Barlıq kitaplar múddetinde — kitap oqıwshılarıńız tártipli.",
+      "lateInfo": "{days} kún keshikpekte · Múddet: {date}",
+      "return": "Qaytarıw"
+    },
+    "returnModal": {
+      "title": "Kitap qaytarıw",
+      "reader": "Kitap oqıwshısı: {name}",
+      "libraryLabel": "Qaytarıw kitapxanası (basqa kitapxanada qaytarıw múmkin)",
+      "current": "(házirgi)",
+      "otherLibHint": "Basqa kitapxanada qaytarıw — tiykarǵı kitapxanaǵa xabarlama jiberiledi",
+      "cancel": "Biykar etiw",
+      "returning": "Qaytarılmaqta…",
+      "confirm": "Tastıyıqlaw"
+    },
+    "issue": {
+      "findLabel": "Kitap oqıwshısın SifatID arqalı tabıń",
+      "qrScanner": "QR skaner",
+      "search": "Izlew",
+      "notActive": "Kitap oqıwshısı aktiv emes — kitap berip bolmaydı",
+      "notFound": "Kitap oqıwshısı tabılmadı (SifatID di tekseriń)",
+      "trust": "Isenim: {score}",
+      "chooseTitle": "Kitap tańlań hám beriń",
+      "bookSearchLabel": "Kitap izlew",
+      "bookSearchPlaceholder": "Kitap izlew...",
+      "dueDateLabel": "Qaytarıw múddeti:",
+      "dueDateHint": "hár \"Beriw\" usı múddet penen beriledi",
+      "loadingBooks": "Júklenbekte…",
+      "noBooks": "Qoljetimli kitap joq",
+      "available": "{count} dana bar",
+      "give": "Beriw"
+    },
+    "register": {
+      "title": "Jańa kitap oqıwshısın qosıw",
+      "name": "Atı familiyası",
+      "phone": "Telefon",
+      "gender": "Jınısı",
+      "male": "Er adam",
+      "female": "Hayal",
+      "region": "Aymaq (kitap oqıwshısınıń mánzili)",
+      "viloyat": "Wálayat",
+      "tuman": "Rayon",
+      "mahalla": "Máhelle",
+      "viloyatPh": "Wálayat tańlań",
+      "tumanPh": "Rayon tańlań",
+      "mahallaPh": "Máhelle tańlań",
+      "errName": "Atıńızdı kirgiziń",
+      "errPhone": "Telefon nomerin durıs kirgiziń",
+      "errRegion": "Aymaq (wálayat → rayon → máhelle) tańlań",
+      "cancel": "Biykar",
+      "adding": "Qosılmaqta…",
+      "add": "Qosıw"
+    },
+    "cred": {
+      "title": "Kitap oqıwshısı qosıldı",
+      "info": "Bul maǵlıwmatlardı kitap oqıwshısına beriń. Paroldi keyin ózi ózgertedi.",
+      "phone": "Telefon",
+      "password": "Parol",
+      "show": "Kórsetiw",
+      "hide": "Jasırıw",
+      "onceWarning": "Bul parol tek bir márte kórsetiledi — jabıwdan aldın nusqalap alıń yamasa oqıwshıǵa jazıp beriń.",
+      "copy": "Nusqalaw",
+      "copied": "Nusqalandı",
+      "close": "Jabıw"
+    }
+  }
+}

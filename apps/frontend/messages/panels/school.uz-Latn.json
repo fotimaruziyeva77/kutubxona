@@ -1,0 +1,99 @@
+{
+  "SchoolPanel": {
+    "title": "Maktab paneli",
+    "subtitle": "O'quvchilar, statistika va PQ-9 muvofiqlik",
+    "selectSchool": "Maktab tanlang",
+    "selectSchoolPlaceholder": "— Maktab tanlang —",
+    "selectSchoolHint": "Statistikani ko'rish uchun maktab tanlang",
+    "approve": "Tasdiqlash",
+    "reject": "Rad etish",
+    "cancel": "Bekor qilish",
+    "riTitle": "O'qish indeksi",
+    "points": "{value} ball",
+    "tabs": {
+      "overview": "Umumiy",
+      "students": "O'quvchilar",
+      "rankings": "Reyting"
+    },
+    "pdf": {
+      "button": "PQ-9 hisoboti",
+      "preparing": "Tayyorlanmoqda…",
+      "error": "PQ-9 hisobotini yuklab bo'lmadi. Qayta urinib ko'ring.",
+      "subscriptionRequired": "Obuna talab qilinadi"
+    },
+    "rejectModal": {
+      "title": "O'quvchini rad etish",
+      "desc": "rad etilmoqda. Sabab kiriting (kamida 3 belgi).",
+      "reasonPlaceholder": "Rad etish sababi...",
+      "minError": "Sabab kamida 3 belgi bo'lishi kerak"
+    },
+    "overview": {
+      "loading": "Statistika yuklanmoqda",
+      "errorTitle": "Statistika yuklanmadi",
+      "errorMessage": "Maktab statistikasini olib bo'lmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.",
+      "totalStudents": "Jami o'quvchilar",
+      "activeCount": "{count} faol",
+      "coverage": "Qamrov darajasi",
+      "coverageSub": "Faol / Jami",
+      "avgRi": "O'rtacha o'qish indeksi",
+      "avgRiSub": "O'quvchilar o'rtachasi",
+      "goal20": "20 kitob maqsadi",
+      "achievedPeople": "{count} kishi",
+      "achievedRate": "{rate}% erishdi",
+      "goalProgress": "Maqsad progressi",
+      "goal20Annual": "20 kitob (yillik)",
+      "studentCoverage": "O'quvchi qamrovi",
+      "activeClubs": "Faol klub",
+      "monthlyTransactions": "Bu oy tranzaksiya",
+      "byClass": "Sinf bo'yicha o'quvchilar",
+      "noClassData": "Sinf ma'lumoti yo'q",
+      "classLabel": "{name}-sinf",
+      "studentCount": "{count} o'quvchi",
+      "kAnonTitle": "Maxfiylik chegarasi (k<5) — o'qish indeksi yashirilgan",
+      "kAnonText": "Sinf kichik — o'quvchi maxfiyligi uchun yashirildi",
+      "riValue": "RI: {value}"
+    },
+    "students": {
+      "classFilterLabel": "Sinf filtri",
+      "classFilterPlaceholder": "Sinf filtri (masalan: 9A)",
+      "statusFilterLabel": "Holat filtri",
+      "allStatuses": "Barcha holatlar",
+      "perPage": "Sahifada:",
+      "thName": "Ism",
+      "thClass": "Sinf",
+      "thStatus": "Holat",
+      "thRi": "O'qish indeksi",
+      "thAction": "Amal",
+      "noId": "ID yo'q",
+      "notCalculated": "Hisoblanmagan",
+      "empty": "O'quvchilar topilmadi",
+      "pageInfo": "{first}–{last} / {total} o'quvchi",
+      "prevPage": "Oldingi sahifa",
+      "nextPage": "Keyingi sahifa"
+    },
+    "rankings": {
+      "title": "Respublika maktab reytingi",
+      "loading": "Reyting yuklanmoqda",
+      "errorTitle": "Reyting yuklanmadi",
+      "errorMessage": "Maktab reytingini olib bo'lmadi. Qayta urinib ko'ring.",
+      "emptyTitle": "Reyting hali shakllanmagan",
+      "emptyDesc": "Maktablar faolligi yig'ilgach respublika reytingi shu yerda ko'rinadi.",
+      "thRank": "O'rin",
+      "thSchool": "Maktab",
+      "thCoverage": "Qamrov %",
+      "thAvgRi": "O'rtacha RI",
+      "avgRiTitle": "O'rtacha o'qish indeksi",
+      "thClubActivity": "Klub faollik",
+      "thTotal": "Jami ball"
+    },
+    "pq9": {
+      "title": "PQ-9 Muvofiqlik holati",
+      "summary": "{pass}/{total} talabga mos",
+      "met": "Mos",
+      "notMet": "Mos emas",
+      "clubCriterion": "Faol Jadidlar izidan klubi",
+      "unitPoints": "ball",
+      "unitClub": "klub"
+    }
+  }
+}

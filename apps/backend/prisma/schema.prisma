@@ -1,0 +1,1079 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Plan 01-06 INFRA-09: app traffic routes through PgBouncer (transaction
+  // pool mode). Prisma migrations need a DIRECT connection because PgBouncer's
+  // transaction-mode pool breaks prepared statements during DDL — `directUrl`
+  // makes `prisma migrate` bypass the pooler. The pooled URL still uses
+  // `?pgbouncer=true` (RESEARCH PITFALLS Pitfall 4).
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserGender {
+  MALE
+  FEMALE
+}
+
+enum UserType {
+  CITIZEN
+  STUDENT_SCHOOL
+  STUDENT_UNIVERSITY
+  GOVERNMENT_EMPLOYEE
+  TEACHER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  BUXGALTER
+  VILOYAT_ADMIN
+  TUMAN_ADMIN
+  MUASSASA_ADMIN
+  KUTUBXONACHI
+  KLUB_RAHBARI
+  DOKON_OPERATOR
+  KITOBXON
+}
+
+enum LibraryType {
+  GOV
+  SCH
+  UNI
+  ORG
+  MAH
+}
+
+enum LibraryStatus {
+  PENDING
+  ACTIVE
+  FROZEN
+  DELETED
+}
+
+enum TransactionType {
+  BORROW
+  RETURN
+  RESERVE
+  CANCEL
+}
+
+enum TransactionStatus {
+  PENDING
+  RESERVED
+  BORROWED
+  RETURNED
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PENDING
+  FROZEN
+  DELETED
+}
+
+enum PaymentMethod {
+  PAYME
+  CLICK
+  BANK_TRANSFER
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ── Geographic models ──────────────────────────────────────────────────────
+
+model Viloyat {
+  id        String   @id @default(cuid())
+  code      String   @unique // "08"
+  name      String // "Navoiy"
+  slug      String   @unique // "navoiy"
+  tumans    Tuman[]
+  createdAt DateTime @default(now())
+}
+
+model Tuman {
+  id        String    @id @default(cuid())
+  code      String    @unique // "08-012"
+  name      String // "Karmana"
+  slug      String // "karmana"
+  viloyatId String
+  viloyat   Viloyat   @relation(fields: [viloyatId], references: [id])
+  mahallas  Mahalla[]
+  createdAt DateTime  @default(now())
+
+  // M-geo (2026-06-10) — URL slug viloyat ichida unikal bo'lishi shart:
+  // sifat.uz/[viloyat]/[tuman] routing'i ikkita bir xil slug'da noto'g'ri
+  // sahifa ochib yuborardi. Migration: 20260610000021_geo_slug_unique.
+  @@unique([viloyatId, slug])
+  @@index([viloyatId])
+}
+
+model Mahalla {
+  id        String   @id @default(cuid())
+  code      String   @unique // "08-012-0045"
+  name      String // "Yangiobod"
+  slug      String // "yangiobod"
+  tumanId   String
+  tuman     Tuman    @relation(fields: [tumanId], references: [id])
+  // sequence counter for sifatId generation
+  lastSeq   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // M-geo (2026-06-10) — URL slug tuman ichida unikal (geo_slug_unique).
+  @@unique([tumanId, slug])
+  @@index([tumanId])
+}
+
+// ── Core models ────────────────────────────────────────────────────────────
+
+model User {
+  id                     String                 @id @default(cuid())
+  sifatId                String?                @unique // SL-UZ-08-012-0045-00847
+  phone                  String                 @unique
+  // M5 (2026-06-10) — OneID (sso.egov.uz) PINFL: davlat shaxs identifikatori.
+  // Telefon raqami almashishi/qayta ishlatilishi mumkin — PINFL esa shaxsga
+  // biriktirilgan durable identity link (iduz.service.loginOrRegister).
+  pinfl                  String?                @unique
+  passwordHash           String? // bcrypt hash — ro'yhatdan so'ng o'rnatiladi
+  name                   String
+  dob                    DateTime
+  gender                 UserGender
+  type                   UserType
+  role                   UserRole               @default(KITOBXON)
+  trustScore             Int                    @default(0)
+  // Phase 7 PERF-06 — privacy: user can hide reading history from public views.
+  // Server-side filter in all public-facing endpoints; client UI is presentation only.
+  hideReadingHistory     Boolean                @default(false)
+  status                 UserStatus             @default(PENDING)
+  // Extra profile fields for specific types
+  schoolId               String? // STUDENT_SCHOOL
+  schoolClass            String?
+  universityId           String? // STUDENT_UNIVERSITY
+  faculty                String?
+  direction              String?
+  studyCourse            Int?
+  organizationId         String? // GOVERNMENT_EMPLOYEE / TEACHER
+  department             String?
+  position               String?
+  // Relations
+  addressId              String?
+  address                Address?               @relation(fields: [addressId], references: [id])
+  familyId               String?
+  family                 Family?                @relation(fields: [familyId], references: [id])
+  refreshTokens          RefreshToken[]
+  transactions           BookTransaction[]
+  readingIndex           ReadingIndex[]
+  fraudScore             FraudScore?
+  isbnScans              IsbnScan[]
+  comprehensionTests     ComprehensionTest[]
+  top100Entries          Top100Entry[]
+  userBadges             UserBadge[]
+  userXp                 UserXp?
+  donations              Donate[]
+  // Plan 05-01 Task 3 — NOTIF-02 push device registration. Empty by default;
+  // populated when a user opts into push from web/mobile (Plan 05-04).
+  deviceTokens           DeviceToken[]
+  // Plan 06-01 FAM-01 opt-IN gate — when FALSE the detectAndSuggestFamily
+  // endpoint short-circuits with `null` instead of returning suggestions.
+  familyDetectionEnabled Boolean                @default(false)
+  // Plan 06-01 FAM-03 — explicit join-date tracking. Backfilled from
+  // User.createdAt for legacy rows; new joins write a row inside the
+  // respondToInvite $transaction.
+  memberships            FamilyMembership[]     @relation("FamilyMembershipUser")
+  // Plan 06-01 FAM-06 — address-change requires tuman-admin approval per
+  // CLAUDE.md §IV.4. Endpoint surface deferred to Plan 06-03.
+  addressChangeRequests  AddressChangeRequest[] @relation("AddressChangeRequestUser")
+  // Phase 8 Plan 08-01 — store operator back-relation
+  storeOperator          Store[]                @relation("storeOperator")
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@index([status])
+  @@index([type])
+}
+
+// Gamifikatsiya poydevori (XP + Level + Streak) — CLAUDE.md §VII/XIV kengaytmasi.
+// Har bir tasdiqlangan o'qish hodisasi (kitob qaytarish, ISBN skan + test,
+// do'kon xaridi tasdig'i, Mutolaa sinxron) XP qo'shadi; currentStreak/
+// longestStreak kunlik faollikni kuzatadi (bir kunda bir necha hodisa faqat
+// bitta kun sifatida sanaladi). Level XP dan lazy hisoblanadi (xp-level.util.ts),
+// lekin tez o'qish uchun bu yerda ham keshlanadi.
+model UserXp {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id])
+  xp             Int       @default(0)
+  level          Int       @default(1)
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  // Oxirgi XP bergan hodisa sanasi (kalendar kun taqqoslash uchun) — null
+  // bo'lsa foydalanuvchi hali birorta tasdiqlangan hodisaga ega emas.
+  lastActiveDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([xp])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// Plan 05-01 Task 3 — DeviceToken (NOTIF-02 push).
+// Stores per-user FCM registration tokens. Consumed by Plan 05-04
+// notification.processor.sendPush — InvalidFcmTokenError → row deletion.
+// onDelete: Cascade — token rows die with the user.
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String // "web" | "android" | "ios"
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Family {
+  id          String             @id @default(cuid())
+  name        String
+  addressId   String? // asosiy manzil (bir xil uy)
+  viloyatId   String?
+  tumanId     String?
+  mahallaId   String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  members     User[]
+  // Plan 06-01 FAM-03 reverse — explicit join-date rows for the 30-day filter.
+  memberships FamilyMembership[]
+
+  @@index([tumanId])
+  @@index([mahallaId])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  viloyatId String
+  tumanId   String
+  mahallaId String
+  street    String
+  house     String
+  apartment String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Library {
+  id            String               @id @default(cuid())
+  code          String               @unique
+  type          LibraryType
+  institutionId String?
+  name          String
+  regionId      String // tumanId reference (denormalized for query speed)
+  tumanId       String?
+  viloyatId     String?
+  address       String?
+  phone         String?
+  workHours     String? // e.g. "09:00-18:00, Du-Sh"
+  latitude      Float?
+  longitude     Float?
+  fundCount     Int                  @default(0)
+  frozenReason  String?
+  status        LibraryStatus        @default(PENDING)
+  books         Book[]
+  transactions  BookTransaction[]    @relation("TransactionReturnLibrary")
+  transfersFrom BookTransfer[]       @relation("BookTransfer_fromLibrary")
+  transfersTo   BookTransfer[]       @relation("BookTransfer_toLibrary")
+  subscriptions Subscription[]
+  approvalLogs  LibraryApprovalLog[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([tumanId])
+  @@index([viloyatId])
+}
+
+model LibraryApprovalLog {
+  id        String   @id @default(cuid())
+  libraryId String
+  library   Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  action    String // "SUBMITTED" | "TUMAN_APPROVED" | "SUPER_APPROVED" | "REJECTED"
+  actorId   String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([libraryId])
+}
+
+model Book {
+  id             String            @id @default(cuid())
+  isbn           String
+  title          String
+  author         String
+  genre          String
+  lang           String            @default("uz")
+  pages          Int               @default(0)
+  year           Int               @default(0)
+  coverUrl       String?
+  description    String?
+  totalCount     Int               @default(1)
+  availableCount Int               @default(1)
+  libraryId      String
+  library        Library           @relation(fields: [libraryId], references: [id])
+  transactions   BookTransaction[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([isbn])
+  @@index([libraryId])
+  @@index([title, author])
+}
+
+model BookTransaction {
+  id                   String            @id @default(cuid())
+  userId               String
+  user                 User              @relation(fields: [userId], references: [id])
+  bookId               String
+  book                 Book              @relation(fields: [bookId], references: [id])
+  type                 TransactionType
+  status               TransactionStatus
+  borrowedAt           DateTime?
+  dueDate              DateTime? // borrowedAt + 14 kun
+  returnedAt           DateTime?
+  penaltyDays          Int               @default(0)
+  // H6 — replaces the legacy `penaltyDays = -1` magic number. extendDueDate
+  // now sets `extended = true` and the existing `penaltyDays > 0` overdue
+  // filter remains shape-stable. Backfill in migration 20260607000000.
+  extended             Boolean           @default(false)
+  reservationExpiresAt DateTime? // bron PENDING dan 24 soat
+  returnLibraryId      String?
+  returnLibrary        Library?          @relation("TransactionReturnLibrary", fields: [returnLibraryId], references: [id])
+  transfers            BookTransfer[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([status, dueDate])
+  @@index([reservationExpiresAt])
+}
+
+// BOOK-02 — Inter-library transfer ledger (Plan 02-02 Task 2).
+// returnRoaming creates a BookTransfer{PENDING}; the bilateral confirm
+// endpoint that flips PENDING -> CONFIRMED and bumps source-library
+// availableCount lands in Plan 02-05.
+model BookTransfer {
+  id            String          @id @default(cuid())
+  transactionId String
+  transaction   BookTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  fromLibraryId String
+  fromLibrary   Library         @relation("BookTransfer_fromLibrary", fields: [fromLibraryId], references: [id])
+  toLibraryId   String
+  toLibrary     Library         @relation("BookTransfer_toLibrary", fields: [toLibraryId], references: [id])
+  status        String          @default("PENDING") // PENDING | CONFIRMED | REJECTED
+  requestedAt   DateTime        @default(now())
+  confirmedAt   DateTime?
+  confirmedById String?
+
+  @@index([transactionId])
+  @@index([fromLibraryId, status])
+  @@index([requestedAt])
+}
+
+// RI-05 (Plan 02-02 Task 3): the live `ReadingIndex` is a PostgreSQL native
+// range-partitioned table by month (PARTITION BY RANGE (calculatedAt)), with
+// 16 monthly partitions covering the prior 13 months + current + next 2.
+// Prisma still models it as a regular table — PG transparently routes
+// inserts/selects across partitions and the composite @@index below is
+// auto-propagated by PG ≥ 11 to every existing and future partition. The
+// partition DDL lives in the raw-SQL migration
+// 20260607000002_phase2_ri_partitions and MUST NOT be regenerated by
+// `prisma migrate dev` (see the @prisma-skip-generate banner in that file).
+model ReadingIndex {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  score        Float
+  components   Json
+  calculatedAt DateTime @default(now())
+
+  // Per-user RI tarixi (user bo'yicha filter + sana bo'yicha tartib) va nightly cron uchun (INFRA-06)
+  // Prod da to'lgan jadvalga CREATE INDEX CONCURRENTLY bilan qo'llanishi kerak (write-lock oldini olish)
+  @@index([userId, calculatedAt])
+}
+
+model FraudScore {
+  id        String   @id @default(cuid())
+  userId    String   @unique // har bir foydalanuvchi faqat 1 ta fraud score (upsert uchun)
+  user      User     @relation(fields: [userId], references: [id])
+  riskScore Int
+  flags     Json
+  action    String
+  checkedAt DateTime @default(now())
+
+  @@index([riskScore])
+  @@index([action])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  libraryId String
+  library   Library            @relation(fields: [libraryId], references: [id])
+  planType  String
+  status    SubscriptionStatus @default(TRIAL)
+  startDate DateTime
+  endDate   DateTime
+  trialEnd  DateTime?
+  invoices  Invoice[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  // Plan 04-03 PAY-08: audit trail for FROZEN/DELETED transitions
+  // CLAUDE.md §XIII.3 — sabab majburiy (reason required)
+  frozenReason  String?
+  frozenAt      DateTime?
+  frozenBy      String? // userId of admin who froze
+  deletedReason String?
+  deletedAt     DateTime?
+  deletedBy     String? // userId of admin who deleted
+}
+
+model Invoice {
+  id             String         @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription   @relation(fields: [subscriptionId], references: [id])
+  amount         Decimal        @db.Decimal(12, 2)
+  dueDate        DateTime
+  paidDate       DateTime?
+  paymentMethod  PaymentMethod?
+  status         PaymentStatus  @default(PENDING)
+  payments       Payment[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id])
+  amount        Decimal       @db.Decimal(12, 2)
+  method        PaymentMethod
+  status        PaymentStatus @default(PAID)
+  transactionId String        @unique
+  paidAt        DateTime      @default(now())
+  // P2 M9 — Payme bekor qilish metama'lumotlari. CheckTransaction/GetStatement
+  // haqiqiy cancel_time (ms epoch) va reason qaytarishi uchun saqlanadi
+  // (rasmiy holat mashinasi: -1 = perform'dan oldin, -2 = perform'dan keyin).
+  cancelledAt   DateTime?
+  cancelReason  Int?
+  createdAt     DateTime      @default(now())
+}
+
+model Top100Entry {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  month      String // "2026-05"
+  rank       Int
+  score      Float
+  components Json // {verified, consistency, diversity, comprehension, discipline, trust}
+  gender     UserGender
+  ageGroup   String // "7-14" | "15-30" | "31-60" | "60+"
+  userType   UserType
+  status     String     @default("DRAFT") // DRAFT | CONFIRMED
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, month])
+  @@index([month, rank])
+  @@index([month, gender])
+  @@index([month, userType])
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String
+  description String
+  icon        String
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model Donate {
+  id         String        @id @default(cuid())
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id])
+  amount     Decimal       @db.Decimal(12, 2)
+  purpose    String // "LIBRARY_BOOKS" | "SCHOOL_BOOKS" | "GENERAL"
+  targetId   String?
+  targetName String?
+  paymentId  String        @unique
+  method     PaymentMethod
+  status     PaymentStatus @default(PENDING)
+  donorName  String?
+  isPublic   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model IsbnScan {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  isbn              String
+  title             String
+  author            String
+  source            String             @default("USER_SCAN") // USER_SCAN | STORE_MANUAL
+  storeId           String?
+  // H4: store webhook idempotency key. order_id is HMAC-verified, then
+  // persisted here. NULL for user self-scans (source=USER_SCAN) — PG treats
+  // NULLs as distinct, so the compound unique below never blocks them.
+  orderId           String?
+  confirmed         Boolean            @default(false)
+  confirmedAt       DateTime?
+  comprehensionTest ComprehensionTest?
+  createdAt         DateTime           @default(now())
+
+  @@unique([storeId, orderId])
+  @@index([userId])
+  @@index([isbn])
+}
+
+model ComprehensionTest {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  isbnScanId  String    @unique
+  isbnScan    IsbnScan  @relation(fields: [isbnScanId], references: [id])
+  questions   Json // [{q, options:[string], answerIdx: number}]
+  passed      Boolean   @default(false)
+  attempts    Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model AiAuditLog {
+  id             String   @id @default(cuid())
+  scope          String
+  scopeId        String
+  issueType      String
+  severity       Severity
+  analysis       String
+  recommendation String
+  resolved       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model RiskLog {
+  id               String   @id @default(cuid())
+  riskType         String
+  severity         Severity
+  description      String
+  mitigationStatus String
+  createdAt        DateTime @default(now())
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model DemoRequest {
+  id           String   @id @default(cuid())
+  organization String
+  phone        String
+  email        String?
+  orgType      String // "MAKTAB" | "OTM" | "IDORA" | "MAHALLA" | "OTHER"
+  message      String?
+  status       String   @default("PENDING") // PENDING | CONTACTED | CLOSED
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ── Sprint 7: Maktab, Jadidlar izidan Klub, Oila ───────────────────────────
+
+// Muassasa — Maktab, OTM yoki Idora (bir universal model)
+model Institution {
+  id         String          @id @default(cuid())
+  type       InstitutionType
+  name       String
+  code       String          @unique // MAKTAB-08012-008 | OTM-...
+  tumanId    String
+  viloyatId  String
+  address    String?
+  phone      String?
+  directorId String? // adminId (User.id)
+  libraryId  String? // bog'liq kutubxona
+  status     String          @default("ACTIVE")
+  clubs      Club[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([tumanId])
+  @@index([viloyatId])
+  @@index([type])
+}
+
+enum InstitutionType {
+  MAKTAB
+  OTM
+  IDORA
+  MAHALLA
+}
+
+// ── Phase 8: Kitob do'konlari (Bookstore Ecosystem) ────────────────────────
+
+// Store — dedicated bookstore entity (replaces Institution workaround).
+// SHOP-01 (CRUD + Excel import), SHOP-06 (premium badge).
+model Store {
+  id           String         @id @default(cuid())
+  name         String
+  slug         String         @unique
+  description  String?
+  phone        String?
+  address      String?
+  lat          Float?
+  lon          Float?
+  workingHours Json?
+  logoUrl      String?
+  premiumBadge Boolean        @default(false)
+  premiumSince DateTime?
+  operatorId   String
+  operator     User           @relation("storeOperator", fields: [operatorId], references: [id])
+  hmacSecret   String
+  tumanId      String
+  viloyatId    String
+  status       String         @default("ACTIVE")
+  products     StoreProduct[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([slug])
+  @@index([tumanId])
+  @@index([viloyatId])
+  @@index([operatorId])
+}
+
+// StoreProduct — individual product in a store catalog (SHOP-01).
+model StoreProduct {
+  id         String   @id @default(cuid())
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id])
+  isbn       String
+  title      String
+  author     String
+  genre      String?
+  price      Int
+  stockCount Int      @default(0)
+  coverUrl   String?
+  description String?
+  lang       String   @default("uz")
+  pages      Int      @default(0)
+  year       Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([storeId, isbn])
+  @@index([storeId])
+  @@index([isbn])
+}
+
+// Jadidlar izidan klubi (maktab/OTM da)
+model Club {
+  id            String       @id @default(cuid())
+  name          String
+  institutionId String
+  institution   Institution  @relation(fields: [institutionId], references: [id])
+  leaderId      String // KLUB_RAHBARI (User.id)
+  goal          Int          @default(20) // yillik kitob maqsadi
+  quarterGoal   Int          @default(5) // choraklik kitob maqsadi
+  description   String?
+  status        String       @default("ACTIVE") // ACTIVE | INACTIVE
+  members       ClubMember[]
+  debates       Debate[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([institutionId])
+  @@index([leaderId])
+}
+
+// Klub a'zosi
+model ClubMember {
+  id              String                  @id @default(cuid())
+  clubId          String
+  club            Club                    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId          String
+  // User bilan direkt relation yo'q — User modelini o'zgartirmaslik uchun userId saqlash
+  status          String                  @default("PENDING")
+  // PENDING (ota-ona rozilik kutilmoqda) | ACTIVE | LEFT
+  parentPhone     String? // 18 yoshgacha ota-ona raqami
+  parentConsented Boolean                 @default(false)
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  // Plan 06-01 SCH-04 — bcrypt-hashed deep-link token for parent SMS consent.
+  // Plumbing only; wired in Plan 06-04.
+  consentToken    ClubMemberConsentToken?
+
+  @@unique([clubId, userId])
+  @@index([clubId])
+  @@index([userId])
+}
+
+// Debat qayd
+model Debate {
+  id           String        @id @default(cuid())
+  clubId       String
+  club         Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  topic        String
+  heldAt       DateTime
+  venue        String?
+  participants Int           @default(0)
+  summary      String?
+  mediaUrls    String[] // foto/video URL lar (MinIO)
+  recordedById String // kutubxonachi yoki klub rahbari
+  // Plan 06-04 SCH-05 — DRAFT (newly created) | PUBLISHED (≥1 media uploaded).
+  // Quarterly + PDF reports only count PUBLISHED debates.
+  status       String        @default("DRAFT")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  // Plan 06-01 SCH-05 — structured media-audit trail (mimeType, sizeBytes,
+  // uploadedById). Replaces ad-hoc mediaUrls[] for SCH-05 compliance.
+  media        DebateMedia[]
+
+  @@index([clubId])
+  @@index([heldAt])
+  @@index([status])
+}
+
+// Oilaga taklif
+model FamilyInvite {
+  id        String   @id @default(cuid())
+  familyId  String
+  inviterId String // taklif yuborgan (User.id)
+  inviteeId String // taklif qabul qiluvchi (User.id)
+  status    String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | EXPIRED
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyId, inviteeId])
+  @@index([inviteeId])
+  @@index([familyId])
+}
+
+// Oila reyting (oylik snapshot)
+model FamilyRating {
+  id          String   @id @default(cuid())
+  familyId    String
+  month       String // "2026-05"
+  avgScore    Float // a'zolar o'rtacha RI
+  totalBooks  Int // jami o'qilgan kitoblar
+  memberCount Int
+  rank        Int? // milliy o'rin
+  viloyatRank Int?
+  tumanRank   Int?
+  createdAt   DateTime @default(now())
+
+  @@unique([familyId, month])
+  @@index([month, avgScore])
+}
+
+// Maktab reytingi (oylik snapshot)
+model SchoolRating {
+  id            String   @id @default(cuid())
+  institutionId String
+  month         String // "2026-05"
+  coverageRate  Float // faol o'quvchilar %
+  avgRi         Float // o'rtacha Reading Index
+  clubActivity  Float // klub faollik bali
+  totalScore    Float // yakuniy reyting bali
+  rank          Int? // respublika bo'yicha o'rin
+  viloyatRank   Int?
+  tumanRank     Int?
+  createdAt     DateTime @default(now())
+
+  @@unique([institutionId, month])
+  @@index([month, totalScore])
+}
+
+// ── Sprint 9: Idora moduli ──────────────────────────────────────────────────
+
+// Bo'lim (department) — Idora ichida
+model Department {
+  id            String     @id @default(cuid())
+  institutionId String
+  name          String
+  code          String?
+  headId        String? // bo'lim rahbari (User.id)
+  profBooks     ProfBook[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([institutionId])
+}
+
+// Kitob burchagi — Idorada jismoniy kitob burchagi
+model BookCorner {
+  id             String                   @id @default(cuid())
+  institutionId  String
+  name           String                   @default("Kitob burchagi")
+  floor          String? // qavat/xona
+  photoUrls      String[] // MinIO foto URL lar
+  latitude       Float?
+  longitude      Float?
+  isActive       Boolean                  @default(true)
+  lastVerified   DateTime?
+  nextReminderAt DateTime? // har 90 kunda
+  adminNote      String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  // Plan 06-01 ORG-04 — verification trail (admin + photo) per refresh cycle.
+  verifications  BookCornerVerification[]
+
+  @@index([institutionId])
+}
+
+// Kitob o'qish soati tadbirlari
+model ReadingHour {
+  id            String                @id @default(cuid())
+  institutionId String
+  title         String                @default("Kitob o'qish soati")
+  heldAt        DateTime
+  venue         String?
+  durationMin   Int                   @default(60) // daqiqalarda
+  mediaUrls     String[]
+  notes         String?
+  recordedById  String // admin/HR (User.id)
+  // Plan 06-06 ORG-03 — DRAFT (newly created) | PUBLISHED (finalised, ≥1 media)
+  // | CANCELLED (admin-cancelled). Monthly summary + PQ-9 PDF only count PUBLISHED.
+  status        String                @default("DRAFT")
+  attendances   ReadingHourAttendee[]
+  // Plan 06-01 ORG-03 — structured media trail (mimeType, sizeBytes, uploader).
+  media         ReadingHourMedia[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([institutionId])
+  @@index([heldAt])
+  @@index([status])
+}
+
+// Tadbir ishtirokchilari (QR bilan)
+model ReadingHourAttendee {
+  id            String      @id @default(cuid())
+  readingHourId String
+  readingHour   ReadingHour @relation(fields: [readingHourId], references: [id], onDelete: Cascade)
+  userId        String
+  markedAt      DateTime    @default(now())
+
+  @@unique([readingHourId, userId])
+  @@index([readingHourId])
+}
+
+// Kasb adabiyotlar ro'yhati (bo'lim/idora bo'yicha)
+model ProfBook {
+  id            String      @id @default(cuid())
+  institutionId String
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  isbn          String?
+  title         String
+  author        String
+  genre         String?
+  description   String?
+  isRequired    Boolean     @default(false) // majburiy o'qish
+  addedById     String
+  createdAt     DateTime    @default(now())
+
+  @@index([institutionId])
+  @@index([departmentId])
+}
+
+// Idora ichki reyting (oylik snapshot)
+model OrgRating {
+  id            String   @id @default(cuid())
+  institutionId String
+  month         String // "2026-05"
+  userId        String // xodim
+  userName      String
+  department    String?
+  avgRi         Float
+  booksRead     Int
+  rank          Int // idora ichida o'rin
+  isMvp         Boolean  @default(false) // eng faol xodim
+  createdAt     DateTime @default(now())
+
+  @@unique([institutionId, month, userId])
+  @@index([institutionId, month])
+}
+
+// ── Phase 6 (Plan 06-01) — schema additions ────────────────────────────────
+
+// FAM-03 — explicit family-membership join date. Backfilled with User.createdAt
+// for legacy rows. Sole source of truth for the 30-day waiting-period filter
+// (CLAUDE.md §IV.4).
+//
+// Plan 06-01-fix audit-HIGH: userId was @unique which enforced "1 user = 1
+// LIFETIME row" (not "1 user = 1 ACTIVE family") — after leaving family X
+// the user could NEVER join family Y because the create would hit a
+// P2002 unique-violation. @unique dropped; uniqueness of the ACTIVE
+// row is enforced by a Postgres partial unique index added in the
+// migration 20260608000004_phase6_family_membership_partial_unique
+// (CREATE UNIQUE INDEX ... ON FamilyMembership(userId) WHERE leftAt IS
+// NULL). leaveFamily MUST stamp leftAt (not just User.familyId=null) for
+// rejoin to work AND for computeFamilyRatings.where.leftAt:null to be
+// accurate.
+model FamilyMembership {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation("FamilyMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  familyId String
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([joinedAt])
+}
+
+// FAM-06 — tuman-admin-approved address change. PENDING|APPROVED|REJECTED.
+// Endpoints land in Plan 06-03.
+model AddressChangeRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation("AddressChangeRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  fromAddressId String?
+  toAddressId   String
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reason        String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+// SCH-04 — bcrypt-hashed parent SMS consent deep-link token. 48h TTL.
+// Plumbing only; wired in Plan 06-04.
+model ClubMemberConsentToken {
+  id           String     @id @default(cuid())
+  clubMemberId String     @unique
+  clubMember   ClubMember @relation(fields: [clubMemberId], references: [id], onDelete: Cascade)
+  tokenHash    String     @unique
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([expiresAt])
+}
+
+// SCH-05 — Debate media-audit trail (MinIO key + mimeType + size + uploader).
+model DebateMedia {
+  id           String   @id @default(cuid())
+  debateId     String
+  debate       Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  url          String
+  mimeType     String
+  sizeBytes    Int
+  thumbnailUrl String?
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+
+  @@index([debateId])
+}
+
+// ORG-03 — ReadingHour media-audit trail.
+model ReadingHourMedia {
+  id            String      @id @default(cuid())
+  readingHourId String
+  readingHour   ReadingHour @relation(fields: [readingHourId], references: [id], onDelete: Cascade)
+  url           String
+  mimeType      String
+  sizeBytes     Int
+  uploadedById  String
+  uploadedAt    DateTime    @default(now())
+
+  @@index([readingHourId])
+}
+
+// ORG-04 — Kitob burchagi verification log (admin + photo per refresh cycle).
+model BookCornerVerification {
+  id           String     @id @default(cuid())
+  bookCornerId String
+  bookCorner   BookCorner @relation(fields: [bookCornerId], references: [id], onDelete: Cascade)
+  verifiedById String
+  photoUrls    String[]   @default([])
+  note         String?
+  createdAt    DateTime   @default(now())
+
+  @@index([bookCornerId, createdAt])
+}

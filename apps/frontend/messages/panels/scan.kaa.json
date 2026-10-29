@@ -1,0 +1,76 @@
+{
+  "ScanPage": {
+    "title": "Skaner",
+    "qrTab": "QR Skan",
+    "isbnTab": "ISBN Skan",
+    "cameraDenied": "Kamera ruxsatı berilmedi.",
+    "checking": "Tekserilmekte…",
+    "search": "Izlew",
+    "retry": "Qayta urınıw",
+    "cancel": "Biykar etiw",
+    "userTypes": {
+      "CITIZEN": "Puqara",
+      "STUDENT_SCHOOL": "Oqıwshı",
+      "STUDENT_UNIVERSITY": "Student",
+      "GOVERNMENT_EMPLOYEE": "Mámleket xızmetkeri",
+      "TEACHER": "Oqıtıwshı"
+    },
+    "qr": {
+      "unsupported": "Brauzerińiz kamera arqalı skanerlewdi qollamaydı — SifatID di qolda kirgiziń.",
+      "resolveError": "QR tekseriwde qátelik",
+      "notFound": "Paydalanıwshı tabılmadı. QR nadurıs yamasa eskirgen.",
+      "startCamera": "Kameranı qosıw",
+      "stopCamera": "Kameranı óshiriw",
+      "manualLabel": "Yamasa SifatID di qolda kirgiziń"
+    },
+    "isbnPanel": {
+      "unsupported": "Brauzerińiz kamera arqalı skanerlewdi qollamaydı — ISBN nomerin qolda kirgiziń.",
+      "scanError": "ISBN skan qáteligi",
+      "testFetchError": "Test sorawların alıwda qátelik",
+      "testSubmitError": "Test jiberiwde qátelik",
+      "intro": "Satıp alınǵan kitaptıń ISBN shtrix-kodın skanlań — Oqıw indeksine qosıladı",
+      "scanButton": "ISBN skanlaw",
+      "manualLabel": "Yamasa ISBN di qolda kirgiziń",
+      "holdBarcode": "Kitaptıń arqa betindegi shtrix-kodtı kameraǵa tutıp turıń",
+      "testTitle": "Kitaptı túsiniw testi",
+      "attemptsLeft": "Urınıslar qaldı: {count}",
+      "wrongAnswers": "Nadurıs. Durıs: {correct}/{total}. Urınıslar qaldı: {left}",
+      "submitAnswers": "Juwaplardı jiberiw",
+      "bookAdded": "Kitap qosıldı",
+      "bookAddedExcl": "Kitap qosıldı!",
+      "indexUpdated": "Oqıw indeksińiz jańalandı",
+      "scanNew": "Jańa kitap skanlaw",
+      "exhaustedTitle": "Urınıslar tawsıldı",
+      "exhaustedDesc": "Test 3 márte tabıssız — bul kitap Reading Indexke qosılmaydı"
+    },
+    "card": {
+      "canIssue": "Kitap beriw múmkin",
+      "cannotIssue": "Kitap berip bolmaydı — {status}",
+      "liveQr": "Janlı QR",
+      "staticWarning": "Statik QR/ID paydalanıldı. Kitap oqıwshısınan profil betindegi jańalanatuǵın QR kodtı kórsetiwdi sorań — ol hár 5 minutta almasadı hám skrinshot arqalı qálbekilestirip bolmaydı.",
+      "trustScore": "Isenim reytingi:",
+      "currentBooks": "Házirgi kitaplar ({count}):",
+      "noBooks": "Házir kitap joq",
+      "daysLate": "{days} kún keshikken",
+      "due": "Múddet: {date}",
+      "issueBook": "Kitap beriw",
+      "newScan": "Jańa skan"
+    },
+    "readingHour": {
+      "title": "Kitap oqıw saatı",
+      "loading": "Tastıyıqlanbaqta...",
+      "missingToken": "QR token tabılmadı. QR kodtı qaytadan skan qılıń.",
+      "success": "Ilajǵa qatnasqanıńız dizimge alındı. Raxmet!",
+      "time": "Waqıt: {time}",
+      "duplicate": "Siz bul ilajǵa aldın qatnasqansız.",
+      "expired": "QR múddeti ótti. Jańa QR di sorań.",
+      "expiredHint": "QR hár 5 minutta jańalanadı — administrator ekranınan jańa kodtı alıń.",
+      "forbidden": "Bul ilaj sizdiń mákemege tiyisli emes.",
+      "authRequired": "Ilajǵa qatnasıwdı belgilew ushın aldın sistemaǵa kiriń.",
+      "login": "Kiriw",
+      "error": "Qátelik: {message}",
+      "unexpectedError": "Kútilmegen qátelik",
+      "networkError": "Tarmaq qáteligi"
+    }
+  }
+}

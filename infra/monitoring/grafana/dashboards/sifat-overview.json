@@ -1,0 +1,74 @@
+{
+  "title": "SIFAT Library — Overview",
+  "uid": "sifat-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "API javob vaqti (p99)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_ms_bucket{job='sifat-backend'}[5m]))",
+          "legendFormat": "p99 ms"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Faol foydalanuvchilar",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sifat_active_users_total",
+          "legendFormat": "Faol"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Bugun o'qilgan kitoblar",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "increase(sifat_books_borrowed_total[24h])",
+          "legendFormat": "Kitob"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Xatolik darajasi",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_requests_total{status=~'5..', job='sifat-backend'}[5m])",
+          "legendFormat": "5xx xatolar/s"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Backend loglari",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Loki",
+          "expr": "{job=\"sifat-backend\"} |= \"ERROR\"",
+          "legendFormat": ""
+        }
+      ]
+    }
+  ]
+}

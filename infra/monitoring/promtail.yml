@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://sifat-loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: sifat-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: sifat-backend
+          __path__: /var/log/sifat/backend/*.log
+
+  - job_name: sifat-frontend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: sifat-frontend
+          __path__: /var/log/sifat/frontend/*.log
+
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          __path__: /var/log/nginx/*.log
