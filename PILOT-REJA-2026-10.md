@@ -10,10 +10,12 @@ Bugungi avtomatik tekshiruv: backend `tsc` ✅ 0 xato · frontend `tsc` ✅ · `
 
 ## 0-bosqich — Poydevor (1 kun)
 
-- [ ] `git init`, `.gitignore` tekshiruvi (`node_modules`, `.env*`, `.next`, `backup/`), birinchi commit
-- [ ] GitHub private repo (**siz**: akkaunt/tashkilot), `main` himoyasi (PR + CI majburiy), `develop` branch
-- [ ] Sirlar repo'ga tushmasin: `gitleaks` CI qadami; `apps/backend/.env`, `apps/frontend/.env.local` tarixga kirmasligi
-- [ ] `backup/*.zip` — repo'dan tashqarida saqlash
+- [x] `git init`, `.gitignore` tekshiruvi (`node_modules`, `.env*`, `.next`, `backup/`, `.swc/`, `node-compile-cache/`), birinchi commit — 2026-10-29, `d030e85`, 750 fayl
+- [x] GitHub private repo — https://github.com/fotimaruziyeva77/kutubxona ; `main` va `develop` branch'lar push qilingan
+- [ ] `main` himoyasi (**siz**, GitHub Settings → Branches): PR majburiy, CI status check majburiy, force-push taqiqlangan
+- [x] Sirlar repo'ga tushmasin: `gitleaks` CI job'i (`.github/workflows/ci.yml`); tekshirildi — tarixda faqat `*.example` env fayllar
+- [x] `backup/*.zip` — `.gitignore` da, repo'da yo'q
+- [x] `.gitattributes` — barcha matn fayllar LF (Linux CI/Docker bilan bir xil)
 
 **Qabul:** repo GitHub'da, CI PR'da ishga tushadi.
 
