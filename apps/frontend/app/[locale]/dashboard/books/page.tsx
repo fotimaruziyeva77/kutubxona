@@ -329,6 +329,9 @@ export default function BooksPage() {
           {importStatus.status === "completed" && (
             <div className="flex items-center gap-1.5"><Icon.success aria-hidden="true" size={ICON_SIZE.sm} className="text-green-600" />{t("import.added", { count: importStatus.processed })}</div>
           )}
+          {importStatus.status === "completed" && (importStatus.skipped ?? 0) > 0 && (
+            <div className="mt-1 flex items-center gap-1.5 text-slate-600"><Icon.info aria-hidden="true" size={ICON_SIZE.sm} />{t("import.skipped", { count: importStatus.skipped ?? 0 })}</div>
+          )}
 
           {importStatus.errors.length > 0 && (
             <div className="mt-2">

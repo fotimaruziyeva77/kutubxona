@@ -213,6 +213,8 @@ export interface BookImportStatusResult {
   status: "queued" | "active" | "completed" | "failed" | "delayed" | "waiting" | "paused" | "unknown";
   processed: number;
   total: number;
+  /** Fondda allaqachon bor ISBN qatorlari — o'tkazib yuborilgan (eski backend javobida bo'lmasligi mumkin). */
+  skipped?: number;
   errors: { row: number; reason: string }[];
   progress: number;
 }

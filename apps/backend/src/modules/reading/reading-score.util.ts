@@ -8,7 +8,11 @@
  * sun'iy oshirish yo'li. Tarixiy duplicate qatorlar bazada mavjud, shuning
  * uchun dedup INSERT vaqtida emas, AYNAN scoring vaqtida bajariladi:
  *
- *   - Kutubxona krediti  = RETURNED tranzaksiyalar ichida DISTINCT bookId (×1.0)
+ *   - Kutubxona krediti  = RETURNED tranzaksiyalar ichida DISTINCT ASAR (×1.0)
+ *     — kalit `book.isbn` (bo'lmasa `bookId`). FR1 (iyul auditi): `Book`
+ *     qatori kutubxonaga bog'langan NUSXA yozuvi, asar emas — "Alpomish"
+ *     2000 kutubxonada 2000 ta har xil bookId. bookId bo'yicha dedup roaming
+ *     orqali (bir kitobni har kutubxonada olib-qaytarish) chetlab o'tilardi.
  *   - ISBN scan krediti  = tasdiqlangan scanlar ichida DISTINCT isbn (×0.9)
  *   - Do'kon krediti     = STORE_MANUAL ichida DISTINCT isbn (×0.9)
  *   - Mutolaa krediti    = MUTOLAA ichida DISTINCT isbn (×0.85)
@@ -24,8 +28,10 @@
  * barcha og'irliklar ATAYIN o'zgartirilmagan — bu fix faqat dedup:
  *   - diversity allaqachon Set<genre> bilan distinct janrlarni sanaydi
  *     (bir kitobning dublikatlari bir xil janrni beradi → Set yutadi);
- *   - consistency/activity xom event-asosida qoladi (TZ §5.1 bo'yicha
- *     "faollik" o'lchovi, kredit emas — 100 ball cap bilan chegaralangan);
+ *   - consistency xom event-haftalari asosida qoladi (hafta allaqachon
+ *     distinct birlik — bir kitobni 4 haftada qaytarish 4 hafta faollik);
+ *   - activity (FR3) 30 kunlik oynada DISTINCT ASAR soni — avval xom event
+ *     soni edi va bitta kitob + roaming bilan 4 hodisada 100 ga to'lardi;
  *   - discipline har kechikkan qaytarishni alohida sanaydi (har biri real
  *     intizom hodisasi).
  *
@@ -60,7 +66,17 @@ export interface ScoreTransaction {
   bookId?: string | null;
   returnedAt?: Date | null;
   penaltyDays?: number | null;
-  book?: { genre?: string | null } | null;
+  book?: { genre?: string | null; isbn?: string | null } | null;
+}
+
+/**
+ * Tranzaksiyaning ASAR kaliti — ISBN (kutubxonadan mustaqil), u bo'lmasa
+ * bookId (nusxa). Caller `book: { select: { isbn: true } }` ni yuklashi shart,
+ * aks holda dedup nusxa darajasiga tushadi (fail-safe, lekin roaming teshigi
+ * qaytadi — shu sabab har ikkala iste'molchi select'i testda tekshiriladi).
+ */
+export function transactionWorkKey(t: ScoreTransaction): string | null | undefined {
+  return t.book?.isbn || t.bookId;
 }
 
 /** Tasdiqlangan IsbnScan yozuvi — scoring uchun minimal shakl. */
@@ -125,10 +141,11 @@ export function computeReadingScore(
   const mutolaaRows = scans.filter((s) => s.source === "MUTOLAA");
   const ebookRows   = scans.filter((s) => s.source === "EBOOK");
 
-  // ── Komponent 1: Kitoblar soni (30%) — C5 DEDUP ───────────────────────────
+  // ── Komponent 1: Kitoblar soni (30%) — C5 + FR1 DEDUP ────────────────────
   // Har manba ichida tabiiy kalit bo'yicha DISTINCT sanash: bir kitobni
-  // 10 marta qaytarish endi 10.0 emas, 1.0 kredit beradi.
-  const libDistinct     = distinctCount(transactions, (t) => t.bookId);
+  // 10 marta qaytarish endi 10.0 emas, 1.0 kredit beradi. Kutubxona uchun
+  // kalit ISBN — bir asarni 10 kutubxonada olib-qaytarish ham 1.0.
+  const libDistinct     = distinctCount(transactions, transactionWorkKey);
   const scanDistinct    = distinctCount(scanRows,     (s) => s.isbn);
   const storeDistinct   = distinctCount(storeRows,    (s) => s.isbn);
   const mutolaaDistinct = distinctCount(mutolaaRows,  (s) => s.isbn);
@@ -164,9 +181,19 @@ export function computeReadingScore(
   const lateReturns = transactions.filter((t) => (t.penaltyDays ?? 0) > 0).length;
   const disciplineScore = Math.max(0, 100 - lateReturns * 15);
 
-  // ── Komponent 5: Faollik (20%) — o'zgarmagan (xom, 100 cap) ──────────────
-  const recentTotal = recentTx.length + recentScans.length;
-  const activityScore = Math.min(recentTotal * 25, 100);
+  // ── Komponent 5: Faollik (20%) — FR3: 30 kunda DISTINCT asar (100 cap) ───
+  // Xom hodisa soni emas: bitta kitobni 4 marta (yoki 4 kutubxonada)
+  // qaytarish 1 asar = 25 ball. Kutubxona va skan manbalari bitta Set'da —
+  // bir asar qaysi yo'l bilan o'qilgan bo'lsa ham bir marta.
+  const recentWorks = new Set<string>();
+  for (const t of recentTx) {
+    const k = transactionWorkKey(t);
+    if (k) recentWorks.add(k);
+  }
+  for (const s of recentScans) {
+    if (s.isbn) recentWorks.add(s.isbn);
+  }
+  const activityScore = Math.min(recentWorks.size * 25, 100);
 
   const score =
     booksCountScore  * WEIGHTS.booksCount +

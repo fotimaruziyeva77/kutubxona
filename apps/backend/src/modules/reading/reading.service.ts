@@ -132,6 +132,21 @@ export class ReadingService {
   async monthlyPartitionCleanup(): Promise<void> {
     const now = new Date();
 
+    // D4 (iyul auditi): prod'da replicas:3 — uchala replika bir vaqtda DDL
+    // (DETACH/DROP PARTITION) bajarsa parent-jadval lock'ida deadlock bo'ladi.
+    // audit.service.ts dagi SETNX leader-lock naqshi: oy-bucket kalit + 2 soat
+    // TTL — faqat bitta replika yuradi. Cache yo'q bo'lsa (unit test) — davom.
+    if (this.cache) {
+      const monthBucket = now.toISOString().slice(0, 7);
+      const acquired = await this.cache.setNx(
+        `cron:ri-partition-monthly:${monthBucket}`, "1", 2 * 60 * 60
+      );
+      if (!acquired) {
+        this.logger.debug(`[ri-partition-monthly] leader lock held — skipping ${monthBucket}`);
+        return;
+      }
+    }
+
     // (a) DROP the 13-months-ago partition.
     const dropTarget = new Date(now);
     dropTarget.setMonth(dropTarget.getMonth() - 13);
@@ -150,22 +165,30 @@ export class ReadingService {
       );
     }
 
-    // (b) CREATE the (current + 3 months) partition.
-    const createTarget = new Date(now);
-    createTarget.setMonth(createTarget.getMonth() + 3);
-    const createName = this._partitionName(createTarget);
-    const rangeStart = this._partitionRangeStart(createTarget);
-    const rangeEnd = this._partitionRangeEnd(createTarget);
-    try {
-      await this.prisma.$executeRawUnsafe(
-        `CREATE TABLE IF NOT EXISTS "${createName}" PARTITION OF "ReadingIndex" ` +
-          `FOR VALUES FROM ('${rangeStart}') TO ('${rangeEnd}');`
-      );
-      this.logger.log(`RI partition created: ${createName} [${rangeStart}, ${rangeEnd})`);
-    } catch (err) {
-      this.logger.warn(
-        `RI partition ${createName} create skipped: ${(err as Error).message}`
-      );
+    // (b) CREATE the forward partitions: current+1 … current+3.
+    //
+    // D2 (iyul auditi): avval FAQAT current+3 yaratilardi. Migratsiya M oyida
+    // qo'llanib M+2 gacha partitsiya bergan; cron birinchi marta M+1 da yurib
+    // M+4 ni yaratardi — M+3 hech qachon yaratilmay, 3 oydan keyin har
+    // readingIndex.create() "no partition of relation" bilan yiqilardi.
+    // Endi oraliqdagi barcha yetishmayotganlar IF NOT EXISTS bilan yaratiladi.
+    for (const monthsAhead of [1, 2, 3]) {
+      const createTarget = new Date(now);
+      createTarget.setMonth(createTarget.getMonth() + monthsAhead);
+      const createName = this._partitionName(createTarget);
+      const rangeStart = this._partitionRangeStart(createTarget);
+      const rangeEnd = this._partitionRangeEnd(createTarget);
+      try {
+        await this.prisma.$executeRawUnsafe(
+          `CREATE TABLE IF NOT EXISTS "${createName}" PARTITION OF "ReadingIndex" ` +
+            `FOR VALUES FROM ('${rangeStart}') TO ('${rangeEnd}');`
+        );
+        this.logger.log(`RI partition ensured: ${createName} [${rangeStart}, ${rangeEnd})`);
+      } catch (err) {
+        this.logger.warn(
+          `RI partition ${createName} create skipped: ${(err as Error).message}`
+        );
+      }
     }
   }
 
@@ -192,11 +215,11 @@ export class ReadingService {
     const now = new Date();
     const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-    // Kutubxona tranzaksiyalari (RETURNED) — bookId default select da bor,
-    // C5 dedup uchun kerak.
+    // Kutubxona tranzaksiyalari (RETURNED) — bookId default select da bor;
+    // book.isbn FR1 dedup kaliti (asar), book.genre diversity uchun.
     const allTx = await this.prisma.bookTransaction.findMany({
       where: { userId, status: "RETURNED", returnedAt: { gte: oneYearAgo } },
-      include: { book: { select: { genre: true } } }
+      include: { book: { select: { genre: true, isbn: true } } }
     });
 
     // ISBN scan (tasdiqlangan) — isbn + source default select da bor.

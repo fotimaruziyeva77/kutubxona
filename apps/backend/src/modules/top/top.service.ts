@@ -82,7 +82,7 @@ interface ScoringUser {
     bookId: string | null;
     returnedAt: Date | null;
     penaltyDays: number;
-    book?: { genre: string | null } | null;
+    book?: { genre: string | null; isbn?: string | null } | null;
   }>;
   isbnScans: Array<{
     isbn: string | null;
@@ -286,7 +286,8 @@ export class TopService {
               bookId: true,
               returnedAt: true,
               penaltyDays: true,
-              book: { select: { genre: true } },
+              // isbn — FR1 asar-darajasida dedup (roaming teshigi), genre — diversity
+              book: { select: { genre: true, isbn: true } },
             },
           },
           isbnScans: {
@@ -378,14 +379,16 @@ export class TopService {
     // BIR XIL kitob N marta qaytarilsa N ball yig'ilardi (o'z-o'ziga
     // qaytarish sikli bilan 25×BHM mukofotni "fermerlash" mumkin edi).
     // Endi har manba ichida DISTINCT kitob hisoblanadi:
-    //   kutubxona: RETURNED tranzaksiyalar orasida distinct bookId
+    //   kutubxona: RETURNED tranzaksiyalar orasida distinct ASAR — kalit
+    //     book.isbn (FR1: bookId kutubxonaga bog'langan nusxa; roaming bilan
+    //     bir asar har kutubxonada yangi bookId olardi), fallback bookId
     //   ISBN scan: tasdiqlangan skanlar orasida distinct isbn (manba bo'yicha)
     // Tarixiy duplikatlar ma'lumotlarda mavjud — dedup scoring vaqtida.
-    // Bir kitob = bir manbada bir ball.
+    // Bir asar = bir manbada bir ball.
     const distinctLibBooks = new Set(
       u.transactions
-        .map((t) => t.bookId)
-        .filter((id): id is string => Boolean(id))
+        .map((t) => t.book?.isbn || t.bookId)
+        .filter((key): key is string => Boolean(key))
     );
     const distinctIsbnBooks = new Set(
       u.isbnScans

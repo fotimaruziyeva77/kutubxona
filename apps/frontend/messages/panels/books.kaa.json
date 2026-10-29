@@ -25,6 +25,7 @@
       "running": "Import atqarılmaqta…",
       "progressRow": "{processed}/{total} qatar — {progress}%",
       "added": "{count} kitap qosıldı",
+      "skipped": "{count} qatar ótkerip jiberildi — bul ISBN fondta bar",
       "errorsCount": "{count} qátelik:",
       "errorRow": "{row}-qatar: {reason}",
       "close": "Jabıw"

@@ -368,6 +368,9 @@ model Book {
   @@index([isbn])
   @@index([libraryId])
   @@index([title, author])
+  // FR2: Book = kutubxonadagi NUSXA yozuvi — bir kutubxonada bir ISBN bitta qator.
+  // Takror import/qo'shish ikkinchi bookId yaratib, scoringda ikki karra kredit berardi.
+  @@unique([libraryId, isbn])
 }
 
 model BookTransaction {

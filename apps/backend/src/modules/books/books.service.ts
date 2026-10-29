@@ -1,7 +1,8 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  ConflictException
 } from "@nestjs/common";
 import { ElasticsearchService } from "@nestjs/elasticsearch";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -113,6 +114,8 @@ export interface BookImportStatus {
   status: "queued" | "active" | "completed" | "failed" | "delayed" | "waiting" | "paused" | "unknown";
   processed: number;
   total: number;
+  /** FR2: fondda allaqachon bor ISBN qatorlari (o'tkazib yuborilgan). */
+  skipped: number;
   errors: { row: number; reason: string }[];
   progress: number;
 }
@@ -246,23 +249,37 @@ export class BooksService {
       };
     }
 
-    const book = await this.prisma.book.create({
-      data: {
-        isbn: cleanIsbn,
-        title: dto.title,
-        author: dto.author,
-        genre: dto.genre,
-        lang: dto.lang ?? "uz",
-        pages,
-        year,
-        coverUrl: dto.coverUrl,
-        description: dto.description ?? null,
-        totalCount: total,
-        availableCount: total,
-        libraryId: dto.libraryId
-      },
-      include: { library: true }
-    });
+    let book: BookWithLibrary;
+    try {
+      book = (await this.prisma.book.create({
+        data: {
+          isbn: cleanIsbn,
+          title: dto.title,
+          author: dto.author,
+          genre: dto.genre,
+          lang: dto.lang ?? "uz",
+          pages,
+          year,
+          coverUrl: dto.coverUrl,
+          description: dto.description ?? null,
+          totalCount: total,
+          availableCount: total,
+          libraryId: dto.libraryId
+        },
+        include: { library: true }
+      })) as unknown as BookWithLibrary;
+    } catch (err) {
+      // FR2: (libraryId, isbn) unique — yuqoridagi `existing` tekshiruvi bilan
+      // bir vaqtda ikki kutubxonachi bir ISBN'ni qo'shsa, ikkinchisi shu yerga
+      // tushadi. Ikkinchi qator yaratilmaydi; mijoz qayta yuborsa nusxa
+      // sifatida qo'shiladi.
+      if ((err as { code?: string })?.code === "P2002") {
+        throw new ConflictException(
+          "Bu ISBN shu kutubxona fondiga hozirgina qo'shildi — nusxa sonini oshirish uchun qayta yuboring"
+        );
+      }
+      throw err;
+    }
 
     await this.indexBook(book);
     await this.updateLibraryFundCount(dto.libraryId);
@@ -427,13 +444,14 @@ export class BooksService {
   async getImportStatus(jobId: string): Promise<BookImportStatus> {
     const job = await this.importQueue.getJob(jobId);
     if (!job) {
-      return { status: "unknown", processed: 0, total: 0, errors: [], progress: 0 };
+      return { status: "unknown", processed: 0, total: 0, skipped: 0, errors: [], progress: 0 };
     }
 
     const state = (await job.getState()) as BookImportStatus["status"];
     const data = (job.data ?? {}) as Partial<BookImportJobData & {
       processed?: number;
       total?: number;
+      skipped?: number;
       errors?: { row: number; reason: string }[];
     }>;
     const progressRaw = job.progress;
@@ -448,6 +466,7 @@ export class BooksService {
       status: state,
       processed: data.processed ?? 0,
       total: data.total ?? 0,
+      skipped: data.skipped ?? 0,
       errors: data.errors ?? [],
       progress: Math.round(progress)
     };

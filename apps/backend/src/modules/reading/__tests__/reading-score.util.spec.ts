@@ -89,9 +89,41 @@ describe("computeReadingScore — C5 dedup", () => {
     expect(components.consistency).toBe(25);  // 1 hafta bucket (bir xil sana)
     expect(components.diversity).toBe(20);    // 1 janr (Set allaqachon distinct)
     expect(components.discipline).toBe(100);  // kechikish yo'q
-    expect(components.activity).toBe(100);    // 10 xom event → cap
-    // 10×0.3 + 25×0.2 + 20×0.15 + 100×0.15 + 100×0.2 = 3+5+3+15+20 = 46.0
-    expect(score).toBe(46.0);
+    expect(components.activity).toBe(25);     // FR3: 1 distinct asar (avval 10 event → 100)
+    // 10×0.3 + 25×0.2 + 20×0.15 + 100×0.15 + 25×0.2 = 3+5+3+15+5 = 31.0
+    expect(score).toBe(31.0);
+  });
+
+  it("ROAMING SENARIYSI (FR1): bir ISBN 5 kutubxonada (5 xil bookId) → 1 kredit", () => {
+    // Book qatori kutubxonaga bog'langan NUSXA: "Alpomish" har kutubxonada
+    // o'z bookId'si bilan. bookId bo'yicha dedup 5 kredit berardi.
+    const transactions = ["lib1", "lib2", "lib3", "lib4", "lib5"].map((lib) =>
+      tx(`${lib}-alpomish`, { book: { genre: "Doston", isbn: "9789943000011" } })
+    );
+
+    const { components } = computeReadingScore(transactions, [], NOW);
+
+    expect(components.totalLibrary).toBe(1);
+    expect(components.booksCount).toBe(10);
+    expect(components.activity).toBe(25);
+  });
+
+  it("ISBN yo'q (eski/mock ma'lumot) → bookId fallback, kredit yo'qolmaydi", () => {
+    const transactions = [tx("b1"), tx("b1"), tx("b2")];
+
+    const { components } = computeReadingScore(transactions, [], NOW);
+
+    expect(components.totalLibrary).toBe(2);
+  });
+
+  it("FR3: faollik kutubxona va skan manbalarida bir xil ISBN'ni bir marta sanaydi", () => {
+    const transactions = [tx("b1", { book: { genre: "Roman", isbn: "9789943452787" } })];
+    const scans = [scan("USER_SCAN", "9789943452787"), scan("MUTOLAA", "9789943452787")];
+
+    const { components } = computeReadingScore(transactions, scans, NOW);
+
+    // Bitta asar — qaysi yo'l bilan o'qilgan bo'lsa ham faollik 1 birlik
+    expect(components.activity).toBe(25);
   });
 
   it("3 XIL kitob → 3 kredit (30 ball), halol o'quvchi farmchidan yuqori", () => {
@@ -106,11 +138,11 @@ describe("computeReadingScore — C5 dedup", () => {
     expect(components.booksCount).toBe(30);
     expect(components.totalLibrary).toBe(3);
     expect(components.diversity).toBe(60);   // 3 janr
-    expect(components.activity).toBe(75);    // 3 event
+    expect(components.activity).toBe(75);    // 3 distinct asar
     // 30×0.3 + 25×0.2 + 60×0.15 + 100×0.15 + 75×0.2 = 9+5+9+15+15 = 53.0
     expect(score).toBe(53.0);
-    // Halol 3-kitob o'quvchi (53.0) > 1 kitobni 10x farmlagan (46.0)
-    expect(score).toBeGreaterThan(46.0);
+    // Halol 3-kitob o'quvchi (53.0) > 1 kitobni 10x farmlagan (31.0)
+    expect(score).toBeGreaterThan(31.0);
   });
 
   it("dublikat USER_SCAN isbn bir marta kreditlanadi (0.9x)", () => {
@@ -199,7 +231,7 @@ describe("computeReadingScore — C5 dedup", () => {
     expect(score).toBe(56.4);
   });
 
-  it("dedup consistency/activity ga TEGMAYDI: bir kitob 2 haftada 2 marta", () => {
+  it("consistency haftalar bo'yicha qoladi, activity esa distinct asar (FR3): bir kitob 2 haftada 2 marta", () => {
     // 14 kun farq → kafolatlangan 2 xil epoch-hafta bucket.
     const transactions = [
       tx("b1", { returnedAt: daysAgo(2) }),
@@ -209,10 +241,10 @@ describe("computeReadingScore — C5 dedup", () => {
     const { score, components } = computeReadingScore(transactions, [], NOW);
 
     expect(components.booksCount).toBe(10);  // 1 distinct kitob
-    expect(components.consistency).toBe(50); // 2 hafta bucket (xom)
-    expect(components.activity).toBe(50);    // 2 event (xom)
-    // 10×0.3 + 50×0.2 + 20×0.15 + 100×0.15 + 50×0.2 = 3+10+3+15+10 = 41.0
-    expect(score).toBe(41.0);
+    expect(components.consistency).toBe(50); // 2 hafta bucket (hafta o'zi distinct birlik)
+    expect(components.activity).toBe(25);    // FR3: 1 distinct asar (avval 2 xom event → 50)
+    // 10×0.3 + 50×0.2 + 20×0.15 + 100×0.15 + 25×0.2 = 3+10+3+15+5 = 36.0
+    expect(score).toBe(36.0);
   });
 
   it("discipline xom qoladi: dublikat kitobning har kechikkan qaytarilishi sanaladi", () => {

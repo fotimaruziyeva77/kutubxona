@@ -81,6 +81,7 @@ export class BookImportProcessor extends WorkerHost {
   async process(job: Job<BookImportJobData>): Promise<{
     processed: number;
     total: number;
+    skipped: number;
     errors: RowError[];
   }> {
     const { fileBase64, libraryId, uploaderUserId } = job.data;
@@ -93,6 +94,9 @@ export class BookImportProcessor extends WorkerHost {
 
     let processed = 0;
     let totalSeen = 0;
+    // FR2: (libraryId, isbn) unique — fondda allaqachon bor ISBN qatorlari
+    // createMany(skipDuplicates) bilan o'tkazib yuboriladi; soni ko'rinsin.
+    let skipped = 0;
     const errors: RowError[] = [];
 
     try {
@@ -132,14 +136,18 @@ export class BookImportProcessor extends WorkerHost {
         batch.push(parsed);
 
         if (batch.length >= BATCH_SIZE) {
-          processed += await this._flushBatch(batch);
+          const created = await this._flushBatch(batch);
+          processed += created;
+          skipped += batch.length - created;
           batch.length = 0;
           await this._reportProgress(job, dataRowCount, totalSeen, processed, errors);
         }
       }
 
       if (batch.length > 0) {
-        processed += await this._flushBatch(batch);
+        const created = await this._flushBatch(batch);
+        processed += created;
+        skipped += batch.length - created;
         batch.length = 0;
       }
     } catch (err) {
@@ -160,15 +168,16 @@ export class BookImportProcessor extends WorkerHost {
       ...job.data,
       processed,
       total: totalSeen,
+      skipped,
       errors
     } as never);
     await job.updateProgress(100);
 
     this.logger.log(
-      `BOOK_IMPORT done (job ${job.id}, library ${libraryId}): ${processed} created, ${errors.length} errors`
+      `BOOK_IMPORT done (job ${job.id}, library ${libraryId}): ${processed} created, ${skipped} skipped (ISBN fondda bor), ${errors.length} errors`
     );
 
-    return { processed, total: totalSeen, errors };
+    return { processed, total: totalSeen, skipped, errors };
   }
 
   private _parseRow(

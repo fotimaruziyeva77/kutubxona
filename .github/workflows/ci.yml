@@ -7,6 +7,10 @@ on:
       - develop
       - main
 
+# Monorepo: lockfile faqat root'da (npm workspaces). Har job root'dan `npm ci`
+# qiladi — workspace ichida `npm install` lockfile'ni chetlab o'tib, CI'da
+# prod image'dan boshqa versiyalar yechilishiga sabab bo'lardi (T5, iyul auditi).
+
 jobs:
   secrets:
     # Sirlar (API kalit, parol, token) tarixga tushmasin — har PR va push'da
@@ -24,6 +28,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  audit:
+    # Prod bog'liqliklar: high/critical = qizil. Yopib bo'lmaydigan (major
+    # upgrade talab qiladigan) advisory'lar audit-ci.jsonc allowlist'ida sabab
+    # va muddat bilan turadi — ro'yxat bo'sh bo'lgani sari yaxshi.
+    name: Dependencies — npm audit (audit-ci)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npx audit-ci@^7 --config audit-ci.jsonc
+
   backend:
     name: Backend — Lint / TypeCheck / Test
     runs-on: ubuntu-latest
@@ -39,8 +63,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (workspace root)
+        working-directory: ${{ github.workspace }}
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -54,8 +79,9 @@ jobs:
       - name: Unit tests
         run: npm run test:cov
 
-      - name: Security audit
-        run: npm audit --audit-level=high
+      - name: Prod env example ↔ PRODUCTION_REQUIRED_ENV (D1)
+        working-directory: ${{ github.workspace }}
+        run: node scripts/check-prod-env.mjs
 
   frontend:
     name: Frontend — Lint / TypeCheck / Build
@@ -72,8 +98,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (workspace root)
+        working-directory: ${{ github.workspace }}
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -83,9 +110,6 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Security audit
-        run: npm audit --audit-level=high
 
   docker-build:
     name: Docker — Build check
@@ -102,7 +126,9 @@ jobs:
       - name: Build backend image
         uses: docker/build-push-action@v5
         with:
-          context: apps/backend
+          # D6: monorepo — kontekst root, lockfile shu yerda (npm ci --workspace)
+          context: .
+          file: apps/backend/Dockerfile
           push: false
           tags: sifat-backend:${{ github.sha }}
           cache-from: type=gha
@@ -111,7 +137,8 @@ jobs:
       - name: Build frontend image
         uses: docker/build-push-action@v5
         with:
-          context: apps/frontend
+          context: .
+          file: apps/frontend/Dockerfile
           push: false
           tags: sifat-frontend:${{ github.sha }}
           cache-from: type=gha

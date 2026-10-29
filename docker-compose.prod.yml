@@ -414,6 +414,9 @@ services:
       - grafana_data:/var/lib/grafana
       # Haqiqiy yo'l: infra/monitoring/grafana/ (infra/grafana/ mavjud emas)
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      # D5: provisioning/dashboards/dashboards.yml provider'i shu yo'lni o'qiydi —
+      # mount bo'lmasa prod Grafana bo'sh ochiladi (sifat-overview.json yuklanmaydi).
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - sifat-net
     expose:

@@ -22,20 +22,21 @@ Bugungi avtomatik tekshiruv: backend `tsc` ✅ 0 xato · frontend `tsc` ✅ · `
 ## 1-bosqich — Yashil CI, ishonchli yadro (1 hafta)
 
 ### Backend
-- [ ] **FR1** — dedup kaliti `bookId` → `book.isbn` (`modules/reading/reading-score.util.ts:131`, `modules/top/top.service.ts`), testlar
-- [ ] **FR2** — `Book` ga `@@unique([libraryId, isbn])` migratsiya; Excel importda upsert; mavjud dublikatlarni tozalash skripti
-- [ ] **FR3** — `activity` / `consistency` ham distinct-asar bo'yicha
-- [ ] **D4** — `monthlyPartitionCleanup` ga `cache.setNx` leader-lock (`audit.service.ts` naqshi)
-- [ ] **D2** — partitsiya cron `M+1…M+3` oralig'ini yopishini tekshirish
-- [ ] **D1** — `.env.prod.example` ga `PAYME_LOGIN`, `VAULT_ADDR`, `VAULT_TOKEN`; CI'da `PRODUCTION_REQUIRED_ENV` bilan taqqoslash skripti
-- [ ] **T2** — yiqilgan Jest testlari: 2026-10-29 natija — **2203 ✅ / 2 ❌** (2205 test, 102 suite, 7.4 daqiqa); yiqilgan ikkalasi ham `modules/books/__tests__/books-import.processor.spec.ts` da. Alohida yurgizilganda **5/5 o'tadi (16 s)**, to'liq suite'da 80 s → timeout — ya'ni kod regressiyasi emas, **flaky** test (Excel parse parallel yuklamada sekin). Fix: shu spec'ga `jest.setTimeout` / kichikroq workbook, yoki CI'da `--maxWorkers=50%`. Iyuldagi 23 ta yiqilishdan 21 tasi allaqachon yopilgan.
-- [ ] **npm audit** — `npm audit fix` (buzmaydigan), `next` 14.2.x oxirgi patch, `multer` / `nodemailer` / `sharp` ko'tarish; qolgan istisnolar hujjatlashtiriladi
+- [x] **FR1** — dedup kaliti `bookId` → `book.isbn` (fallback bookId): `reading-score.util.ts` (`transactionWorkKey`), `top.service.ts`, `reading.service.ts` va `ri-recalc.processor.ts` select'lariga `isbn`; roaming testlari (reading-score + top spec) — 2026-10-29
+- [x] **FR2** — `@@unique([libraryId, isbn])` + migratsiya `20261029120000_book_library_isbn_unique` (dublikatlarni birlashtiradi: nusxa sonlari + tranzaksiyalar keep-qatorga, keyin unique); dev DB'ga qo'llandi; `books.service.create` P2002 → 409; import'da `skipped` soni (backend + UI + 4 til)
+- [x] **FR3** — `activity` 30 kunda distinct asar (kutubxona + skan bitta Set); `consistency` hafta bo'yicha qoladi (hafta o'zi distinct birlik) — testlar yangilandi
+- [x] **D4** — `monthlyPartitionCleanup`: `cache.setNx("cron:ri-partition-monthly:YYYY-MM")`, 2 soat TTL; test
+- [x] **D2** — cron endi `M+1…M+3` ni `IF NOT EXISTS` bilan yaratadi (avval faqat M+3); test
+- [x] **D1** — `.env.prod.example` 26 kalit to'liq (PAYME_LOGIN, VAULT_*, SMTP_PASS, ESKIZ_*, FCM_*, MINIO_ACCESS/SECRET + 3 bucket); `scripts/check-prod-env.mjs` CI qadami
+- [x] **T2** — flaky spec'ga `jest.setTimeout(60_000)` qo'yildi. 2026-10-29 natija (tuzatishdan oldin) — **2203 ✅ / 2 ❌** (2205 test, 102 suite, 7.4 daqiqa); yiqilgan ikkalasi ham `modules/books/__tests__/books-import.processor.spec.ts` da. Alohida yurgizilganda **5/5 o'tadi (16 s)**, to'liq suite'da 80 s → timeout — ya'ni kod regressiyasi emas, **flaky** test (Excel parse parallel yuklamada sekin). Fix: shu spec'ga `jest.setTimeout` / kichikroq workbook, yoki CI'da `--maxWorkers=50%`. Iyuldagi 23 ta yiqilishdan 21 tasi allaqachon yopilgan.
+- [x] **npm audit** — 83 → 30 zaiflik (prod deps): ishlatilmaydigan `openai` va backend `zod` olib tashlandi; nodemailer 10, puppeteer-core 25 (`setContent waitUntil: "load"`), sharp 0.35; root `overrides` (multer 2.5, body-parser 1.20.9, lodash 4.18, js-yaml 4.3.2, @grpc/grpc-js, browserslist, basic-ftp); root'dagi tasodifiy deps o'chirildi; lockfile noldan qayta yechildi (2053 paket). Qolgan high/critical — faqat Next 14 (+ next'ga pin qilingan postcss, serwist'ning zod'i) → `audit-ci.jsonc` allowlist, sabab + mitigatsiya bilan: `images.unoptimized`, nginx `/_next/image → 404`. **Next 15.5/16 upgrade — alohida PR (qayta ko'rish 2026-12-01).**
 
 ### CI / infra
-- [ ] **T5** — `npm ci` root'dan (workspace ichida `npm install` emas)
+- [x] **T5** — har job root'dan `npm ci`; `audit` job (`audit-ci`), gitleaks job
 - [ ] **T4** — `tests/` (axe audit, k6 smoke) CI'ga ulanadi
 - [ ] **T6** — coverage'ga controller va guard'lar qo'shiladi
-- [ ] **D5** — Grafana: `./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro` mount
+- [x] **D5** — Grafana dashboards mount qo'shildi (`docker-compose.prod.yml`)
+- [x] **D6 (yangi, 2026-10-29)** — Dockerfile'lar root-kontekst + `npm ci --workspace=apps/<app>`; `.dockerignore`; `next.config.js` `outputFileTracingRoot` (standalone monorepo); `ci.yml` va `deploy-prod.yml` `context: .` + `file:` — lokal `docker build` sinovi natijasi quyida
 
 ### Frontend
 - [ ] Qidiruv: landing'dan kelgan `?q=` `search/page.tsx` da `useSearchParams` bilan o'qilsin

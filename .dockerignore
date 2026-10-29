@@ -1,0 +1,25 @@
+# Docker build konteksti — repo ILDIZI (D6, apps/*/Dockerfile). Og'ir va
+# keraksiz narsalar kontekstga kirmasin (tezlik + sirlar).
+.git
+.github
+.claude
+.planning
+backup
+infra
+k6
+tests
+scripts
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.swc
+**/.env
+**/.env.local
+**/.env.prod
+**/*.tsbuildinfo
+*.md
+docker-compose*.yml
+lighthouserc.js
+audit-ci.jsonc

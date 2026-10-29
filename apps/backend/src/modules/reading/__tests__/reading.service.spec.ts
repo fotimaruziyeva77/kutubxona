@@ -28,7 +28,9 @@ const mockCache = {
   remember: jest.fn().mockImplementation((_k: string, _t: number, fn: () => unknown) => fn()),
   get: jest.fn().mockResolvedValue(null),
   set: jest.fn().mockResolvedValue(undefined),
-  del: jest.fn().mockResolvedValue(undefined)
+  del: jest.fn().mockResolvedValue(undefined),
+  // D4: partitsiya cron'i leader-lock — default: lock olindi (bu replika yuradi)
+  setNx: jest.fn().mockResolvedValue(true)
 } as unknown as CacheService;
 
 describe("ReadingService", () => {
@@ -233,9 +235,9 @@ describe("ReadingService", () => {
       // Avval: min(10 × 1.0 × 10, 100) = 100. Endi: DISTINCT bookId = 1 → 10.
       expect(components.booksCount).toBe(10);
       expect(components.totalLibrary).toBe(1);
-      // Dedup FAQAT kitob kreditiga tegadi — faollik xom event asosida
-      // qoladi (10 event → cap 100), intizom ham o'zgarmaydi.
-      expect(components.activity).toBe(100);
+      // FR3: faollik ham distinct asar bo'yicha (10 event, 1 asar → 25);
+      // intizom o'zgarmaydi.
+      expect(components.activity).toBe(25);
       expect(components.discipline).toBe(100);
     });
 
@@ -496,6 +498,19 @@ describe("ReadingService", () => {
   describe("monthlyPartitionCleanup", () => {
     beforeEach(() => {
       (mockPrisma.$executeRawUnsafe as jest.Mock).mockResolvedValue(0);
+      (mockCache.setNx as jest.Mock).mockResolvedValue(true);
+    });
+
+    it("D4: leader-lock olinmasa (boshqa replika yuribdi) hech qanday DDL bajarilmaydi", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-06-01T04:00:00Z"));
+      (mockCache.setNx as jest.Mock).mockResolvedValue(false);
+
+      await service.monthlyPartitionCleanup();
+
+      expect(mockCache.setNx).toHaveBeenCalledWith("cron:ri-partition-monthly:2026-06", "1", 2 * 60 * 60);
+      expect(mockPrisma.$executeRawUnsafe).not.toHaveBeenCalled();
+
+      jest.useRealTimers();
     });
 
     it("DETACHes + DROPs the partition for (current - 13 months)", async () => {
@@ -513,17 +528,21 @@ describe("ReadingService", () => {
       jest.useRealTimers();
     });
 
-    it("CREATEs the (current + 3 months) partition with correct range bounds", async () => {
-      // June 2026 + 3 = September 2026 → 'ReadingIndex_y2026_m09'
-      // Range: ['2026-09-01', '2026-10-01')
+    it("D2: CREATEs current+1 … current+3 partitions (oraliq bo'shliq qolmaydi) with correct range bounds", async () => {
+      // June 2026 → July, August, September 2026. Avval FAQAT +3 yaratilardi
+      // va migratsiya (M+2 gacha) bilan cron (M+4 dan) orasida M+3 tushib
+      // qolardi — 3 oydan keyin readingIndex.create yiqilardi.
       jest.useFakeTimers().setSystemTime(new Date("2026-06-01T04:00:00Z"));
 
       await service.monthlyPartitionCleanup();
 
       const calls = (mockPrisma.$executeRawUnsafe as jest.Mock).mock.calls.map((c) => c[0]);
-      const create = calls.find((sql: string) => /CREATE TABLE IF NOT EXISTS/.test(sql));
-      expect(create).toMatch(/"ReadingIndex_y2026_m09"/);
-      expect(create).toMatch(/FROM \('2026-09-01'\) TO \('2026-10-01'\)/);
+      const creates = calls.filter((sql: string) => /CREATE TABLE IF NOT EXISTS/.test(sql));
+      expect(creates).toHaveLength(3);
+      expect(creates[0]).toMatch(/"ReadingIndex_y2026_m07"/);
+      expect(creates[1]).toMatch(/"ReadingIndex_y2026_m08"/);
+      expect(creates[2]).toMatch(/"ReadingIndex_y2026_m09"/);
+      expect(creates[2]).toMatch(/FROM \('2026-09-01'\) TO \('2026-10-01'\)/);
 
       jest.useRealTimers();
     });

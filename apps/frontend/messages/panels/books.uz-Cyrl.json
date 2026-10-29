@@ -25,6 +25,7 @@
       "running": "Импорт бажарилмоқда…",
       "progressRow": "{processed}/{total} қатор — {progress}%",
       "added": "{count} та китоб қўшилди",
+      "skipped": "{count} та қатор ўтказиб юборилди — бу ISBN фондда аллақачон бор",
       "errorsCount": "{count} та хатолик:",
       "errorRow": "{row}-қатор: {reason}",
       "close": "Ёпиш"

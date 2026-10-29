@@ -17,6 +17,11 @@ import { ElasticsearchService } from "@nestjs/elasticsearch";
 import type { Job } from "bullmq";
 import type { BookImportJobData } from "../books.service";
 
+// Real ExcelJS workbook generatsiyasi + parse: yolg'iz 16 s, to'liq suite
+// parallel yurganda 80 s gacha cho'ziladi va 5 s default timeout'ga uriladi
+// (2026-10-29: 2 test shu sababdan yiqildi, kod regressiyasi emas).
+jest.setTimeout(60_000);
+
 /** Build a real .xlsx buffer via ExcelJS (mirrors prod parser API). */
 async function makeExcelBuffer(
   rows: Array<Record<string, string | number>>

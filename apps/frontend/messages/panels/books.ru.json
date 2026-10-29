@@ -25,6 +25,7 @@
       "running": "Идёт импорт…",
       "progressRow": "{processed}/{total} строк — {progress}%",
       "added": "Добавлено книг: {count}",
+      "skipped": "{count} строк пропущено — этот ISBN уже есть в фонде",
       "errorsCount": "Ошибок: {count}",
       "errorRow": "Строка {row}: {reason}",
       "close": "Закрыть"

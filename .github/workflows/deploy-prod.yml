@@ -73,7 +73,8 @@ jobs:
       - name: Backend image build & push
         uses: docker/build-push-action@v5
         with:
-          context: apps/backend
+          context: .
+          file: apps/backend/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/backend:${{ steps.version.outputs.version }}
@@ -86,7 +87,8 @@ jobs:
       - name: Frontend image build & push
         uses: docker/build-push-action@v5
         with:
-          context: apps/frontend
+          context: .
+          file: apps/frontend/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/frontend:${{ steps.version.outputs.version }}

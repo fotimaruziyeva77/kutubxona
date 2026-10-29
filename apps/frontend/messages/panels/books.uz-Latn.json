@@ -25,6 +25,7 @@
       "running": "Import bajarilmoqda…",
       "progressRow": "{processed}/{total} qator — {progress}%",
       "added": "{count} ta kitob qo'shildi",
+      "skipped": "{count} ta qator o'tkazib yuborildi — bu ISBN fondda allaqachon bor",
       "errorsCount": "{count} ta xatolik:",
       "errorRow": "{row}-qator: {reason}",
       "close": "Yopish"

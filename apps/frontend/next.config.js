@@ -1,3 +1,4 @@
+const path = require("path");
 const withSerwist = require("@serwist/next").default({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
@@ -112,11 +113,20 @@ const nextConfig = {
   images: {
     domains: ["sifat.uz", "api.sifat.uz"],
     formats: ["image/avif", "image/webp"],
+    // Next 14.2 Image Optimization API (/_next/image) uchun unauthenticated RCE/DoS
+    // advisory'lari bor (GHSA-2xp9-vwfh-vxw4, GHSA-2464-fhr4-w9xw, GHSA-9g9p-9gw9-jx7f),
+    // tuzatish faqat Next 15.5.28+/16 da. Loyihada next/image ishlatilmaydi —
+    // optimizator o'chiriladi, nginx.prod.conf esa /_next/image ni 404 qaytaradi.
+    // Next upgrade — PILOT-REJA 1-bosqich, alohida PR. audit-ci.jsonc ga qarang.
+    unoptimized: true,
   },
 
   // ── Bundle Optimization ────────────────────────────────────────────────
   experimental: {
     optimizePackageImports: ["recharts", "@tanstack/react-query"],
+    // Monorepo: standalone chiqish hoisted node_modules ni repo ildizidan izlasin
+    // (apps/frontend/Dockerfile, D6). Aks holda standalone/ da modullar yetishmaydi.
+    outputFileTracingRoot: path.join(__dirname, "../../"),
   },
 
 
