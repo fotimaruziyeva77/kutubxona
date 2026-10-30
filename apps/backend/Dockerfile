@@ -74,15 +74,15 @@ RUN npm ci --workspace=apps/backend --omit=dev
 # foydalanuvchisi ham ishlata oladi).
 RUN npm i -g prisma@$(node -p "require('./apps/backend/package.json').devDependencies.prisma.replace('^','')")
 
-COPY --from=builder /app/apps/backend/dist     ./apps/backend/dist
-COPY --from=builder /app/node_modules/.prisma  ./node_modules/.prisma
+# Egalik COPY paytida beriladi: `RUN chown -R /app` butun node_modules'ni
+# (773 MB) yangi qatlamga qayta yozib image'ni ~600 MB kattalashtirardi.
+# node_modules root'niki bo'lib qoladi — o'qish uchun yetarli, yozish kerak emas.
+COPY --from=builder --chown=sifat:sifat /app/apps/backend/dist     ./apps/backend/dist
+COPY --from=builder --chown=sifat:sifat /app/node_modules/.prisma  ./node_modules/.prisma
 # To'liq prisma/ katalogi (schema + migrations/) — `prisma migrate deploy`
 # migratsiya fayllarisiz "No pending migrations" deb yolg'on muvaffaqiyat
 # qaytaradi. Faqat schema.prisma ko'chirish yetarli EMAS.
-COPY --from=builder /app/apps/backend/prisma   ./apps/backend/prisma
-
-# Fayllar egasini o'zgartirish
-RUN chown -R sifat:sifat /app
+COPY --from=builder --chown=sifat:sifat /app/apps/backend/prisma   ./apps/backend/prisma
 
 USER sifat
 WORKDIR /app/apps/backend

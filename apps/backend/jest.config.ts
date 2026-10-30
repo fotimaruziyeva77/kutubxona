@@ -5,6 +5,11 @@ const config: Config = {
   testEnvironment: "node",
   rootDir: "src",
   testRegex: ".*\\.spec\\.ts$",
+  // Default 5 s: to'liq suite parallel yurganda PDF/Excel generatsiya qiladigan
+  // spec'lar (books-import, invoice) yolg'iz 16 s, yuklama ostida 200 s+ cho'zilib
+  // timeout'ga tushardi (2026-10-29/30 — kod regressiyasi emas, flaky). 30 s —
+  // haqiqiy osilib qolishni hali ham ushlaydi.
+  testTimeout: 30_000,
   transform: {
     "^.+\\.ts$": ["ts-jest", {
       // Pre-existing @nestjs/elasticsearch type incompatibility: the installed
