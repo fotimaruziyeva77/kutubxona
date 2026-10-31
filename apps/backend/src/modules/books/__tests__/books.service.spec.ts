@@ -77,6 +77,18 @@ const mockStoreService = {
 describe("BooksService", () => {
   let service: BooksService;
 
+  // `.env` unit-testlarga ham yuklanadi (throttle.const.ts dotenv chaqiradi):
+  // lokal `.env` da ELASTICSEARCH_ENABLED=false bo'lsa ES testlari yiqilardi.
+  // Bu spec ES YOQILGAN holatni sinaydi — bayroqni aniq o'rnatamiz.
+  const prevEsEnabled = process.env.ELASTICSEARCH_ENABLED;
+  beforeAll(() => {
+    process.env.ELASTICSEARCH_ENABLED = "true";
+  });
+  afterAll(() => {
+    if (prevEsEnabled === undefined) delete process.env.ELASTICSEARCH_ENABLED;
+    else process.env.ELASTICSEARCH_ENABLED = prevEsEnabled;
+  });
+
   beforeEach(() => {
     service = new BooksService(
       mockPrisma as unknown as PrismaService,
@@ -462,6 +474,38 @@ describe("BooksService", () => {
 
       const result = await service.search({ q: "Alpomish" });
       expect((result.data[0] as Record<string, unknown>)["title"]).toBe("Alpomish");
+    });
+
+    // ES yiqilganda har qidiruv requestTimeout+retry (~3.5 s) kutmasligi uchun
+    // birinchi xatodan keyin 60 s davomida ES'ga umuman murojaat qilinmaydi.
+    it("ES yiqilgandan keyin cooldown: keyingi qidiruv ES'ga urinmaydi, cooldown tugagach yana urinadi", async () => {
+      mockEs.search.mockClear();
+      mockEs.search.mockRejectedValue(new Error("ES unavailable"));
+      mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+
+      await service.search({ q: "Alpomish" });
+      expect(mockEs.search).toHaveBeenCalledTimes(1);
+
+      // Cooldown ichida — ES tiklangan bo'lsa ham chaqirilmaydi, to'g'ridan-to'g'ri Prisma
+      mockEs.search.mockResolvedValue({ hits: { total: { value: 0 }, hits: [] } });
+      const second = await service.search({ q: "Alpomish" });
+      expect(mockEs.search).toHaveBeenCalledTimes(1);
+      expect((second.data[0] as Record<string, unknown>)["title"]).toBe("Alpomish");
+
+      // Cooldown tugadi — ES yana ishlatiladi
+      (service as unknown as { esCooldownUntil: number }).esCooldownUntil = 0;
+      await service.search({ q: "Alpomish" });
+      expect(mockEs.search).toHaveBeenCalledTimes(2);
+    });
+
+    it("ES o'chirilgan (ELASTICSEARCH_ENABLED=false) holatda cooldown boshlanmaydi", async () => {
+      (service as unknown as { esEnabled: boolean }).esEnabled = false;
+      mockEs.search.mockClear();
+      mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+
+      await service.search({ q: "Alpomish" });
+      expect(mockEs.search).not.toHaveBeenCalled();
+      expect((service as unknown as { esCooldownUntil: number }).esCooldownUntil).toBe(0);
     });
 
     // ── AUDIT-REPORT M16 — limit clamp (ES + fallback) va to'g'ri total ─────

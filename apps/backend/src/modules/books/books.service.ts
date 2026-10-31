@@ -135,6 +135,14 @@ export class BooksService {
   // chaqiruvda ~8s osilishning oldini oladi. Default yoqilgan (production: ES bor).
   private readonly esEnabled = process.env.ELASTICSEARCH_ENABLED !== "false";
 
+  // ES ulanish xatosidan keyin shuncha vaqt ES'ga qayta urinilmaydi (cooldown).
+  // Aks holda yiqilgan ES'da HAR qidiruv requestTimeout + retry (~3.5 s) kutib,
+  // keyin Prisma'ga o'tardi — foydalanuvchi uchun qidiruv "sekin" ko'rinardi.
+  // Cooldown tugagach bitta urinish yana qilinadi (ES qayta tiklangan bo'lsa
+  // ishlashda davom etadi).
+  private static readonly ES_COOLDOWN_MS = 60_000;
+  private esCooldownUntil = 0;
+
   // ── Barcha kitoblar ───────────────────────────────────────────────────────
   // AUDIT-REPORT M16 — majburiy pagination: default 50, maksimum 200. Avval
   // butun books jadvali bitta so'rovda qaytarilardi. Javob shakli (massiv)
@@ -485,6 +493,7 @@ export class BooksService {
       // ES o'chirilgan bo'lsa darhol fallback'ga o'tamiz (catch ushlaydi) —
       // o'lik ES portiga ulanish ~8s osilishining oldini oladi.
       if (!this.esEnabled) throw new Error("Elasticsearch disabled");
+      if (Date.now() < this.esCooldownUntil) throw new Error("Elasticsearch cooldown");
       const must: object[] = [];
       const filter: object[] = [];
 
@@ -522,7 +531,11 @@ export class BooksService {
         data: hits.map((h) => ({ id: h._id, ...h._source }))
       };
     } catch {
-      // Elasticsearch mavjud bo'lmasa Prisma fallback
+      // Elasticsearch mavjud bo'lmasa Prisma fallback. ES'ning O'ZI yiqilgan
+      // bo'lsa (o'chirilgan yoki cooldown emas) — cooldown boshlanadi.
+      if (this.esEnabled && Date.now() >= this.esCooldownUntil) {
+        this.esCooldownUntil = Date.now() + BooksService.ES_COOLDOWN_MS;
+      }
       libraryResult = await this.searchFallback(dto);
     }
 
