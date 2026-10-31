@@ -108,6 +108,11 @@ jobs:
       - name: TypeScript check
         run: npm run typecheck
 
+      - name: Unit tests (Jest + jsdom)
+        # T3: lib/ va components/ dagi spec'lar (offline sync, xarita ranglari,
+        # geojson, API client 401 mantig'i). E2E — alohida `e2e` job.
+        run: npm test -- --ci
+
       - name: Accessibility — axe JSDOM fixture sanity (tests/accessibility, ~10 s)
         # Statik fixture'lar: axe ishlayotganini tekshiradi. HAQIQIY sahifalar
         # auditi — e2e job (apps/frontend/e2e/a11y.spec.ts, brauzerda).
