@@ -859,6 +859,29 @@ describe("TransactionsService", () => {
       expect(result.correct).toBe(3);
     });
 
+    // Dublikat variant: to'g'ri javob distraktor bilan ustma-ust tushib
+    // qolgan eski testlarda ro'yxatda ikkita bir xil matn bo'ladi. Ikkalasini
+    // tanlagan ham to'g'ri hisoblanishi kerak (matn bo'yicha solishtirish).
+    it("bir xil matnli ikki variantdan istalganini tanlash to'g'ri hisoblanadi", async () => {
+      const dupQuestions = [
+        { q: "Muallif?", options: ["Abdulla Qahhor", "Oybek", "Abdulla Qahhor", "Cho'lpon"], answerIdx: 0 },
+        { q: "Nomi?", options: ["Sarob", "O'tkan kunlar", "Ufq", "Oʻtkan kunlar"], answerIdx: 1 },
+        { q: "Qachon?", options: ["A", "B", "C", "D"], answerIdx: 1 },
+      ];
+      mockPrisma.comprehensionTest.findUnique.mockResolvedValue({ ...pendingTest, questions: dupQuestions });
+      mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
+        fn(mockPrisma as unknown as typeof mockPrisma)
+      );
+      mockPrisma.comprehensionTest.update.mockResolvedValue({});
+      mockPrisma.isbnScan.update.mockResolvedValue({});
+
+      // 2-indeks ("Abdulla Qahhor" dublikati) va 3-indeks (apostrof varianti)
+      const result = await service.submitComprehensionTest("u1", "scan-1", [2, 3, 1]);
+
+      expect(result.correct).toBe(3);
+      expect(result.passed).toBe(true);
+    });
+
     it("yetarli javob yo'q — test o'tilmadi", async () => {
       mockPrisma.comprehensionTest.findUnique.mockResolvedValue(pendingTest);
       mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
@@ -926,6 +949,26 @@ describe("TransactionsService", () => {
         expect(qs[1].options[qs[1].answerIdx]).toBe("Alpomish");
         // Question 3 — correct = recency answer
         expect(qs[2].options[qs[2].answerIdx]).toBe("Oxirgi 30 kun ichida");
+      }
+    });
+
+    it("distraktorlar to'g'ri javob bilan ustma-ust tushmaydi (muallif/nom havzada bo'lsa)", () => {
+      const svc = service as unknown as {
+        generateQuestions(t: string, a: string): Array<{ q: string; options: string[]; answerIdx: number }>;
+      };
+      // Ikkalasi ham distraktor havzasida bor — avval variantlar ichida
+      // ikkita "Abdulla Qahhor" / ikkita "O'tkan kunlar" chiqardi.
+      for (let i = 0; i < 50; i++) {
+        const qs = svc.generateQuestions("Oʻtkan kunlar", "Abdulla Qahhor");
+        for (const q of qs) {
+          expect(q.options).toHaveLength(4);
+          const normalized = q.options.map((o) =>
+            o.toLowerCase().replace(/[‘’ʻʼ]/g, "'").trim()
+          );
+          expect(new Set(normalized).size).toBe(4);
+        }
+        expect(qs[0].options[qs[0].answerIdx]).toBe("Abdulla Qahhor");
+        expect(qs[1].options[qs[1].answerIdx]).toBe("Oʻtkan kunlar");
       }
     });
 

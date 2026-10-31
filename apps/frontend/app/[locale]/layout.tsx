@@ -162,7 +162,7 @@ export default async function LocaleLayout({
         />
       </head>
       <body>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={messages} timeZone="Asia/Tashkent">
           <SkipNavLink />
           <LocaleThemeControl />
           <LiteModeProvider>

@@ -47,6 +47,7 @@ import { BookRow } from "@/components/books/BookCard";
 import { fetchMyStore } from "@/lib/api/store";
 import { fetchMyXp } from "@/lib/api/xp";
 import { apiOrigin } from "@/lib/api/base";
+import { fmtDayMonthTime } from "@/lib/format";
 
 // ── API ─────────────────────────────────────────────────────────────────────
 
@@ -190,6 +191,18 @@ export default function ProfilePage() {
   const isDokon = role === "DOKON_OPERATOR";
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  useEffect(() => {
+    const openFromHash = () => {
+      if (typeof window === "undefined" || window.location.hash !== "#qr") return;
+      setShowQr(true);
+      window.setTimeout(() => {
+        document.getElementById("qr")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [profile?.sifatId]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -620,19 +633,44 @@ export default function ProfilePage() {
                     library: tx.book.library,
                   }}
                   meta={
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-                      {tx.status === "RESERVED" ? t("bronReady") : t("bronPending")}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                        {tx.status === "RESERVED" ? t("bronReady") : t("bronPending")}
+                      </span>
+                      {/* Keyingi qadam: PENDING — qachongacha tasdiq kutiladi
+                          (server sanasi), RESERVED — kutubxonaga borish. */}
+                      {tx.status === "PENDING" && tx.reservationExpiresAt && (
+                        <span className="text-[11px] text-slate-500">
+                          {t("bronUntil", { date: fmtDayMonthTime(tx.reservationExpiresAt) })}
+                        </span>
+                      )}
+                      {tx.status === "RESERVED" && (
+                        <span className="max-w-[9rem] text-right text-[11px] text-slate-500">
+                          {t("bronConfirmedHint")}
+                        </span>
+                      )}
+                    </div>
                   }
                   action={
-                    <button
-                      type="button"
-                      onClick={() => cancelMut.mutate(tx.id)}
-                      disabled={cancelMut.isPending}
-                      className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
-                    >
-                      {t("cancel")}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {tx.status === "RESERVED" && (
+                        <a
+                          href="#qr"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline"
+                        >
+                          <Icon.qr aria-hidden="true" size={ICON_SIZE.xs} />
+                          {t("showQr")}
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => cancelMut.mutate(tx.id)}
+                        disabled={cancelMut.isPending}
+                        className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                      >
+                        {t("cancel")}
+                      </button>
+                    </div>
                   }
                 />
               ))}
@@ -663,7 +701,7 @@ export default function ProfilePage() {
 
         {/* Kutubxona pasporti — yig'ilgan, kerak bo'lganda ochiladi */}
         {profile.sifatId && (
-          <section className="card-surface overflow-hidden rounded-2xl">
+          <section id="qr" className="card-surface overflow-hidden rounded-2xl scroll-mt-20">
             <button
               type="button"
               onClick={() => setShowQr((v) => !v)}

@@ -39,11 +39,11 @@ Bugungi avtomatik tekshiruv: backend `tsc` ✅ 0 xato · frontend `tsc` ✅ · `
 - [x] **D6 (yangi, 2026-10-29)** — Dockerfile'lar root-kontekst + `npm ci --workspace=apps/<app>`; `.dockerignore`; `next.config.js` `outputFileTracingRoot` (standalone monorepo); `ci.yml` va `deploy-prod.yml` `context: .` + `file:` — lokal `docker build` sinovi natijasi quyida
 
 ### Frontend
-- [ ] Qidiruv: landing'dan kelgan `?q=` `search/page.tsx` da `useSearchParams` bilan o'qilsin
-- [ ] Bron qilingandan keyingi «keyingi qadam» ekrani (muddat, kutubxona, QR'ga o'tish)
-- [ ] Kutubxona profili: manzil, telefon, ish vaqti — schema + admin forma + ommaviy sahifa
-- [ ] Comprehension test: takrorlanuvchi javob variantlari
-- [ ] Landing bo'sh holatlari (ma'lumot yo'q bloklar yashirilsin yoki «—»)
+- [x] Qidiruv: `?q=` (landing, kitobxon bosh sahifasi, tavsiyalar) va `?libraryId=` (kutubxona sahifasining «To'liq katalog» havolasi) `useSearchParams` bilan o'qiladi; Suspense chegarasi (`loading.tsx` skeleti); kutubxona chipi + «Barcha kutubxonalar» tozalash — 2026-10-31, brauzerda tekshirildi
+- [x] Bron qilingandan keyin «keyingi qadam» oynasi (`ReservationNextSteps`): server `reservationExpiresAt` sanasi (Toshkent vaqti, raqamli — `fmtDayMonthTime`), kutubxona nomi/manzili/ish vaqti, «Bronlarim» va «QR kodim» (`/profile#qr` — pasport bo'limi avtomatik ochiladi). Profil «Bronlarim»da PENDING uchun «… gacha tasdiq kutiladi», RESERVED uchun «Kutubxonaga borib QR ko'rsating» + QR havola. Kutubxona sahifasi va kashfiyot blokida ishlaydi — 2026-10-31
+- [x] Kutubxona profili: schema'da maydonlar allaqachon bor edi; **muassasa panelida tahrirlash formasi** (MUASSASA_ADMIN / SUPER_ADMIN; `PUT /libraries/:id`); ommaviy sahifada manzil/ish vaqti/telefon HAR DOIM ko'rsatiladi («—» bo'lsa ham), `tel:` havola, OpenStreetMap «Xaritada ochish»; sahifa 4 tilga o'tdi (`LibraryPage`). **Xavfsizlik (yangi):** `PUT /libraries/:id` egalikni tekshirmasdi — istalgan muassasa admini boshqa kutubxonani o'zgartira olardi (IDOR); endi `resolveCallerLibraryId` orqali 403 (4 test; jonli: boshqa kutubxona → 403, o'zi → 200) — 2026-10-31
+- [x] Comprehension test: distraktor havzasi 3 → 10 (muallif/asar), to'g'ri javobga teng (apostrof variantlari normallashtirilib) bo'lganlar chiqarib tashlanadi; javob indeks emas, MATN bo'yicha solishtiriladi (eski dublikatli testlar ham adolatli) — 2 test, 2026-10-31
+- [x] Landing bo'sh holatlari — tekshirildi: raqam yo'q bo'lsa «—», jonli statistika/reyting/donat bloklari shtrixli «hali yo'q» holatida, soxta raqam yo'q. Qo'shimcha: ishonch qatoridagi 2 ta qattiq o'zbekcha matn 4 tilga o'tdi (`hero.trustData/trustOffline`) — 2026-10-31
 - [ ] Playwright o'rnatish + 1 ta smoke E2E (login → qidiruv → bron), CI'da
 
 **Qabul:** CI'ning 4 bosqichi yashil; `npm audit --audit-level=high` yashil yoki istisnolar yozilgan; FR1/FR2 testlari bor.

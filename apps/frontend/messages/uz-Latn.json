@@ -399,7 +399,9 @@
       "statLibraries": "Kutubxona",
       "statReaders": "Kitobxon",
       "statBooks": "Kitob fondi",
-      "statRI": "Milliy RI ball"
+      "statRI": "Milliy RI ball",
+      "trustData": "Ma'lumotlar O'zbekistonda saqlanadi",
+      "trustOffline": "Offline rejim — 12 soat"
     },
     "challenge": {
       "title": "O'qish sayohatingiz shu yerdan boshlanadi",

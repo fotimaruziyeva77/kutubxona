@@ -215,8 +215,28 @@ export class LibrariesService {
   }
 
   // ── Kutubxona tahrirlash ──────────────────────────────────────────────────
-  async update(id: string, dto: UpdateLibraryDto) {
+  /**
+   * Kutubxona ma'lumotlarini yangilash (nom, manzil, telefon, ish vaqti,
+   * koordinata). `actor` berilsa egalik tekshiriladi: SUPER_ADMIN istalgan
+   * kutubxonani, MUASSASA_ADMIN faqat o'z muassasasiga biriktirilgan
+   * kutubxonani (resolveCallerLibraryId — Institution.libraryId forward-link)
+   * yangilay oladi. Avval bu tekshiruv yo'q edi: istalgan muassasa admini
+   * boshqa kutubxonaning nomi/telefonini o'zgartira olardi (IDOR).
+   */
+  async update(
+    id: string,
+    dto: UpdateLibraryDto,
+    actor?: { sub: string; role: string }
+  ) {
     await this.findOne(id);
+    if (actor && actor.role !== UserRole.SUPER_ADMIN) {
+      const ownLibraryId = await resolveCallerLibraryId(this.prisma, actor.sub);
+      if (ownLibraryId !== id) {
+        throw new ForbiddenException(
+          "Faqat o'z muassasangiz kutubxonasini tahrirlashingiz mumkin"
+        );
+      }
+    }
     // Plan 04-04 audit-fix FIX C — same defence in depth on update.
     let nameToWrite: string | undefined = undefined;
     if (dto.name !== undefined) {

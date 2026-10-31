@@ -399,7 +399,9 @@
       "statLibraries": "Kitapxana",
       "statReaders": "Kitap oqıwshı",
       "statBooks": "Kitap fondı",
-      "statRI": "Milliy RI balı"
+      "statRI": "Milliy RI balı",
+      "trustData": "Maǵlıwmatlar Ózbekstanda saqlanadı",
+      "trustOffline": "Oflayn rejim — 12 saat"
     },
     "challenge": {
       "title": "Oqıw sayaxatıńız usı jerden baslanadı",

@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { searchBooks, getNearbyLibraries, type Book, type NearbyLibrary } from "@/lib/api/libraries";
+import {
+  searchBooks,
+  getNearbyLibraries,
+  getLibrary,
+  type Book,
+  type NearbyLibrary,
+} from "@/lib/api/libraries";
+import SearchLoading from "./loading";
 import { searchStoreProducts, type StoreProductSearchResult } from "@/lib/api/store";
 import { ReaderShell } from "@/components/reader/ReaderShell";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
@@ -62,10 +70,31 @@ function formatPrice(price: number, unit: string): string {
 // Main Page
 // ---------------------------------------------------------------------------
 
+/**
+ * useSearchParams() Next 14 da statik sahifada Suspense chegarasini talab
+ * qiladi — aks holda build "Missing Suspense boundary with useSearchParams"
+ * bilan yiqiladi. Fallback — mavjud skelet (loading.tsx).
+ */
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchLoading />}>
+      <SearchPageInner />
+    </Suspense>
+  );
+}
+
+function SearchPageInner() {
   const locale = useLocale();
   const t = useTranslations("ReaderSearch");
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  // Landing, kitobxon bosh sahifasi va tavsiyalar `?q=` bilan, kutubxona
+  // sahifasining "To'liq katalog" havolasi `?libraryId=` bilan yuboradi.
+  // Avval ikkalasi ham o'qilmasdi — foydalanuvchi bo'sh qidiruvga tushardi.
+  const qParam = searchParams.get("q") ?? "";
+  const libraryIdParam = searchParams.get("libraryId") ?? "";
+  const [query, setQuery] = useState(qParam);
   const [genre, setGenre] = useState("");
   const [lang, setLang] = useState("");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
@@ -82,6 +111,26 @@ export default function SearchPage() {
   const [pricePreset, setPricePreset] = useState(0);
 
 
+  // URL o'zgarsa (yangi `?q=` bilan qayta kelish) maydon va sahifalash
+  // yangilanadi; foydalanuvchi yozganda esa URL tegilmaydi.
+  useEffect(() => {
+    setQuery(qParam);
+    setPage(1);
+    setStorePage(1);
+  }, [qParam]);
+
+  // Kutubxona bo'yicha cheklov chipi uchun nom.
+  const { data: scopedLibrary } = useQuery({
+    queryKey: ["library", libraryIdParam],
+    queryFn: () => getLibrary(libraryIdParam),
+    enabled: Boolean(libraryIdParam),
+    staleTime: 300_000,
+  });
+  const clearLibraryFilter = () => {
+    const q = query.trim();
+    router.replace(q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname);
+  };
+
   const debouncedQuery = useDebounce(query, 400);
   const debouncedMin = useDebounce(minPrice, 300);
   const debouncedMax = useDebounce(maxPrice, 300);
@@ -92,12 +141,13 @@ export default function SearchPage() {
   // while deleting/retyping the box) served a STALE cached result instead of
   // refetching — old book names appeared "stuck" even after changing the query.
   const { data: searchResult, isLoading: searchLoading } = useQuery({
-    queryKey: ["books-search", debouncedQuery, genre, lang, onlyAvailable, page],
+    queryKey: ["books-search", debouncedQuery, genre, lang, onlyAvailable, page, libraryIdParam],
     queryFn: () =>
       searchBooks({
         q: debouncedQuery || undefined,
         genre: genre || undefined,
         lang: lang || undefined,
+        libraryId: libraryIdParam || undefined,
         available: onlyAvailable || undefined,
         page,
         limit: 20,
@@ -236,6 +286,24 @@ export default function SearchPage() {
               className="w-full pl-10 pr-4 py-3 border border-line-strong rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
+
+          {/* Kutubxona bo'yicha cheklov — kutubxona sahifasidan kelganda */}
+          {libraryIdParam && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
+                <Icon.library aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("libraryFilter", { name: scopedLibrary?.name ?? "…" })}
+              </span>
+              <button
+                type="button"
+                onClick={clearLibraryFilter}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-700"
+              >
+                <Icon.close aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("clearLibraryFilter")}
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-3 items-center">
             {/* Genre chips */}

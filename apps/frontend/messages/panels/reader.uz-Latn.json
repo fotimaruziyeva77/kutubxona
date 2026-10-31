@@ -23,6 +23,9 @@
     "myBrons": "Bronlarim",
     "bronReady": "Tayyor",
     "bronPending": "Kutilmoqda",
+    "bronUntil": "{date} gacha tasdiq kutiladi",
+    "bronConfirmedHint": "Kutubxonaga borib QR ko'rsating",
+    "showQr": "QR kodim",
     "cancel": "Bekor qilish",
     "bronCancelled": "Bron bekor qilindi",
     "passport": "Kutubxona pasporti",
@@ -108,7 +111,9 @@
     "prev": "← Oldingi",
     "next": "Keyingi →",
     "notFoundTitle": "Kitob topilmadi",
-    "notFoundHint": "Yaqin kutubxonalardan qidiring yoki do'konlardan sotib oling"
+    "notFoundHint": "Yaqin kutubxonalardan qidiring yoki do'konlardan sotib oling",
+    "libraryFilter": "Faqat: {name}",
+    "clearLibraryFilter": "Barcha kutubxonalar"
   },
   "TopPage": {
     "title": "Reyting",
@@ -331,6 +336,46 @@
         "m11": "Dek"
       }
     }
+  },
+  "ReservationSteps": {
+    "title": "Bron yuborildi",
+    "lead": "«{title}» siz uchun ajratildi. Keyingi qadamlar:",
+    "step1Title": "Kutubxonachi tasdiqlaydi",
+    "step1Desc": "Tasdiq SMS orqali keladi. Bron {date} gacha kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
+    "step1DescNoDate": "Tasdiq SMS orqali keladi. Bron 24 soat kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
+    "step2Title": "Kutubxonaga boring",
+    "step2Unknown": "Kitob turgan kutubxona",
+    "step3Title": "QR kodingizni ko'rsating",
+    "step3Desc": "Kutubxonachi QR kodni skanerlab kitobni sizga biriktiradi. O'qish muddati — 14 kun.",
+    "myBrons": "Bronlarim",
+    "showQr": "QR kodim",
+    "close": "Yopish"
+  },
+  "LibraryPage": {
+    "loading": "Yuklanmoqda…",
+    "notFound": "Kutubxona topilmadi",
+    "code": "Kod: {code}",
+    "home": "Bosh sahifaga qaytish",
+    "types": {
+      "GOV": "Davlat kutubxonasi",
+      "SCH": "Maktab kutubxonasi",
+      "UNI": "OTM kutubxonasi",
+      "ORG": "Idora kutubxonasi",
+      "MAH": "Mahalla kutubxonasi"
+    },
+    "address": "Manzil",
+    "workHours": "Ish vaqti",
+    "phone": "Telefon",
+    "directions": "Xaritada ochish",
+    "fund": "Jami fond",
+    "fundUnit": "kitob",
+    "available": "Mavjud",
+    "availableUnit": "nusxa",
+    "codeLabel": "Kodi",
+    "frozen": "Kutubxona vaqtincha yopiq",
+    "booksHeading": "Kitob fondidan ({count} ta ko'rsatilmoqda)",
+    "fullCatalog": "To'liq katalog →",
+    "emptyFund": "Fond ma'lumotlari mavjud emas"
   },
   "BookCard": {
     "band": "Band",

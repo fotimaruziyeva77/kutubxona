@@ -23,6 +23,9 @@
     "myBrons": "Bronlarım",
     "bronReady": "Tayar",
     "bronPending": "Kútilmekte",
+    "bronUntil": "{date} ge shekem tastıyıqlaw kútiledi",
+    "bronConfirmedHint": "Kitapxanaǵa barıp QR kórsetiń",
+    "showQr": "QR kodım",
     "cancel": "Biykar etiw",
     "bronCancelled": "Bron biykar etildi",
     "passport": "Kitapxana pasportı",
@@ -108,7 +111,9 @@
     "prev": "← Aldınǵı",
     "next": "Keyingi →",
     "notFoundTitle": "Kitap tabılmadı",
-    "notFoundHint": "Jaqın kitapxanalardan izleń yamasa dúkanlardan satıp alıń"
+    "notFoundHint": "Jaqın kitapxanalardan izleń yamasa dúkanlardan satıp alıń",
+    "libraryFilter": "Tek: {name}",
+    "clearLibraryFilter": "Barlıq kitapxanalar"
   },
   "TopPage": {
     "title": "Reyting",
@@ -331,6 +336,46 @@
         "m11": "Dek"
       }
     }
+  },
+  "ReservationSteps": {
+    "title": "Bron jiberildi",
+    "lead": "«{title}» siz ushın ajıratıldı. Keyingi qádemler:",
+    "step1Title": "Kitapxanashı tastıyıqlaydı",
+    "step1Desc": "Tastıyıqlaw SMS arqalı keledi. Bron {date} ge shekem kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
+    "step1DescNoDate": "Tastıyıqlaw SMS arqalı keledi. Bron 24 saat kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
+    "step2Title": "Kitapxanaǵa barıń",
+    "step2Unknown": "Kitap turǵan kitapxana",
+    "step3Title": "QR kodıńızdı kórsetiń",
+    "step3Desc": "Kitapxanashı QR kodtı skanerlep kitaptı sizge biriktiredi. Oqıw múddeti — 14 kún.",
+    "myBrons": "Bronlarım",
+    "showQr": "QR kodım",
+    "close": "Jabıw"
+  },
+  "LibraryPage": {
+    "loading": "Júklenbekte…",
+    "notFound": "Kitapxana tabılmadı",
+    "code": "Kod: {code}",
+    "home": "Bas betke qaytıw",
+    "types": {
+      "GOV": "Mámleketlik kitapxana",
+      "SCH": "Mektep kitapxanası",
+      "UNI": "JOO kitapxanası",
+      "ORG": "Mákeme kitapxanası",
+      "MAH": "Máhelle kitapxanası"
+    },
+    "address": "Mánzil",
+    "workHours": "Is waqtı",
+    "phone": "Telefon",
+    "directions": "Kartada ashıw",
+    "fund": "Jámi fond",
+    "fundUnit": "kitap",
+    "available": "Bar",
+    "availableUnit": "nusqa",
+    "codeLabel": "Kodı",
+    "frozen": "Kitapxana waqtınsha jabıq",
+    "booksHeading": "Kitap fondınan ({count} kórsetilip atır)",
+    "fullCatalog": "Tolıq katalog →",
+    "emptyFund": "Fond maǵlıwmatları joq"
   },
   "BookCard": {
     "band": "Bánt",

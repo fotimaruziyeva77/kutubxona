@@ -102,11 +102,18 @@ export class LibrariesController {
     return this.librariesService.create(dto, user.sub);
   }
 
+  // Egalik tekshiruvi service'da: MUASSASA_ADMIN faqat O'Z kutubxonasini
+  // (Institution.libraryId orqali) yangilay oladi — avval istalgan :id ni
+  // yangilash mumkin edi (IDOR).
   @Put(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.MUASSASA_ADMIN)
-  update(@Param("id") id: string, @Body() dto: UpdateLibraryDto) {
-    return this.librariesService.update(id, dto);
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateLibraryDto,
+    @CurrentUser() user: JwtPayload
+  ) {
+    return this.librariesService.update(id, dto, { sub: user.sub, role: user.role });
   }
 
   @Patch(":id/approve/tuman")

@@ -56,10 +56,13 @@ const mockPrisma = {
   // (libraries.service.ts:139). Bu modellarsiz findOne ga tayanadigan
   // har bir test TypeError bilan yiqilardi.
   institution: {
-    findFirst: jest.fn()
+    findFirst: jest.fn(),
+    // update() egalik tekshiruvi — resolveCallerLibraryId (Institution.libraryId)
+    findUnique: jest.fn()
   },
   user: {
-    count: jest.fn()
+    count: jest.fn(),
+    findUnique: jest.fn()
   },
   $transaction: jest.fn()
 };
@@ -277,6 +280,53 @@ describe("LibrariesService", () => {
 
       const result = await service.update("lib1", { name: "Yangi nom" });
       expect(result.name).toBe("Yangi nom");
+    });
+
+    // ── Egalik (IDOR): MUASSASA_ADMIN faqat o'z kutubxonasini yangilaydi ──
+    it("MUASSASA_ADMIN o'z muassasasi kutubxonasini yangilaydi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: "inst1", universityId: null, organizationId: null });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib1" });
+      mockPrisma.library.update.mockResolvedValue({ ...mockActiveLib, phone: "+998901112233" });
+
+      const result = await service.update(
+        "lib1",
+        { phone: "+998901112233" },
+        { sub: "admin-inst1", role: "MUASSASA_ADMIN" }
+      );
+      expect(result.phone).toBe("+998901112233");
+      expect(mockPrisma.library.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "lib1" }, data: { phone: "+998901112233" } })
+      );
+    });
+
+    it("MUASSASA_ADMIN boshqa kutubxonani yangilay olmaydi — ForbiddenException", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: "inst2", universityId: null, organizationId: null });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib-other" });
+
+      await expect(
+        service.update("lib1", { name: "Egallab olish" }, { sub: "admin-inst2", role: "MUASSASA_ADMIN" })
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.library.update).not.toHaveBeenCalled();
+    });
+
+    it("muassasasiz MUASSASA_ADMIN (libraryId=null) ham 403 oladi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: null, universityId: null, organizationId: null });
+
+      await expect(
+        service.update("lib1", { address: "x" }, { sub: "lonely-admin", role: "MUASSASA_ADMIN" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("SUPER_ADMIN istalgan kutubxonani yangilaydi (egalik tekshirilmaydi)", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.library.update.mockResolvedValue({ ...mockActiveLib, workHours: "08:00-17:00" });
+
+      const result = await service.update("lib1", { workHours: "08:00-17:00" }, { sub: "root", role: "SUPER_ADMIN" });
+      expect(result.workHours).toBe("08:00-17:00");
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 

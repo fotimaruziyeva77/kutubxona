@@ -16,6 +16,47 @@ import { Prisma, TransactionStatus, TransactionType, UserStatus } from "@prisma/
 const BORROW_DAYS = 14;
 const EXTEND_DAYS = 7;
 const RESERVATION_TTL_HOURS = 24;
+
+// Comprehension test distraktor havzalari — o'zbek adabiyotining taniqli
+// mualliflari va asarlari. Havza 3 tadan katta: to'g'ri javob ro'yxatda
+// bo'lsa u chiqarib tashlanadi va baribir 3 ta boshqa variant qoladi.
+const AUTHOR_DISTRACTORS: readonly string[] = [
+  "Abdulla Qahhor",
+  "O'tkir Hoshimov",
+  "Erkin Vohidov",
+  "Abdulla Qodiriy",
+  "Oybek",
+  "G'afur G'ulom",
+  "Said Ahmad",
+  "Tohir Malik",
+  "Pirimqul Qodirov",
+  "Abdulla Oripov"
+];
+const TITLE_DISTRACTORS: readonly string[] = [
+  "Mehrobdan chayon",
+  "O'tkan kunlar",
+  "Sarob",
+  "Yulduzli tunlar",
+  "Ikki eshik orasi",
+  "Shaytanat",
+  "Qutlug' qon",
+  "Navoiy",
+  "Dunyoning ishlari",
+  "Ufq"
+];
+
+/**
+ * Javob matnini solishtirish uchun normallashtirish: katta-kichik harf,
+ * ortiqcha bo'shliq va apostrof variantlari (' ’ ʻ ʼ `) farq qilmasin —
+ * "O'tkan kunlar" va "Oʻtkan kunlar" bitta asar.
+ */
+export function normalizeAnswer(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[‘’ʻʼ`]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 // AUDIT-REPORT M14 — RESERVED (tasdiqlangan) bronlar uchun maksimal kutish
 // muddati. TZ da bu holat uchun aniq qiymat belgilanmagan; 72 soat (3 kun)
 // tanlandi: kutubxonachi tasdiqlagan, lekin kitobxon olib ketmagan bronlar
@@ -683,7 +724,17 @@ export class TransactionsService {
       }
     }
 
-    const correct = answers.filter((a, i) => a === questions[i]?.answerIdx).length;
+    // Javob MATN bo'yicha solishtiriladi, indeks bo'yicha emas: eski testlarda
+    // to'g'ri javob distraktor bilan ustma-ust tushib (mas. muallif "Abdulla
+    // Qahhor"), ro'yxatda ikkita bir xil variant paydo bo'lardi — ulardan
+    // birini tanlagan kitobxon "noto'g'ri" deb baholanardi.
+    const correct = answers.filter((a, i) => {
+      const q = questions[i];
+      if (!q || typeof a !== "number") return false;
+      const chosen = q.options[a];
+      const right = q.options[q.answerIdx];
+      return chosen !== undefined && right !== undefined && normalizeAnswer(chosen) === normalizeAnswer(right);
+    }).length;
     const passed = correct >= Math.ceil(questions.length * 0.7); // 70% to'g'ri = o'tdi
 
     await this.prisma.$transaction(async (p) => {
@@ -1193,17 +1244,30 @@ export class TransactionsService {
     return { q, options, answerIdx: options.indexOf(correct) };
   }
 
+  /**
+   * Havzadan to'g'ri javobga TENG BO'LMAGAN 3 ta tasodifiy distraktor.
+   * Avval 3 ta qat'iy distraktor edi — skan qilingan kitob muallifi/nomi
+   * ro'yxatdagi bilan bir xil bo'lsa ("Abdulla Qahhor", "O'tkan kunlar")
+   * variantlar ichida ikkita bir xil javob chiqardi: biri to'g'ri hisoblanib,
+   * ikkinchisi noto'g'ri — ham adolatsiz, ham javobni fosh qilardi.
+   */
+  private pickDistractors(pool: readonly string[], correct: string, n = 3): string[] {
+    const target = normalizeAnswer(correct);
+    const candidates = pool.filter((p) => normalizeAnswer(p) !== target);
+    return this.shuffle(candidates).slice(0, n);
+  }
+
   private generateQuestions(title: string, author: string) {
     return [
       this.buildQuestion(
         `Bu kitobning muallifi kim?`,
         author,
-        ["Abdulla Qahhor", "O'tkir Hoshimov", "Erkin Vohidov"]
+        this.pickDistractors(AUTHOR_DISTRACTORS, author)
       ),
       this.buildQuestion(
         `Siz o'qigan kitobning nomi nima?`,
         title,
-        ["Mehrobdan chayon", "O'tkan kunlar", "Sarob"]
+        this.pickDistractors(TITLE_DISTRACTORS, title)
       ),
       this.buildQuestion(
         `Kitobni qachon o'qib tugatdingiz?`,

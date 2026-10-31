@@ -107,7 +107,13 @@ export const getLibraryByCode = (code: string) =>
 // kutubxonachi tasdiqlaydi (RESERVED).
 export const reserveBook = (bookId: string) =>
   apiClient
-    .post<{ id: string; status: string }>("/transactions/reserve", { bookId })
+    .post<{
+      id: string;
+      status: string;
+      bookId: string;
+      /** 24 soatlik tasdiq muddati (server hisoblaydi) — «keyingi qadam» oynasida ko'rsatiladi. */
+      reservationExpiresAt?: string | null;
+    }>("/transactions/reserve", { bookId })
     .then((r) => r.data);
 
 export const createLibrary = (dto: CreateLibraryDto) =>

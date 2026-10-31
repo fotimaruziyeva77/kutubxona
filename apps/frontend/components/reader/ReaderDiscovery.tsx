@@ -25,6 +25,10 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { reserveBook } from "@/lib/api/libraries";
 import { BookCard, type BookCardData } from "@/components/books/BookCard";
+import {
+  ReservationNextSteps,
+  type ReservationInfo,
+} from "@/components/reader/ReservationNextSteps";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 
 type Recommendation = {
@@ -64,6 +68,10 @@ export function ReaderDiscovery({
   const t = useTranslations("ReaderBits.discovery");
   const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // Bron yuborilgach ochiladigan «keyingi qadam» oynasi (tasdiq muddati,
+  // qaysi kutubxona, QR). Avval faqat toast chiqardi — kitobxon keyin nima
+  // qilishni bilmay qolardi.
+  const [nextSteps, setNextSteps] = useState<ReservationInfo | null>(null);
 
   const { data: recs = [] } = useQuery({
     queryKey: ["reader-recommendations"],
@@ -77,12 +85,21 @@ export function ReaderDiscovery({
     staleTime: 300_000,
   });
 
-  const handleReserve = async (bookId: string) => {
+  const handleReserve = async (bookId: string, card?: BookCardData) => {
     setPendingId(bookId);
     try {
-      await reserveBook(bookId);
+      const tx = await reserveBook(bookId);
       setReservedIds((prev) => new Set(prev).add(bookId));
-      onToast(t("reserved"));
+      setNextSteps({
+        bookTitle: card?.title ?? "",
+        libraryName: card?.library?.name ?? null,
+        libraryHref: card?.library?.code
+          ? `/${locale}/library/${encodeURIComponent(card.library.code)}`
+          : card?.library?.id
+            ? `/${locale}/library/${encodeURIComponent(card.library.id)}`
+            : null,
+        expiresAt: tx.reservationExpiresAt ?? null,
+      });
     } catch (e) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response
         ?.data?.message;
@@ -130,6 +147,7 @@ export function ReaderDiscovery({
 
   return (
     <section className="space-y-6">
+      <ReservationNextSteps info={nextSteps} onClose={() => setNextSteps(null)} />
       {/* Shaxsiy tavsiyalar */}
       {recCards.length > 0 && (
         <div>
@@ -152,7 +170,7 @@ export function ReaderDiscovery({
               <BookCard
                 key={book.id}
                 book={book}
-                onReserve={handleReserve}
+                onReserve={(id) => handleReserve(id, book)}
                 reserving={pendingId === book.id}
                 reserved={reservedIds.has(book.id)}
               />
@@ -199,7 +217,7 @@ export function ReaderDiscovery({
                 <BookCard
                   key={book.id}
                   book={book}
-                  onReserve={handleReserve}
+                  onReserve={(id) => handleReserve(id, book)}
                   reserving={pendingId === book.id}
                   reserved={reservedIds.has(book.id)}
                 />

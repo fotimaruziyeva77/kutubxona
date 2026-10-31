@@ -331,8 +331,8 @@ export default async function HomePage({
               <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
                 {[
                   { icon: Icon.shield, label: t("hero.badge") },
-                  { icon: Icon.locked, label: "Ma'lumotlar O'zbekistonda" },
-                  { icon: Icon.offline, label: "Offline 12 soat" },
+                  { icon: Icon.locked, label: t("hero.trustData") },
+                  { icon: Icon.offline, label: t("hero.trustOffline") },
                 ].map(({ icon: TrustIcon, label }) => (
                   <span
                     key={label}
