@@ -754,7 +754,7 @@ export default async function HomePage({
                 href="https://t.me/SifatLibraryBot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-sky-500 px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-sky-600 active:scale-[0.98]"
+                className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-sky-700 px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-sky-800 active:scale-[0.98]"
               >
                 <TelegramIcon size={18} />
                 @SifatLibraryBot
@@ -874,7 +874,7 @@ export default async function HomePage({
                 </div>
                 <div className="space-y-3 p-4">
                   <div className="rounded-xl bg-brand-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-500">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
                       Reading Index
                     </p>
                     <p className="mt-1 text-3xl font-bold text-brand-800">—</p>

@@ -69,6 +69,7 @@
       "epik": "Epik",
       "sheriyat": "Poeziya"
     },
+    "langFilter": "Kitap tili",
     "langs": { "all": "Barlıq tiller", "uz": "Ózbek", "ru": "Rus", "en": "Inglis" },
     "onlyAvailable": "Tek bar bolǵanları",
     "nearbyOn": "Jaylasıwǵa tiykarlanǵan",

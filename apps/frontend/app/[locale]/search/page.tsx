@@ -323,10 +323,12 @@ function SearchPageInner() {
               ))}
             </div>
 
-            {/* Language */}
+            {/* Language — ko'rinadigan label yo'q, shuning uchun aria-label
+                (axe select-name, WCAG 4.1.2) */}
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value)}
+              aria-label={t("langFilter")}
               className="border border-line-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {LANGS.map((l) => (
@@ -377,7 +379,7 @@ function SearchPageInner() {
                   onClick={() => handlePricePreset(i)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                     pricePreset === i
-                      ? "bg-orange-600 text-white border-orange-600"
+                      ? "bg-orange-700 text-white border-orange-700"
                       : "border-line-strong text-slate-600 hover:border-orange-400"
                   }`}
                 >
@@ -438,7 +440,7 @@ function SearchPageInner() {
                 {debouncedQuery && (
                   <span
                     className={`ml-1.5 text-xs ${
-                      viewTab === tabItem.key ? "text-blue-200" : "text-slate-400"
+                      viewTab === tabItem.key ? "text-white" : "text-slate-400"
                     }`}
                   >
                     ({tabItem.count})
@@ -881,7 +883,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
               {product.storeName}
             </span>
             {product.stockCount > 0 ? (
-              <span className="text-green-600 font-medium">{t("inStock")}</span>
+              <span className="text-green-700 font-medium">{t("inStock")}</span>
             ) : (
               <span className="text-red-500 font-medium">{t("outOfStock")}</span>
             )}
@@ -957,7 +959,7 @@ function BookCard({
         )}
         <div className={`mt-1 flex items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
           {book.availableCount > 0 ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-green-700 font-medium">
               {t("freeAvailable", { count: book.availableCount })}
             </span>
           ) : (
@@ -1030,7 +1032,7 @@ function StoreProductCard({
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
           {product.stockCount > 0 ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-green-700 font-medium">
               {t("inStockCount", { count: product.stockCount })}
             </span>
           ) : (

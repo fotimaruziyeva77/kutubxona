@@ -731,7 +731,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-slate-500 mt-4">
           {tp("haveAccount")}{" "}
-          <a href={`/${locale}/login`} className="text-brand-600 hover:underline">{tp("login")}</a>
+          <a href={`/${locale}/login`} className="text-brand-600 underline underline-offset-2">{tp("login")}</a>
         </p>
       </div>
     </main>

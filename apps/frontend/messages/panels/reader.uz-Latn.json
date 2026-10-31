@@ -69,6 +69,7 @@
       "epik": "Epik",
       "sheriyat": "She'riyat"
     },
+    "langFilter": "Kitob tili",
     "langs": { "all": "Barcha tillar", "uz": "O'zbek", "ru": "Rus", "en": "Ingliz" },
     "onlyAvailable": "Faqat mavjud",
     "nearbyOn": "Joylashuvga asosli",

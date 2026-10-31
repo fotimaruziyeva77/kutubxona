@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
+import { LOCALE, login } from "./helpers";
 
 /**
  * Smoke E2E — kitobxonning asosiy oqimi (TZ Sprint 4 MVP mezoni):
@@ -11,30 +10,9 @@ import { test, expect, type Page } from "@playwright/test";
  * Oxirgi qadam — TOZALASH: test o'z izini qoldirmaydi, shuning uchun bir xil
  * seed bazasida qayta-qayta ishlaydi (lokal va CI).
  *
- * Ma'lumot: `apps/backend/prisma/seed.ts` demo akkauntlari (faqat dev/CI;
- * production'da seed ishlamaydi). Parol — seed'dagi `DEMO_PASSWORD` bilan
- * BIR manba: shu fayldan o'qiladi (`E2E_DEMO_PASSWORD` env bilan almashtirsa bo'ladi).
+ * Akkaunt va parol — `./helpers` (seed `DEMO_PASSWORD` bilan bir manba).
  */
-const LOCALE = "uz-Latn";
-// Sanjar Yusupov (talaba): muddati o'tgan kitobi yo'q — bron bloklanmaydi.
-const READER_PHONE_DIGITS = "901234570";
 const BOOK_TITLE = "Alkimyogar";
-
-function demoPasswordFromSeed(): string {
-  const seedPath = path.resolve(__dirname, "../../backend/prisma/seed.ts");
-  const match = readFileSync(seedPath, "utf8").match(/const DEMO_PASSWORD = "([^"]+)"/);
-  if (!match) throw new Error(`DEMO_PASSWORD topilmadi: ${seedPath}`);
-  return match[1];
-}
-const PASSWORD = process.env.E2E_DEMO_PASSWORD ?? demoPasswordFromSeed();
-
-async function login(page: Page) {
-  await page.goto(`/${LOCALE}/login`);
-  await page.locator('input[type="tel"]').fill(READER_PHONE_DIGITS);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.getByRole("button", { name: "Kirish" }).click();
-  await page.waitForURL(`**/${LOCALE}/profile`);
-}
 
 /** Profil «Bronlarim» bo'limidagi barcha bronlarni bekor qiladi (idempotent). */
 async function cancelAllReservations(page: Page) {

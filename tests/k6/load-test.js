@@ -4,14 +4,18 @@
  * Simulates 5,000 concurrent virtual users (VUs) against critical API endpoints.
  * Validates that p95 response time stays under 200ms and error rate < 1%.
  *
- * Run via Docker:
- *   docker run --rm -i grafana/k6 run - < tests/k6/load-test.js
+ * Run via Docker (backend :4000 lokalda — `--network host`):
+ *   docker run --rm -i --network host grafana/k6 run - < tests/k6/load-test.js
  *
  * With custom base URL:
- *   docker run --rm -i -e BASE_URL=http://staging.sifat.uz grafana/k6 run - < tests/k6/load-test.js
+ *   docker run --rm -i -e BASE_URL=https://staging.sifat.uz grafana/k6 run - < tests/k6/load-test.js
  *
- * With auth token for admin endpoints:
- *   docker run --rm -i -e BASE_URL=http://localhost:3001 -e AUTH_TOKEN=<jwt> grafana/k6 run - < tests/k6/load-test.js
+ * With auth token for admin endpoints (SUPER_ADMIN yoki BUXGALTER JWT):
+ *   docker run --rm -i --network host -e AUTH_TOKEN=<jwt> grafana/k6 run - < tests/k6/load-test.js
+ *
+ * Endpoint'lar smoke-test.js bilan bir xil (u yerda CI profili va rate-limit
+ * izohi bor). Yuklama testi faqat staging'da: bitta IP'dan 5 000 VU uchun
+ * backend THROTTLE_LIMIT ni oshirish yoki k6 ni ko'p mashinadan yurgizish kerak.
  *
  * For 50K VU target, use distributed k6 (k6 Cloud or Kubernetes).
  * Single machine realistic limit: 5K VUs.
@@ -23,7 +27,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const BASE_URL = __ENV.BASE_URL || "http://localhost:3001";
+const BASE_URL = __ENV.BASE_URL || "http://localhost:4000";
 const AUTH_TOKEN = __ENV.AUTH_TOKEN || "";
 
 export const options = {
@@ -60,25 +64,29 @@ export default function () {
   });
   sleep(1);
 
-  // 2. GET /api/top/leaderboard — public rankings
-  const leaderboardRes = http.get(
-    `${BASE_URL}/api/top/leaderboard?type=MONTHLY&scope=NATIONAL&limit=10`
-  );
-  check(leaderboardRes, {
-    "leaderboard status is 200": (r) => r.status === 200,
+  // 2. GET /api/top — public Top-100 rankings
+  const topRes = http.get(`${BASE_URL}/api/top?limit=10`, {
+    tags: { name: "GET /api/top" },
+  });
+  check(topRes, {
+    "top status is 200": (r) => r.status === 200,
   });
   sleep(1);
 
-  // 3. GET /api/stats/national — admin stats (requires Authorization)
-  const headers = AUTH_TOKEN
-    ? { Authorization: `Bearer ${AUTH_TOKEN}` }
-    : {};
-  const adminStatsRes = http.get(`${BASE_URL}/api/stats/national`, {
-    headers,
-  });
+  // 3. GET /api/admin/stats/national — SUPER_ADMIN / BUXGALTER (token bo'lsa 200,
+  //    bo'lmasa 401 kutiladi — threshold'ga xato sifatida kirmaydi)
+  const adminStatsRes = AUTH_TOKEN
+    ? http.get(`${BASE_URL}/api/admin/stats/national`, {
+        headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+        tags: { name: "GET /api/admin/stats/national" },
+      })
+    : http.get(`${BASE_URL}/api/admin/stats/national`, {
+        responseCallback: http.expectedStatuses(200, 401),
+        tags: { name: "GET /api/admin/stats/national" },
+      });
   check(adminStatsRes, {
-    "stats/national status is 200 or 401": (r) =>
-      r.status === 200 || r.status === 401,
+    "admin/stats/national status is 200 (token) / 401 (tokensiz)": (r) =>
+      AUTH_TOKEN ? r.status === 200 : r.status === 401,
   });
   sleep(1);
 

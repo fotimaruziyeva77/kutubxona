@@ -30,6 +30,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { getMyInstitutionLibrary } from "@/lib/api/libraries";
+import { hasAuthHintCookie } from "@/lib/auth-cookie";
+import { useAuthStore } from "@/store/auth.store";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
 import { LogoMark } from "@/components/brand/Logo";
 
@@ -65,9 +67,17 @@ export function ReaderShell({
 
   // Muassasa kutubxonasi bor kitobxonda "Kutubxonam" tab'i chiqadi.
   // Xato bo'lsa (401, tarmoq) — tab shunchaki ko'rsatilmaydi, qobiq ishlaydi.
+  // Faqat sessiya bo'lganda so'raladi: qobiq ochiq sahifalarda ham (qidiruv,
+  // kutubxona profili) ishlaydi va anonim mehmon uchun himoyalangan so'rov
+  // yuborishning ma'nosi yo'q (401 → eski interceptor /login ga otardi).
+  // Hard reload: token hali xotirada emas, lekin sl_auth hint cookie bor —
+  // request interceptor boot-refresh bilan tokenni tiklaydi.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasSession = isAuthenticated || hasAuthHintCookie();
   const { data: myLib } = useQuery({
     queryKey: ["my-institution-library"],
     queryFn: getMyInstitutionLibrary,
+    enabled: hasSession,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });

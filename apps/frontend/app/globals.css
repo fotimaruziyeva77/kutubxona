@@ -42,6 +42,18 @@
   --color-brand-900: #1e3a8a;  /* sarlavhalar, CTA banner */
   --color-brand-950: #172554;  /* eng chuqur — footer, siyoh bloklar */
 
+  /* ── Ikkinchi darajali matn (slate-400/500) — WCAG 2.1 AA kontrast ───────
+     Tailwind'ning standart slate-400 (#94a3b8) oq fonda 2.6:1, slate-500
+     (#64748b) och fon (`surface-muted` #f4f6fb) ustida 4.4:1 — ikkalasi ham
+     AA (4.5:1) dan past; axe auditi (e2e/a11y.spec.ts) 9 sahifada 100+
+     elementni belgilagan. Ilova yuzlab joyda shu utility'larni ishlatadi,
+     shuning uchun token darajasida qoraytirildi (ierarxiya saqlanadi:
+     400 < 500 < 600). Eng och fonlar bilan nisbat: slate-400 — oq 5.6,
+     surface-muted 5.1, surface-sunken 4.8, brand-100 4.5; slate-500 — 6.7 /
+     6.2 / 5.8 / 5.4. Tungi rejim — `.dark` blokida alohida. */
+  --color-slate-400: #5b6980;
+  --color-slate-500: #4f5d73;
+
   /* ── Aksent: kahrabo-oltin (yutuq, medal, reyting) ───────────────────── */
   --color-accent-50:  #fffbeb;
   --color-accent-100: #fef3c7;
@@ -141,6 +153,11 @@
   --color-surface-sunken: #253150;
   --color-line:           #2a3752;
   --color-line-strong:    #3d4c6d;
+  /* Ikkinchi darajali matn tungi fonlarda (#182238 / #0f172a / #253150):
+     yuqoridagi qoraytirilgan slate-400/500 bu yerda 2.9:1 bo'lardi —
+     ochroq qiymatlar (≥ 5:1 barcha uchta fonda). */
+  --color-slate-400: #a5b1c4;
+  --color-slate-500: #94a3b8;
   --shadow-card:       0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px -1px rgb(0 0 0 / 0.28);
   --shadow-card-hover: 0 4px 10px -2px rgb(0 0 0 / 0.3), 0 14px 28px -6px rgb(0 0 0 / 0.4);
 

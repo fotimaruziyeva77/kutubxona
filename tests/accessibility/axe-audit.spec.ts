@@ -4,8 +4,14 @@
  * Jest spec using axe-core to detect critical/serious WCAG violations.
  * Uses JSDOM to render HTML and run axe analysis.
  *
- * Run via:
- *   npx jest --testPathPattern=axe-audit --no-coverage --config tests/accessibility/jest.config.ts
+ * QAMROV (halol aytganda): bu spec STATIK fixture'larni tekshiradi — ilovaning
+ * o'zini emas. JSDOM'da layout va rang yo'q, shuning uchun `color-contrast`
+ * o'chirilgan. HAQIQIY sahifalar auditi — `apps/frontend/e2e/a11y.spec.ts`
+ * (Playwright + axe-core, brauzerda, CI `e2e` job). Bu fayl CI `frontend`
+ * job'ida tez (≈10 s) «axe ishlayaptimi» sanity sifatida yuradi.
+ *
+ * Run via (repo root):
+ *   npx jest --config tests/accessibility/jest.config.ts --no-coverage
  *
  * @jest-environment jsdom
  */
@@ -36,6 +42,10 @@ export async function auditPage(html: string): Promise<AuditResult> {
       type: "tag",
       values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
     },
+    // JSDOM'da canvas/layout yo'q: kontrast o'lchab bo'lmaydi (axe "Not
+    // implemented: HTMLCanvasElement.getContext" bilan shovqin qiladi).
+    // Kontrast — e2e/a11y.spec.ts (haqiqiy brauzer) vazifasi.
+    rules: { "color-contrast": { enabled: false } },
   });
 
   return {

@@ -108,18 +108,28 @@ jobs:
       - name: TypeScript check
         run: npm run typecheck
 
+      - name: Accessibility — axe JSDOM fixture sanity (tests/accessibility, ~10 s)
+        # Statik fixture'lar: axe ishlayotganini tekshiradi. HAQIQIY sahifalar
+        # auditi — e2e job (apps/frontend/e2e/a11y.spec.ts, brauzerda).
+        working-directory: ${{ github.workspace }}
+        run: npx jest --config tests/accessibility/jest.config.ts --no-coverage
+
       - name: Build
         run: npm run build
 
   e2e:
-    # Smoke E2E (Playwright): login → qidiruv → bron — HAQIQIY backend + seed
-    # DB bilan (mock yo'q). Postgres/Redis — GitHub service konteynerlari;
-    # Elasticsearch/Kafka/MinIO yo'q — backend ularsiz no-op rejimda ishlaydi
-    # (ELASTICSEARCH_ENABLED=false, KAFKA_BROKERS/MINIO_ENDPOINT o'rnatilmagan).
-    # Serverlarni Playwright webServer ko'taradi (apps/frontend/playwright.config.ts).
-    name: E2E — Playwright smoke (login → qidiruv → bron)
+    # HAQIQIY backend + seed DB bilan (mock yo'q), bitta job'da uch tekshiruv:
+    #   1) Playwright smoke: login → qidiruv → bron (apps/frontend/e2e/smoke.spec.ts)
+    #   2) Playwright + axe: 9 ta haqiqiy sahifa WCAG 2.1 AA (e2e/a11y.spec.ts)
+    #   3) k6 API smoke: 5 endpoint, p95 < 500 ms, xato < 5 % (tests/k6/smoke-test.js)
+    # Postgres/Redis — GitHub service konteynerlari; Elasticsearch/Kafka/MinIO
+    # yo'q — backend ularsiz no-op rejimda ishlaydi (ELASTICSEARCH_ENABLED=false,
+    # KAFKA_BROKERS/MINIO_ENDPOINT o'rnatilmagan). 1–2 uchun serverlarni
+    # Playwright webServer ko'taradi (apps/frontend/playwright.config.ts), 3 uchun
+    # backend qayta ishga tushiriladi (Playwright o'zinikini yopadi).
+    name: E2E — Playwright (smoke + a11y) va k6 API smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:15
@@ -154,6 +164,12 @@ jobs:
       QR_HMAC_SECRET: e2e-only-qr-hmac-secret-not-for-production
       PORT: "4000"
       FRONTEND_URL: http://localhost:3000
+      # Butun test trafigi BITTA IP'dan (127.0.0.1): default 100 so'rov/daqiqa
+      # va 10 login/15 daqiqa k6'ni (5 VU) va Playwright'ning 5 ta login'ini
+      # 429 bilan to'xtatardi. Rate-limit mantig'i unit testlarda tekshiriladi;
+      # bu job perf/a11y/oqim uchun, shuning uchun limitlar ko'tarilgan.
+      THROTTLE_LIMIT: "100000"
+      THROTTLE_LOGIN_LIMIT: "1000"
 
     steps:
       - uses: actions/checkout@v4
@@ -191,7 +207,7 @@ jobs:
         working-directory: apps/frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Smoke E2E
+      - name: Playwright — smoke (login → qidiruv → bron) + axe a11y (9 sahifa)
         working-directory: apps/frontend
         env:
           BACKEND_PROXY_TARGET: http://localhost:4000
@@ -204,6 +220,44 @@ jobs:
           name: playwright-report
           path: apps/frontend/playwright-report
           retention-days: 7
+
+      # ── k6 API smoke ─────────────────────────────────────────────────────
+      # Binar GitHub releases'dan (Docker Hub'ga bog'liq emas — anonim pull
+      # limiti / TLS uzilishlari CI'ni qizartirmasin).
+      - name: k6 — o'rnatish
+        uses: grafana/setup-k6-action@v1
+
+      - name: k6 uchun backend (Playwright o'zinikini yopgan)
+        working-directory: apps/backend
+        env:
+          NODE_ENV: development
+        run: |
+          nohup node dist/main.js > "$RUNNER_TEMP/backend-k6.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend-k6.pid"
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:4000/health > /dev/null; then
+              echo "backend tayyor (${i} s)"; exit 0
+            fi
+            sleep 1
+          done
+          echo "backend 60 s ichida ko'tarilmadi:"; cat "$RUNNER_TEMP/backend-k6.log"; exit 1
+
+      - name: k6 smoke — 5 endpoint, 5 VU × 20 s (p95 < 500 ms, xato < 5 %)
+        # Admin endpoint (admin/stats/national) uchun seed SUPER_ADMIN bilan
+        # bir marta login — parol seed.ts'dagi DEMO_PASSWORD (faqat dev/CI).
+        run: |
+          ADMIN_PASSWORD="$(grep -oP 'const DEMO_PASSWORD = "\K[^"]+' apps/backend/prisma/seed.ts)"
+          k6 run \
+            -e BASE_URL=http://localhost:4000 -e VUS=5 -e DURATION=20s \
+            -e ADMIN_PHONE=+998900000001 -e "ADMIN_PASSWORD=$ADMIN_PASSWORD" \
+            tests/k6/smoke-test.js
+
+      - name: k6 backend'ini to'xtatish
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/backend-k6.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/backend-k6.pid")" 2>/dev/null || true
+          fi
 
   docker-build:
     name: Docker — Build check

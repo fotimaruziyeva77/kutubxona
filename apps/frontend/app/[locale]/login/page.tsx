@@ -427,7 +427,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-slate-500 mt-4">
           Yangi foydalanuvchimisiz?{" "}
-          <Link href={`/${locale}/register`} className="text-brand-600 hover:underline">
+          <Link href={`/${locale}/register`} className="text-brand-600 underline underline-offset-2">
             Ro&apos;yhatdan o&apos;tish
           </Link>
         </p>

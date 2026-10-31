@@ -346,16 +346,16 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
                 { key: "workHours", icon: Icon.pending, value: lib.workHours },
               ] as const
             ).map(({ key, icon: RowIcon, value }) => (
-              <div key={key} className="flex items-start gap-2 rounded-xl bg-surface-muted px-3 py-2.5">
-                <RowIcon aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0 text-slate-400" />
-                <div className="min-w-0">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    {t(`editInfo.${key}`)}
-                  </dt>
-                  <dd className={value ? "text-sm text-slate-800" : "text-sm italic text-slate-400"}>
-                    {value || t("editInfo.notSet")}
-                  </dd>
-                </div>
+              // dt/dd — <dl> ning bevosita <div> farzandi ichida (axe
+              // definition-list / dlitem); ikonka dt ichida.
+              <div key={key} className="min-w-0 rounded-xl bg-surface-muted px-3 py-2.5">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  <RowIcon aria-hidden="true" size={ICON_SIZE.sm} className="shrink-0" />
+                  {t(`editInfo.${key}`)}
+                </dt>
+                <dd className={value ? "mt-0.5 text-sm text-slate-800" : "mt-0.5 text-sm italic text-slate-400"}>
+                  {value || t("editInfo.notSet")}
+                </dd>
               </div>
             ))}
           </dl>
@@ -524,7 +524,7 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
             {books.length > 30 && (
               <p className="py-3 text-center text-xs text-slate-400">
                 {t("fund.moreHidden", { count: books.length - 30 })}{" "}
-                <Link href={`/${locale}/dashboard/books`} className="font-medium text-brand-600 hover:underline">
+                <Link href={`/${locale}/dashboard/books`} className="font-medium text-brand-600 underline underline-offset-2">
                   {t("fund.goToBooks")}
                 </Link>
               </p>

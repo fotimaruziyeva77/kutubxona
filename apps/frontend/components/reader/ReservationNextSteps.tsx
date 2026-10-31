@@ -61,7 +61,7 @@ export function ReservationNextSteps({
             info.libraryHref ? (
               <Link
                 href={info.libraryHref}
-                className="font-semibold text-brand-700 hover:underline"
+                className="font-semibold text-brand-700 underline underline-offset-2"
               >
                 {info.libraryName}
               </Link>

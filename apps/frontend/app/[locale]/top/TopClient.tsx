@@ -340,7 +340,7 @@ export default function TopClient({
         </p>
         <Link
           href={`/${locale}/donate`}
-          className="inline-flex h-10 shrink-0 items-center rounded-xl bg-info-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-info-700"
+          className="inline-flex h-10 shrink-0 items-center rounded-xl bg-info-700 px-5 text-sm font-semibold text-white transition-colors hover:bg-info-900"
         >
           {t("donate")}
         </Link>

@@ -108,7 +108,17 @@ apiClient.interceptors.response.use(
     // chaqiruvchiga (login sahifasi) qaytadi va xato matni ko'rsatiladi.
     const reqUrl: string = original?.url ?? "";
     const isAuthFlow = /\/auth\/(login|refresh|register|otp|password\/reset)/.test(reqUrl);
-    if (error.response?.status === 401 && original && !original._retry && !isAuthFlow) {
+    // Sessiya umuman BO'LMAGAN (anonim) foydalanuvchida 401 — "token eskirgan"
+    // emas, shunchaki "kirilmagan". Refresh urinishi baribir 401 beradi va
+    // doRefresh logout + /login ga hard-redirect qiladi — ya'ni ochiq sahifada
+    // (qidiruv, kutubxona profili) bitta himoyalangan so'rov (masalan
+    // ReaderShell'ning /libraries/my-institution) anonim mehmonni login
+    // sahifasiga uloqtirardi (2026-10-31, axe auditida topildi). Sessiya
+    // belgisi: xotiradagi access token yoki sl_auth hint cookie.
+    const hadSession =
+      typeof window !== "undefined" &&
+      (Boolean(useAuthStore.getState().accessToken) || hasAuthHintCookie());
+    if (error.response?.status === 401 && original && !original._retry && !isAuthFlow && hadSession) {
       original._retry = true;
       try {
         const token = await refreshAccessToken();
