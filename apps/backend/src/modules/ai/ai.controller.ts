@@ -296,7 +296,12 @@ export class AiController {
     return this.recommendService.getRecommendations(userId, limit ? Number(limit) : 5);
   }
 
+  // Boshqa foydalanuvchining tavsiyalari = uning o'qish tarixi haqida ma'lumot
+  // (R5 maxfiylik). Avval @Roles'siz edi — har qanday kitobxon istalgan userId
+  // uchun so'ray olardi; frontend bu route'ni ishlatmaydi (2026-10-31, T6 auditi).
   @Get("recommend/user/:userId")
+  @UseGuards(RolesGuard)
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: "Foydalanuvchi uchun kitob tavsiyalari (5 ta)" })
   @ApiQuery({ name: "limit", required: false })
   getRecommendations(
@@ -307,6 +312,8 @@ export class AiController {
   }
 
   @Get("recommend/club/:clubId")
+  @UseGuards(RolesGuard)
+  @Roles(...ADMIN_ROLES, UserRole.KLUB_RAHBARI)
   @ApiOperation({ summary: "Klub debati uchun kitob tavsiyalari" })
   getClubRecommendations(
     @Param("clubId") clubId: string,

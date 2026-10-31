@@ -19,17 +19,20 @@ const config: Config = {
       diagnostics: false,
     }],
   },
+  // T6 (2026-10-31): controller'lar va guard'lar endi coverage'ga KIRADI —
+  // RBAC (@Roles/@Public) va egalik tekshiruvlari (IDOR) aynan shu qatlamda,
+  // ularni o'lchovdan chiqarib tashlash xavfsizlik testlarini ko'rinmas
+  // qilardi. Chiqarib tashlanganlar: modul deklaratsiyalari, bootstrap,
+  // infra adapterlari (tashqi servislar), dekoratorlar (metadata), mock/test.
   collectCoverageFrom: [
     "**/*.ts",
     "!**/*.module.ts",
-    "!**/*.controller.ts",
     "!**/main.ts",
     "!**/infra/**",
-    "!**/common/guards/**",
     "!**/common/decorators/**",
     "!**/__tests__/**",
-    "!**/dist/**",
-    "!**/app.controller.ts"
+    "!**/__mocks__/**",
+    "!**/dist/**"
   ],
   coverageThreshold: {
     global: {
