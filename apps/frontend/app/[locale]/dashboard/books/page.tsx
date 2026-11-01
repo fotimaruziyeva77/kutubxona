@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   getBooks,
+  getInventoryReport,
+  getMyLibraries,
   downloadBookTemplate,
   createBook,
   updateBook,
@@ -14,21 +16,71 @@ import {
   getBookImportStatus,
   type Book,
   type Library,
-  type BookImportStatusResult
+  type BookImportStatusResult,
+  type CreateBookInput
 } from "@/lib/api/libraries";
-import { getMyLibraries } from "@/lib/api/libraries";
 import { getViloyatlar, getTumanlar } from "@/lib/api/geo";
 import { useAuthStore } from "@/store/auth.store";
+import { cn } from "@/lib/utils";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { BookCover } from "@/components/books/BookCover";
 import { BookRow } from "@/components/books/BookCard";
-import { ErrorState } from "@/components/ui/error-state";
+import { Button } from "@/components/ui/button";
+import { Input, FormField } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { DashboardPage, PageHeader } from "@/components/dashboard/ui";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { DashboardPage, PageHeader, StatCard, StatGrid } from "@/components/dashboard/ui";
 
 // Kutubxona turi yorlig'i — super admin kaskadida kutubxonani aniqroq ko'rsatish.
 // Tarjimalar BooksPanel.libTypes da; noma'lum tur xom kod bilan qoladi.
 const LIB_TYPE_KEYS = ["GOV", "SCH", "UNI", "ORG", "MAH"] as const;
+
+// Janr taklifl/ari (datalist) — qidiruv sahifasidagi filtr lug'ati bilan bir xil
+// + fondda ko'p uchraydiganlar. Erkin matn: istalgan janr yozish mumkin.
+const GENRE_SUGGESTIONS = [
+  "Roman", "Ilmiy", "Bolalar adabiyoti", "Tarix", "Texnika", "Falsafa", "Epik",
+  "She'riyat", "Sarguzasht", "Drama", "Darslik", "Diniy", "Biografiya", "Detektiv",
+  "Fantastika", "Satira"
+];
+
+const LANG_OPTIONS = [
+  { code: "uz", key: "form.langUz" },
+  { code: "ru", key: "form.langRu" },
+  { code: "en", key: "form.langEn" },
+  { code: "kaa", key: "form.langKaa" }
+] as const;
+
+/** Qatorga yetkazilgan xato (axios) ichidan status va backend xabarini oladi. */
+function apiError(err: unknown): { status?: number; message?: string } {
+  const e = err as { response?: { status?: number; data?: { message?: string | string[] } } };
+  const raw = e?.response?.data?.message;
+  return {
+    status: e?.response?.status,
+    message: Array.isArray(raw) ? raw.join(", ") : raw
+  };
+}
+
+/**
+ * ISBN-10/13 nazorat raqami. Chiziqcha/bo'shliq e'tiborga olinmaydi.
+ * Noto'g'ri bo'lsa ham saqlashga YO'L QO'YILADI (eski/nostandart nashrlar) —
+ * faqat ogohlantirish.
+ */
+function isbnChecksumOk(raw: string): boolean {
+  const s = raw.replace(/[-\s]/g, "").toUpperCase();
+  if (/^\d{13}$/.test(s)) {
+    const sum = [...s].reduce((acc, ch, i) => acc + Number(ch) * (i % 2 === 0 ? 1 : 3), 0);
+    return sum % 10 === 0;
+  }
+  if (/^\d{9}[\dX]$/.test(s)) {
+    const sum = [...s].reduce((acc, ch, i) => acc + (ch === "X" ? 10 : Number(ch)) * (10 - i), 0);
+    return sum % 11 === 0;
+  }
+  return false;
+}
 
 // Muqova rasmini brauzerda kichraytirib (maks 360px), JPEG data-URL'ga
 // aylantiradi. Natija ~80KB ostida bo'ladi — JSON body limitiga sig'adi va
@@ -76,6 +128,20 @@ function fileToCoverDataUrl(file: File): Promise<string> {
 export default function BooksPage() {
   const t = useTranslations("BooksPanel");
   const qc = useQueryClient();
+  const toast = useToast();
+  const role = useAuthStore((s) => s.user?.role);
+  // DELETE /books/:id — faqat MUASSASA_ADMIN va SUPER_ADMIN (backend @Roles).
+  // Kutubxonachiga tugma ko'rsatilmaydi: avval ko'rinardi va 403 bilan tugardi.
+  const canDelete = role === "SUPER_ADMIN" || role === "MUASSASA_ADMIN";
+  // Til kodi → yorliq. DB'da kodlar aralash ("uz", "uz-Latn", "uz-Cyrl", "ru" —
+  // seed va forma turlicha yozgan); prefiks bo'yicha moslanadi, noma'lum — kodning o'zi.
+  const langLabel = (code?: string | null) => {
+    if (!code) return "—";
+    const base = code.toLowerCase().split("-")[0];
+    const opt = LANG_OPTIONS.find((l) => l.code === base);
+    return opt ? t(opt.key) : code;
+  };
+
   const [selectedLib, setSelectedLib] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editBook, setEditBook] = useState<Book | null>(null);
@@ -89,6 +155,25 @@ export default function BooksPage() {
   // the legacy synchronous { created, errors } response.
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<BookImportStatusResult | null>(null);
+
+  // ── Fond ichida qidiruv va filtrlar ───────────────────────────────────────
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [genre, setGenre] = useState("");
+  const [lang, setLang] = useState("");
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(id);
+  }, [query]);
+  const hasFilters = Boolean(debouncedQuery || genre || lang || onlyAvailable);
+  const resetFilters = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setGenre("");
+    setLang("");
+    setOnlyAvailable(false);
+  };
 
   // RBAC FIX: caller-scoped libraries (not the @Public GET /libraries which
   // returns every library). A KUTUBXONACHI now sees only their own library.
@@ -114,22 +199,60 @@ export default function BooksPage() {
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
-  // Kutubxona yoki sahifa hajmi o'zgarsa — 1-sahifaga qaytamiz.
-  useEffect(() => { setPage(1); }, [effectiveLib, limit]);
+  // Kutubxona, sahifa hajmi yoki filtr o'zgarsa — 1-sahifaga qaytamiz.
+  useEffect(() => { setPage(1); }, [effectiveLib, limit, debouncedQuery, genre, lang, onlyAvailable]);
 
-  const { data: books = [], isLoading, isError, refetch, isRefetching } = useQuery({
-    queryKey: ["books", effectiveLib, page, limit],
-    queryFn: () => getBooks(effectiveLib || undefined, page, limit),
-    enabled: true
+  const list = useQuery({
+    queryKey: ["books", effectiveLib, debouncedQuery, genre, lang, onlyAvailable, page, limit],
+    queryFn: () =>
+      getBooks({
+        libraryId: effectiveLib || undefined,
+        q: debouncedQuery,
+        genre,
+        lang,
+        available: onlyAvailable,
+        page,
+        limit
+      }),
+    // Sahifa/filtr almashganda eski ro'yxat turadi (skelet miltillamaydi).
+    placeholderData: keepPreviousData
   });
+  const listData = list.data;
+  const books = useMemo<Book[]>(() => listData?.data ?? [], [listData]);
+  const total = listData?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / limit));
+
+  // Inventarizatsiya — HAQIQIY raqamlar (nusxalar, mavjud, kitobxonlarda,
+  // xatlovdagi fond). Faqat bitta kutubxona tanlanganda; ruxsat: super/tuman/
+  // muassasa admin va kutubxonachi (GET /libraries/:id/inventory).
+  const inventory = useQuery({
+    queryKey: ["library-inventory", effectiveLib],
+    queryFn: () => getInventoryReport(effectiveLib),
+    enabled: !!effectiveLib,
+    staleTime: 60_000
+  });
+
+  const invalidateFund = () => {
+    qc.invalidateQueries({ queryKey: ["books"] });
+    qc.invalidateQueries({ queryKey: ["library-inventory"] });
+  };
 
   const del = useMutation({
     mutationFn: (id: string) => deleteBook(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["books"] });
+      invalidateFund();
       setDeleteTarget(null);
+      toast.success(t("deleteModal.deleted"));
     }
   });
+  // 403 — rol yetarli emas; 409 — backend sababi (kitobxonlardagi nusxa yoki
+  // berish/qaytarish tarixi); qolgani — umumiy xato.
+  const deleteError = (() => {
+    if (!del.error) return "";
+    const { status, message } = apiError(del.error);
+    if (status === 403) return t("deleteModal.forbidden");
+    return message || t("deleteModal.failed");
+  })();
 
   const importExcel = useMutation({
     mutationFn: (file: File) => importBooksExcel(file, effectiveLib),
@@ -153,6 +276,7 @@ export default function BooksPage() {
         setImportStatus(s);
         if (s.status === "completed" || s.status === "failed" || s.status === "unknown") {
           qc.invalidateQueries({ queryKey: ["books"] });
+          qc.invalidateQueries({ queryKey: ["library-inventory"] });
           return; // stop polling
         }
         setTimeout(tick, 2000);
@@ -168,23 +292,87 @@ export default function BooksPage() {
     };
   }, [importJobId, qc]);
 
+  // Janr datalist: lug'at + hozirgi sahifadagi janrlar (dublikatsiz).
+  const genreOptions = useMemo(() => {
+    const set = new Set<string>(GENRE_SUGGESTIONS);
+    for (const b of books) if (b.genre) set.add(b.genre);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [books]);
+
+  // Mavjudlik: raqam + mini shkala + holat matni. Rang: 0 → qizil,
+  // qisman → sariq, hammasi joyida → yashil.
+  const renderAvailability = (book: Book) => {
+    const available = book.availableCount ?? 0;
+    const totalCount = book.totalCount ?? 0;
+    const out = Math.max(0, totalCount - available);
+    const pct = totalCount > 0 ? Math.round((available / totalCount) * 100) : 0;
+    const tone = available === 0 ? "red" : out > 0 ? "amber" : "green";
+    return (
+      <div className="min-w-[7.5rem]">
+        <div className="flex items-baseline gap-1 text-sm tabular-nums">
+          <span
+            className={cn(
+              "font-semibold",
+              tone === "red" ? "text-red-600" : tone === "amber" ? "text-accent-700" : "text-green-700"
+            )}
+          >
+            {available}
+          </span>
+          <span className="text-slate-400">/ {totalCount}</span>
+        </div>
+        <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
+          <div
+            className={cn(
+              "h-full rounded-full transition-[width]",
+              tone === "red" ? "bg-red-400" : tone === "amber" ? "bg-amber-400" : "bg-green-500"
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="mt-0.5 text-[11px] text-slate-500">
+          {available === 0
+            ? t("availability.none")
+            : out > 0
+              ? t("availability.out", { count: out })
+              : t("availability.all")}
+        </p>
+      </div>
+    );
+  };
+
   // Amallar tugmalari — jadvalda ham, mobil kartada ham bir xil.
   const rowActions = (book: Book) => (
-    <div className="flex gap-2">
-      <button
+    <div className="flex items-center justify-end gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => setEditBook(book)}
-        className="inline-flex min-h-9 items-center rounded-md bg-blue-50 px-3 py-2 text-xs font-medium text-brand-700 hover:bg-blue-100"
+        className="gap-1.5 text-brand-700 hover:bg-brand-50"
       >
+        <Icon.edit aria-hidden="true" size={ICON_SIZE.xs} />
         {t("edit")}
-      </button>
-      <button
-        onClick={() => setDeleteTarget(book)}
-        className="inline-flex min-h-9 items-center rounded-md bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
-      >
-        {t("delete")}
-      </button>
+      </Button>
+      {canDelete && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            del.reset();
+            setDeleteTarget(book);
+          }}
+          className="gap-1.5 text-red-600 hover:bg-red-50"
+        >
+          <Icon.delete aria-hidden="true" size={ICON_SIZE.xs} />
+          {t("delete")}
+        </Button>
+      )}
     </div>
   );
+
+  const listIsEmpty = !list.isLoading && !list.isError && books.length === 0;
+  const inv = inventory.data;
 
   return (
     <DashboardPage>
@@ -207,20 +395,24 @@ export default function BooksPage() {
                 } else if (f && !effectiveLib) {
                   setActionNotice(t("selectLibraryFirst"));
                 }
+                e.target.value = "";
               }}
             />
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() =>
-                downloadBookTemplate().catch(() =>
-                  setActionNotice(t("templateError"))
-                )
+                downloadBookTemplate().catch(() => setActionNotice(t("templateError")))
               }
-              className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-surface-muted active:scale-[0.98]"
+              className="gap-1.5"
             >
               <Icon.download aria-hidden="true" size={ICON_SIZE.sm} />
               {t("excelTemplate")}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              isLoading={importExcel.isPending}
               onClick={() => {
                 if (!effectiveLib) {
                   setActionNotice(t("selectLibraryFirst"));
@@ -229,18 +421,15 @@ export default function BooksPage() {
                 setActionNotice("");
                 fileInputRef.current?.click();
               }}
-              className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-surface-muted active:scale-[0.98]"
+              className="gap-1.5"
             >
               <Icon.document aria-hidden="true" size={ICON_SIZE.sm} />
               {t("excelImport")}
-            </button>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 active:scale-[0.98]"
-            >
+            </Button>
+            <Button type="button" onClick={() => setShowAdd(true)} className="gap-1.5">
               <Icon.add aria-hidden="true" size={ICON_SIZE.sm} />
               {t("addBook")}
-            </button>
+            </Button>
           </div>
         }
       />
@@ -265,30 +454,139 @@ export default function BooksPage() {
         </div>
       )}
 
-      {/* Kutubxona filter — bitta kutubxona bo'lsa yashiriladi (librarian
-          "Barcha kutubxonalar" orqali boshqa kutubxonalarni ko'ra olmaydi) */}
-      {singleLibrary ? (
-        <div className="text-sm text-slate-600">
-          {t("currentLibrary")} <span className="font-medium text-slate-900">{libraries[0].name}</span>
-        </div>
-      ) : (
-        <div>
-          <label htmlFor="books-lib-filter" className="sr-only">
-            {t("filterLabel")}
-          </label>
-          <select
-            id="books-lib-filter"
-            value={selectedLib}
-            onChange={(e) => setSelectedLib(e.target.value)}
-            className="border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="">{t("allLibraries")}</option>
-            {(libraries as Library[]).map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Inventarizatsiya — real raqamlar (bitta kutubxona tanlanganda) */}
+      {effectiveLib && inv && (
+        <StatGrid cols={4}>
+          <StatCard icon={Icon.book} label={t("summary.copies")} value={inv.dbBookCount} tone="blue" />
+          <StatCard icon={Icon.check} label={t("summary.available")} value={inv.availableCount} tone="green" />
+          <StatCard icon={Icon.readers} label={t("summary.borrowed")} value={inv.borrowedCount} tone="amber" />
+          <StatCard
+            icon={Icon.checklist}
+            label={t("summary.declared")}
+            value={inv.declaredFundCount}
+            tone={inv.alert ? "rose" : "gray"}
+            sub={
+              inv.discrepancy > 0
+                ? t("summary.discrepancy", { count: inv.discrepancy, pct: inv.discrepancyPct })
+                : t("summary.inSync")
+            }
+          />
+        </StatGrid>
       )}
+
+      {/* Qidiruv + filtrlar */}
+      <div className="card-surface rounded-xl p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Icon.search
+              aria-hidden="true"
+              size={ICON_SIZE.sm}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <Input
+              id="books-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("toolbar.searchPlaceholder")}
+              aria-label={t("toolbar.searchLabel")}
+              autoComplete="off"
+              className="pl-9 pr-9"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label={t("toolbar.clearSearch")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-surface-muted hover:text-slate-600"
+              >
+                <Icon.close aria-hidden="true" size={ICON_SIZE.sm} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Kutubxona filter — bitta kutubxona bo'lsa yashiriladi (librarian
+                "Barcha kutubxonalar" orqali boshqa kutubxonalarni ko'ra olmaydi) */}
+            {!singleLibrary && (
+              <>
+                <label htmlFor="books-lib-filter" className="sr-only">
+                  {t("filterLabel")}
+                </label>
+                <select
+                  id="books-lib-filter"
+                  value={selectedLib}
+                  onChange={(e) => setSelectedLib(e.target.value)}
+                  className="h-10 rounded-md border border-line-strong bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="">{t("allLibraries")}</option>
+                  {(libraries as Library[]).map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <label htmlFor="books-genre" className="sr-only">{t("toolbar.genre")}</label>
+            <Input
+              id="books-genre"
+              list="books-genre-options"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              placeholder={t("toolbar.anyGenre")}
+              autoComplete="off"
+              className="w-44"
+            />
+            <datalist id="books-genre-options">
+              {genreOptions.map((g) => (
+                <option key={g} value={g} />
+              ))}
+            </datalist>
+
+            <label htmlFor="books-lang" className="sr-only">{t("toolbar.lang")}</label>
+            <select
+              id="books-lang"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="h-10 rounded-md border border-line-strong bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">{t("toolbar.anyLang")}</option>
+              {LANG_OPTIONS.map((l) => (
+                <option key={l.code} value={l.code}>{t(l.key)}</option>
+              ))}
+            </select>
+
+            <label className="inline-flex h-10 cursor-pointer select-none items-center gap-2 rounded-md border border-line-strong bg-white px-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={onlyAvailable}
+                onChange={(e) => setOnlyAvailable(e.target.checked)}
+                className="h-4 w-4 rounded border-line-strong accent-brand-600"
+              />
+              {t("toolbar.onlyAvailable")}
+            </label>
+
+            {hasFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1">
+                <Icon.close aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("toolbar.resetFilters")}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {list.data && (
+          <p className="mt-2 text-xs text-slate-500" aria-live="polite">
+            {hasFilters ? t("toolbar.found", { count: total }) : t("toolbar.totalCount", { count: total })}
+            {singleLibrary && (
+              <>
+                {" · "}
+                {t("currentLibrary")} <span className="font-medium text-slate-700">{libraries[0].name}</span>
+              </>
+            )}
+          </p>
+        )}
+      </div>
 
       {/* Import progress — BOOK-01 (Plan 02-04): polled BullMQ job state */}
       {importStatus && importJobId && (
@@ -354,26 +652,55 @@ export default function BooksPage() {
       )}
 
       {/* Kitoblar ro'yxati */}
-      {isLoading ? (
-        <div className="text-center py-12 text-slate-500">{t("loading")}</div>
-      ) : isError ? (
+      {list.isLoading ? (
+        <SkeletonTable rows={6} columns={5} />
+      ) : list.isError ? (
         <ErrorState
           title={t("loadError.title")}
           message={t("loadError.message")}
-          onRetry={() => refetch()}
-          isRetrying={isRefetching}
+          onRetry={() => list.refetch()}
+          isRetrying={list.isRefetching}
         />
+      ) : listIsEmpty ? (
+        hasFilters ? (
+          <EmptyState
+            icon={Icon.search}
+            title={t("noResults.title")}
+            description={t("noResults.description")}
+            action={
+              <Button type="button" variant="outline" onClick={resetFilters}>
+                {t("noResults.reset")}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={Icon.bookClosed}
+            title={t("emptyFund.title")}
+            description={t("emptyFund.description")}
+            action={
+              <Button type="button" onClick={() => setShowAdd(true)} className="gap-1.5">
+                <Icon.add aria-hidden="true" size={ICON_SIZE.sm} />
+                {t("emptyFund.add")}
+              </Button>
+            }
+          />
+        )
       ) : (
-        <>
-          {/* Telefon (sm dan past): karta-ro'yxat — 8 ustunli jadval siqilib
-              o'qib bo'lmas edi. */}
+        <div
+          className={cn(
+            "transition-opacity",
+            list.isFetching && list.isPlaceholderData ? "opacity-60" : "opacity-100"
+          )}
+        >
+          {/* Telefon (sm dan past): karta-ro'yxat — jadval siqilib o'qib bo'lmas edi. */}
           <div className="space-y-3 sm:hidden">
-            {(books as Book[]).map((book) => (
+            {books.map((book) => (
               <BookRow
                 key={book.id}
                 book={book}
                 meta={
-                  <span className="text-xs">
+                  <span className="text-xs tabular-nums">
                     <span className={book.availableCount === 0 ? "font-medium text-red-600" : "font-medium text-green-700"}>
                       {book.availableCount}
                     </span>
@@ -383,72 +710,78 @@ export default function BooksPage() {
                 action={rowActions(book)}
               />
             ))}
-            {books.length === 0 && (
-              <div className="rounded-xl border border-dashed border-line-strong bg-white px-4 py-8 text-center text-sm text-slate-400">
-                {t("emptyList")}
-              </div>
-            )}
           </div>
 
           {/* Jadval — sm va undan keng ekranlarda */}
-          <div className="hidden overflow-x-auto rounded-xl border border-line sm:block">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-muted text-slate-600 text-left">
-                <tr>
-                  {[t("table.cover"), t("table.isbn"), t("table.name"), t("table.author"), t("table.genre"), t("table.year"), t("table.totalAvailable"), t("table.actions")].map((h) => (
-                    <th key={h} className="px-4 py-3 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {(books as Book[]).map((book) => (
-                  <tr key={book.id} className="hover:bg-surface-muted">
-                    <td className="px-4 py-3">
-                      <BookCover
-                        size="sm"
-                        title={book.title}
-                        author={book.author}
-                        genre={book.genre}
-                        coverUrl={book.coverUrl}
-                      />
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{book.isbn}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900 max-w-[200px] truncate">{book.title}</td>
-                    <td className="px-4 py-3 text-slate-700">{book.author}</td>
-                    <td className="px-4 py-3 text-slate-600">{book.genre}</td>
-                    <td className="px-4 py-3 text-slate-600">{book.year || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={book.availableCount === 0 ? "text-red-600 font-medium" : "text-green-700 font-medium"}>
-                        {book.availableCount}
-                      </span>
-                      <span className="text-slate-400">/{book.totalCount}</span>
-                    </td>
-                    <td className="px-4 py-3">{rowActions(book)}</td>
-                  </tr>
-                ))}
-                {books.length === 0 && (
+          <div className="card-surface hidden overflow-hidden rounded-xl sm:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-muted text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                      {t("emptyList")}
-                    </td>
+                    <th scope="col" className="px-4 py-2.5">{t("table.book")}</th>
+                    <th scope="col" className="hidden px-4 py-2.5 md:table-cell">{t("table.genre")}</th>
+                    <th scope="col" className="hidden px-4 py-2.5 lg:table-cell">{t("table.lang")}</th>
+                    <th scope="col" className="hidden px-4 py-2.5 lg:table-cell">{t("table.year")}</th>
+                    <th scope="col" className="px-4 py-2.5">
+                      {t("table.copies")}{" "}
+                      <span className="font-normal normal-case tracking-normal text-slate-400">
+                        ({t("table.copiesHint")})
+                      </span>
+                    </th>
+                    <th scope="col" className="whitespace-nowrap px-4 py-2.5 text-right">{t("table.actions")}</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {books.map((book) => (
+                    <tr key={book.id} className="transition-colors hover:bg-surface-muted/60">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-3">
+                          <BookCover
+                            size="xs"
+                            title={book.title}
+                            author={book.author}
+                            genre={book.genre}
+                            coverUrl={book.coverUrl}
+                          />
+                          <div className="min-w-0 max-w-[22rem]">
+                            <p className="truncate font-medium text-slate-900" title={book.title}>{book.title}</p>
+                            <p className="truncate text-xs text-slate-500" title={book.author}>{book.author}</p>
+                            <p className="font-mono text-[11px] text-slate-400">{book.isbn}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden px-4 py-2.5 md:table-cell">
+                        {book.genre ? (
+                          <span className="inline-flex max-w-[10rem] truncate rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                            {book.genre}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="hidden px-4 py-2.5 text-xs text-slate-600 lg:table-cell">{langLabel(book.lang)}</td>
+                      <td className="hidden px-4 py-2.5 tabular-nums text-slate-600 lg:table-cell">{book.year || "—"}</td>
+                      <td className="px-4 py-2.5">{renderAvailability(book)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5">{rowActions(book)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Pagination + sahifa hajmi (20/50/100) */}
-      {!isLoading && !isError && (
-        <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Pagination + sahifa hajmi (20/50/100) — jami son backend'dan */}
+      {!list.isLoading && !list.isError && total > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <label htmlFor="books-page-size">{t("pageSize")}</label>
             <select
               id="books-page-size"
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value))}
-              className="border border-line-strong rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="h-9 rounded-md border border-line-strong bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {[20, 50, 100].map((n) => (
                 <option key={n} value={n}>{n}</option>
@@ -456,38 +789,45 @@ export default function BooksPage() {
             </select>
             <span>{t("pageSizeUnit")}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
+          <div className="flex items-center gap-3">
+            <span className="text-sm tabular-nums text-slate-500">
+              {t("pagination.range", {
+                from: (page - 1) * limit + 1,
+                to: Math.min(page * limit, total),
+                total
+              })}
+              <span className="mx-2 text-slate-300">·</span>
+              {t("pagination.pageOf", { page, pages })}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
               aria-label={t("prevPage")}
-              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-sm text-slate-600 hover:bg-surface-muted disabled:opacity-40"
+              className="gap-1"
             >
               <Icon.next aria-hidden="true" size={ICON_SIZE.sm} className="rotate-180" />
               {t("prev")}
-            </button>
-            <span className="text-sm text-slate-500">{t("pageN", { page })}</span>
-            {/* GET /books hozircha jami sonni (total) qaytarmaydi — faqat
-                Book[] keladi, shuning uchun oxirgi sahifani aniq bilib
-                bo'lmaydi. `books.length < limit` evristikasi: to'liq sahifa
-                kelsa "Keyingi" ochiq qoladi (oxirgi sahifa aynan limit ta
-                bo'lsa bitta bo'sh sahifa ko'rinishi mumkin). API total
-                qaytarganda `page * limit < total` sharti va "N-sahifa / M"
-                ko'rinishiga o'tkaziladi. */}
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={books.length < limit}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              disabled={page >= pages}
               aria-label={t("nextPage")}
-              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-sm text-slate-600 hover:bg-surface-muted disabled:opacity-40"
+              className="gap-1"
             >
               {t("next")}
               <Icon.next aria-hidden="true" size={ICON_SIZE.sm} />
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      {/* O'chirishni tasdiqlash — kitob nomi sarlavhada */}
+      {/* O'chirishni tasdiqlash — kitob kartasi, kitobxonlardagi nusxa ogohlantirishi, xato */}
       <ConfirmModal
         open={!!deleteTarget}
         title={deleteTarget ? t("deleteModal.titleNamed", { title: deleteTarget.title }) : t("deleteModal.title")}
@@ -495,9 +835,53 @@ export default function BooksPage() {
         confirmLabel={t("deleteModal.confirm")}
         variant="destructive"
         isPending={del.isPending}
+        disabled={!!deleteTarget && deleteTarget.availableCount < deleteTarget.totalCount}
         onConfirm={() => deleteTarget && del.mutate(deleteTarget.id)}
-        onCancel={() => setDeleteTarget(null)}
-      />
+        onCancel={() => {
+          setDeleteTarget(null);
+          del.reset();
+        }}
+      >
+        {deleteTarget && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-muted/60 p-3">
+              <BookCover
+                size="xs"
+                title={deleteTarget.title}
+                author={deleteTarget.author}
+                genre={deleteTarget.genre}
+                coverUrl={deleteTarget.coverUrl}
+              />
+              <div className="min-w-0 text-sm">
+                <p className="truncate font-medium text-slate-900">{deleteTarget.title}</p>
+                <p className="truncate text-xs text-slate-500">
+                  {t("deleteModal.meta", { author: deleteTarget.author, isbn: deleteTarget.isbn })}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {t("deleteModal.copiesRow", {
+                    available: deleteTarget.availableCount,
+                    total: deleteTarget.totalCount
+                  })}
+                </p>
+              </div>
+            </div>
+            {deleteTarget.availableCount < deleteTarget.totalCount && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-accent-700">
+                <Icon.warning aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
+                {t("deleteModal.borrowedWarning", {
+                  count: deleteTarget.totalCount - deleteTarget.availableCount
+                })}
+              </div>
+            )}
+            {deleteError && (
+              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <Icon.error aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
+                {deleteError}
+              </div>
+            )}
+          </div>
+        )}
+      </ConfirmModal>
 
       {(showAdd || editBook) && (
         <BookFormModal
@@ -505,10 +889,47 @@ export default function BooksPage() {
           libraryId={effectiveLib || libraries[0]?.id || ""}
           libraries={libraries}
           onClose={() => { setShowAdd(false); setEditBook(null); }}
-          onSaved={() => { qc.invalidateQueries({ queryKey: ["books"] }); setShowAdd(false); setEditBook(null); }}
+          onSaved={() => { invalidateFund(); setShowAdd(false); setEditBook(null); }}
         />
       )}
     </DashboardPage>
+  );
+}
+
+/**
+ * FormField ichidagi <select>: FormField bolaga `id`, `aria-describedby` va
+ * (xato bo'lsa) `hasError` beradi — xom <select> `hasError` ni DOM'ga
+ * uzatib React ogohlantirishi chiqarardi. Shu o'ram uni uslubga aylantiradi.
+ */
+function NativeSelect({
+  hasError,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { hasError?: boolean }) {
+  return (
+    <select
+      aria-invalid={hasError || undefined}
+      className={cn(
+        "flex h-10 w-full rounded-md border bg-white px-3 text-sm transition-colors",
+        "focus:border-transparent focus:outline-none focus:ring-2",
+        "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-slate-400",
+        hasError
+          ? "border-red-400 focus:ring-red-500"
+          : "border-line-strong hover:border-gray-400 focus:ring-brand-500",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Forma bo'limi — kichik sarlavha + maydonlar. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset className="space-y-3">
+      <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</legend>
+      {children}
+    </fieldset>
   );
 }
 
@@ -529,26 +950,30 @@ function BookFormModal({
   // kaskadi orqali tanlaydi. Muassasa admin/kutubxonachi esa faqat o'z
   // (filial) kutubxonalarini ko'radi — kaskad shart emas.
   const t = useTranslations("BooksPanel");
+  const toast = useToast();
   const currentUser = useAuthStore((s) => s.user);
   const isSuper = currentUser?.role === "SUPER_ADMIN";
   const libTypeLabel = (type: string) =>
     (LIB_TYPE_KEYS as readonly string[]).includes(type) ? t(`libTypes.${type}`) : type;
 
+  // Raqamli maydonlar MATN sifatida saqlanadi: bo'sh = noma'lum (0 emas).
+  // Avval "Yil: 0" / "Sahifalar: 0" default'lari ko'rinardi.
   const [form, setForm] = useState({
     isbn: book?.isbn ?? "",
     title: book?.title ?? "",
     author: book?.author ?? "",
     genre: book?.genre ?? "",
     lang: book?.lang ?? "uz",
-    pages: book?.pages ?? 0,
-    year: book?.year ?? 0,
+    pages: book?.pages ? String(book.pages) : "",
+    year: book?.year ? String(book.year) : "",
     coverUrl: book?.coverUrl ?? "",
     description: book?.description ?? "",
-    totalCount: book?.totalCount ?? 1,
+    totalCount: String(book?.totalCount ?? 1),
     // Super admin add rejimida bo'sh boshlanadi (kaskad orqali tanlanadi);
     // muassasa admin uchun o'z kutubxonasi oldindan tanlangan bo'ladi.
     libraryId: book?.libraryId ?? (isSuper ? "" : libraryId)
   });
+  const [submitted, setSubmitted] = useState(false);
   const [isbnLoading, setIsbnLoading] = useState(false);
   // Yumshoq maslahat (topilmadi → qo'lda to'ldirish) — qizil xato emas.
   const [isbnHint, setIsbnHint] = useState("");
@@ -579,7 +1004,7 @@ function BookFormModal({
   // Viloyat/tuman variantlari KUTUBXONALAR ro'yxatidan olinadi (faqat
   // kutubxonasi bor hududlar ko'rinadi); nomlari geo'dan bog'lanadi.
   const viloyatNameById = new Map(viloyatList.map((v) => [v.id, v.name]));
-  const tumanNameById = new Map(tumanList.map((t) => [t.id, t.name]));
+  const tumanNameById = new Map(tumanList.map((tm) => [tm.id, tm.name]));
   const viloyatOptions = [
     ...Array.from(
       new Set(libraries.map((l) => l.viloyatId).filter(Boolean) as string[])
@@ -614,11 +1039,51 @@ function BookFormModal({
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
 
+  // ── Validatsiya ────────────────────────────────────────────────────────────
+  const currentYear = new Date().getFullYear();
+  const borrowed = book ? Math.max(0, book.totalCount - book.availableCount) : 0;
+  const minCopies = Math.max(1, borrowed);
+  const yearNum = form.year.trim() ? Number(form.year) : undefined;
+  const copiesNum = Number(form.totalCount);
+  const errors = {
+    isbn: submitted && !form.isbn.trim() ? t("form.isbnTooShort") : undefined,
+    title: submitted && !form.title.trim() ? t("form.titleRequired") : undefined,
+    author: submitted && !form.author.trim() ? t("form.authorRequired") : undefined,
+    year:
+      yearNum !== undefined && (!Number.isInteger(yearNum) || yearNum < 1400 || yearNum > currentYear + 1)
+        ? t("form.yearInvalid", { min: 1400, max: currentYear + 1 })
+        : undefined,
+    copies:
+      !Number.isInteger(copiesNum) || copiesNum < minCopies
+        ? borrowed > 0
+          ? t("form.copiesMin", { count: borrowed })
+          : t("form.copiesHint")
+        : undefined,
+    library: submitted && !form.libraryId ? t("form.libraryRequired") : undefined
+  };
+  const isbnWarning = form.isbn.trim() && !isbnChecksumOk(form.isbn) ? t("form.isbnChecksum") : "";
+  const requiredOk =
+    !!form.isbn.trim() && !!form.title.trim() && !!form.author.trim() && !!form.libraryId;
+  const canSubmit = requiredOk && !errors.year && !errors.copies;
+
   const save = useMutation({
-    mutationFn: () =>
-      book
-        ? updateBook(book.id, form)
-        : createBook(form as any),
+    mutationFn: () => {
+      const payload: CreateBookInput = {
+        isbn: form.isbn.trim(),
+        title: form.title.trim(),
+        author: form.author.trim(),
+        genre: form.genre.trim(),
+        lang: form.lang,
+        // 0 = noma'lum (jadvalda "—"); backend sxemasida son majburiy.
+        pages: form.pages.trim() ? Number(form.pages) : 0,
+        year: yearNum ?? 0,
+        coverUrl: form.coverUrl,
+        description: form.description,
+        totalCount: Math.max(minCopies, copiesNum || 1),
+        libraryId: form.libraryId
+      };
+      return book ? updateBook(book.id, payload) : createBook(payload);
+    },
     onSuccess: (result) => {
       // Qo'shishda dublikat bo'lsa (shu kutubxonada bor edi — nusxa qo'shildi)
       // aniq xabarni ko'rsatamiz va modalni ochiq qoldiramiz; aks holda yopamiz.
@@ -630,13 +1095,20 @@ function BookFormModal({
         );
         return;
       }
+      toast.success(book ? t("toast.updated") : t("toast.created"));
       onSaved();
     },
-    onError: () => {
+    onError: (err) => {
       setSaveMessage("");
-      setSaveError(t("form.saveError"));
+      setSaveError(apiError(err).message || t("form.saveError"));
     }
   });
+
+  const submit = () => {
+    setSubmitted(true);
+    if (!canSubmit || save.isPending) return;
+    save.mutate();
+  };
 
   const handleIsbnLookup = async () => {
     setIsbnOk("");
@@ -656,8 +1128,8 @@ function BookFormModal({
           ...f,
           title: data.title ?? f.title,
           author: data.author ?? f.author,
-          pages: data.pages ?? f.pages,
-          year: data.year ?? f.year,
+          pages: data.pages ? String(data.pages) : f.pages,
+          year: data.year ? String(data.year) : f.year,
           genre: data.genre ?? f.genre,
           lang: data.lang ?? f.lang,
           coverUrl: data.coverUrl ?? f.coverUrl,
@@ -699,91 +1171,169 @@ function BookFormModal({
     }
   };
 
-  const set = (k: string, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold mb-4">{book ? t("form.editTitle") : t("form.newTitle")}</h2>
-
-        <div className="space-y-3">
-          {/* ISBN + auto-fill */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.isbnLabel")}</label>
-            <div className="flex gap-2">
-              <input
+    <Modal
+      open
+      title={book ? t("form.editTitle") : t("form.newTitle")}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      footer={
+        <>
+          <span className="self-center text-xs text-slate-500 sm:mr-auto">{t("form.requiredNote")}</span>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {saveMessage ? t("form.close") : t("form.cancel")}
+          </Button>
+          {saveMessage ? (
+            // Dublikat: nusxa qo'shildi — ro'yxatni yangilab modalni yopamiz.
+            <Button type="button" onClick={onSaved}>{t("form.done")}</Button>
+          ) : (
+            <Button
+              type="submit"
+              form="book-form"
+              isLoading={save.isPending}
+              disabled={submitted && !canSubmit}
+            >
+              {save.isPending ? t("form.saving") : t("form.save")}
+            </Button>
+          )}
+        </>
+      }
+    >
+      <form
+        id="book-form"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="space-y-6"
+      >
+        {/* ── ISBN + avtoto'ldirish ─────────────────────────────────────────── */}
+        <Section title={t("form.sectionIsbn")}>
+          <div className="flex items-start gap-2">
+            <FormField
+              id="book-isbn"
+              label={t("form.isbnLabel")}
+              className="flex-1"
+              error={errors.isbn}
+              hint={isbnOk || isbnWarning || isbnHint || t("form.isbnHint")}
+            >
+              <Input
                 value={form.isbn}
                 onChange={(e) => set("isbn", e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleIsbnLookup();
+                  }
+                }}
                 placeholder={t("form.isbnPlaceholder")}
-                className="flex-1 border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                inputMode="numeric"
+                autoComplete="off"
+                className="font-mono"
               />
-              <button
-                type="button"
-                onClick={handleIsbnLookup}
-                disabled={isbnLoading}
-                className="px-3 py-2 bg-surface-sunken hover:bg-line rounded-lg text-sm font-medium text-slate-700 disabled:opacity-50"
-              >
-                {isbnLoading ? "…" : t("form.isbnSearch")}
-              </button>
-            </div>
-            {isbnHint && <p className="text-accent-600 text-xs mt-1">{isbnHint}</p>}
-            {isbnOk && <p className="text-emerald-600 text-xs mt-1">{isbnOk}</p>}
+            </FormField>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleIsbnLookup}
+              isLoading={isbnLoading}
+              className="mt-6 shrink-0 gap-1.5"
+            >
+              <Icon.search aria-hidden="true" size={ICON_SIZE.sm} />
+              {t("form.isbnSearch")}
+            </Button>
           </div>
+          {isbnOk && (
+            <p className="-mt-1 flex items-center gap-1.5 text-xs text-green-700">
+              <Icon.check aria-hidden="true" size={ICON_SIZE.xs} />
+              {isbnOk}
+            </p>
+          )}
+        </Section>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.nameLabel")}</label>
-            <input value={form.title} onChange={(e) => set("title", e.target.value)}
-              className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.authorLabel")}</label>
-            <input value={form.author} onChange={(e) => set("author", e.target.value)}
-              className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.genreLabel")}</label>
-              <input value={form.genre} onChange={(e) => set("genre", e.target.value)}
+        {/* ── Asosiy ma'lumot ───────────────────────────────────────────────── */}
+        <Section title={t("form.sectionMain")}>
+          <FormField id="book-title" label={t("form.nameLabel")} error={errors.title}>
+            <Input value={form.title} onChange={(e) => set("title", e.target.value)} autoComplete="off" />
+          </FormField>
+          <FormField id="book-author" label={t("form.authorLabel")} error={errors.author}>
+            <Input value={form.author} onChange={(e) => set("author", e.target.value)} autoComplete="off" />
+          </FormField>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField id="book-genre" label={t("form.genreLabel")}>
+              <Input
+                list="book-genre-options"
+                value={form.genre}
+                onChange={(e) => set("genre", e.target.value)}
                 placeholder={t("form.genrePlaceholder")}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.langLabel")}</label>
-              <select value={form.lang} onChange={(e) => set("lang", e.target.value)}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="uz">{t("form.langUz")}</option>
-                <option value="ru">{t("form.langRu")}</option>
-                <option value="en">{t("form.langEn")}</option>
-                <option value="kaa">{t("form.langKaa")}</option>
-              </select>
-            </div>
+                autoComplete="off"
+              />
+            </FormField>
+            <datalist id="book-genre-options">
+              {GENRE_SUGGESTIONS.map((g) => (
+                <option key={g} value={g} />
+              ))}
+            </datalist>
+            <FormField id="book-lang" label={t("form.langLabel")}>
+              <NativeSelect value={form.lang} onChange={(e) => set("lang", e.target.value)}>
+                {LANG_OPTIONS.map((l) => (
+                  <option key={l.code} value={l.code}>{t(l.key)}</option>
+                ))}
+              </NativeSelect>
+            </FormField>
           </div>
+        </Section>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.yearLabel")}</label>
-              <input type="number" value={form.year} onChange={(e) => set("year", parseInt(e.target.value) || 0)}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.pagesLabel")}</label>
-              <input type="number" value={form.pages} onChange={(e) => set("pages", parseInt(e.target.value) || 0)}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.copiesLabel")}</label>
-              <input type="number" min={1} value={form.totalCount} onChange={(e) => set("totalCount", Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
+        {/* ── Nashr va nusxalar ─────────────────────────────────────────────── */}
+        <Section title={t("form.sectionPublish")}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FormField id="book-year" label={t("form.yearLabel")} error={errors.year}>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1400}
+                max={currentYear + 1}
+                value={form.year}
+                onChange={(e) => set("year", e.target.value)}
+                placeholder={t("form.yearPlaceholder")}
+              />
+            </FormField>
+            <FormField id="book-pages" label={t("form.pagesLabel")}>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={form.pages}
+                onChange={(e) => set("pages", e.target.value)}
+                placeholder={t("form.pagesPlaceholder")}
+              />
+            </FormField>
+            <FormField
+              id="book-copies"
+              label={t("form.copiesLabel")}
+              error={errors.copies}
+              hint={borrowed > 0 ? t("form.copiesMin", { count: borrowed }) : t("form.copiesHint")}
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={minCopies}
+                value={form.totalCount}
+                onChange={(e) => set("totalCount", e.target.value)}
+              />
+            </FormField>
           </div>
+        </Section>
 
-          {/* Muqova rasmi — yuklash + preview. Rasm bo'lmasa BookCover
-              deterministik gradient muqova chizadi (aynan shu holat uchun). */}
+        {/* ── Muqova va tavsif ──────────────────────────────────────────────── */}
+        <Section title={t("form.sectionCover")}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.coverLabel")}</label>
-            <div className="flex items-center gap-3">
+            <p className="mb-1 block text-sm font-medium text-slate-700">{t("form.coverLabel")}</p>
+            <div className="flex items-center gap-4 rounded-xl border border-dashed border-line-strong bg-surface-muted/50 p-3">
+              {/* Rasm bo'lmasa BookCover deterministik gradient muqova chizadi. */}
               <BookCover
                 size="sm"
                 title={form.title || t("form.newTitle")}
@@ -791,150 +1341,141 @@ function BookFormModal({
                 genre={form.genre}
                 coverUrl={form.coverUrl || null}
               />
-              <div className="flex flex-col gap-1.5 items-start">
+              <div className="flex min-w-0 flex-col items-start gap-1.5">
                 <input
                   ref={coverInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => handleCoverFile(e.target.files?.[0])}
+                  onChange={(e) => {
+                    void handleCoverFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
                 />
-                <button
-                  type="button"
-                  onClick={() => coverInputRef.current?.click()}
-                  disabled={coverUploading}
-                  className="px-3 py-1.5 bg-surface-sunken hover:bg-line rounded-lg text-sm font-medium text-slate-700 disabled:opacity-50"
-                >
-                  {coverUploading ? t("form.coverUploading") : form.coverUrl ? t("form.coverReplace") : t("form.coverUpload")}
-                </button>
-                {form.coverUrl && (
-                  <button
+                <div className="flex flex-wrap gap-2">
+                  <Button
                     type="button"
-                    onClick={() => set("coverUrl", "")}
-                    className="text-xs text-red-500 hover:underline"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => coverInputRef.current?.click()}
+                    isLoading={coverUploading}
+                    className="gap-1.5"
                   >
-                    {t("form.coverRemove")}
-                  </button>
-                )}
+                    <Icon.upload aria-hidden="true" size={ICON_SIZE.xs} />
+                    {coverUploading ? t("form.coverUploading") : form.coverUrl ? t("form.coverReplace") : t("form.coverUpload")}
+                  </Button>
+                  {form.coverUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => set("coverUrl", "")}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      {t("form.coverRemove")}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">{t("form.coverHint")}</p>
+                {coverError && <p className="text-xs text-red-600">{coverError}</p>}
               </div>
             </div>
-            {coverError && <p className="text-red-500 text-xs mt-1">{coverError}</p>}
           </div>
 
-          {/* Qisqacha tavsif */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.descriptionLabel")}</label>
+            <label htmlFor="book-description" className="mb-1 block text-sm font-medium text-slate-700">
+              {t("form.descriptionLabel")}
+            </label>
             <textarea
+              id="book-description"
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               rows={3}
               maxLength={1000}
               placeholder={t("form.descriptionPlaceholder")}
-              className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+              className="w-full resize-none rounded-md border border-line-strong px-3 py-2 text-sm transition-colors placeholder:text-slate-400 hover:border-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
-            <div className="text-xs text-slate-400 text-right mt-0.5">{form.description.length}/1000</div>
+            <div className="mt-0.5 text-right text-xs tabular-nums text-slate-400">{form.description.length}/1000</div>
           </div>
+        </Section>
 
-          {!book && isSuper && (
-            // Super admin: Viloyat → Tuman → Kutubxona kaskadi (minglab
-            // kutubxona ichidan hududiy tanlash uchun).
+        {/* ── Kutubxona ─────────────────────────────────────────────────────── */}
+        {!book && isSuper && (
+          // Super admin: Viloyat → Tuman → Kutubxona kaskadi (minglab
+          // kutubxona ichidan hududiy tanlash uchun).
+          <Section title={t("form.sectionLibrary")}>
             <div className="space-y-3 rounded-xl border border-line bg-surface-muted/60 p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.viloyatLabel")}</label>
-                  <select
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField id="book-viloyat" label={t("form.viloyatLabel")}>
+                  <NativeSelect
                     value={filterViloyat}
                     onChange={(e) => { setFilterViloyat(e.target.value); setFilterTuman(""); set("libraryId", ""); }}
-                    className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                   >
                     <option value="">{t("form.select")}</option>
                     {viloyatOptions.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.tumanLabel")}</label>
-                  <select
+                  </NativeSelect>
+                </FormField>
+                <FormField id="book-tuman" label={t("form.tumanLabel")}>
+                  <NativeSelect
                     value={filterTuman}
                     onChange={(e) => { setFilterTuman(e.target.value); set("libraryId", ""); }}
                     disabled={!filterViloyat}
-                    className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white disabled:bg-surface-sunken disabled:text-slate-400"
                   >
                     <option value="">{t("form.allOption")}</option>
                     {tumanOptions.map((tm) => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
-                  </select>
-                </div>
+                  </NativeSelect>
+                </FormField>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.libraryLabel")}</label>
-                <select
+              <FormField
+                id="book-library"
+                label={t("form.libraryLabel")}
+                error={errors.library}
+                hint={filterViloyat && filteredLibs.length === 0 ? t("form.noLibsInRegion") : undefined}
+              >
+                <NativeSelect
                   value={form.libraryId}
                   onChange={(e) => set("libraryId", e.target.value)}
                   disabled={!filterViloyat}
-                  className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white disabled:bg-surface-sunken disabled:text-slate-400"
                 >
                   <option value="">{filterViloyat ? t("form.selectLibrary") : t("form.selectViloyatFirst")}</option>
                   {filteredLibs.map((l) => (
                     <option key={l.id} value={l.id}>{l.name} — {libTypeLabel(l.type)}</option>
                   ))}
-                </select>
-                {filterViloyat && filteredLibs.length === 0 && (
-                  <p className="text-accent-600 text-xs mt-1">{t("form.noLibsInRegion")}</p>
-                )}
-              </div>
+                </NativeSelect>
+              </FormField>
             </div>
-          )}
+          </Section>
+        )}
 
-          {!book && !isSuper && (
-            // Muassasa admin/kutubxonachi: viloyat/tuman avtomat (o'z muassasasi),
-            // faqat filial (kutubxona) tanlanadi.
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t("form.branchLabel")}</label>
-              <select value={form.libraryId} onChange={(e) => set("libraryId", e.target.value)}
-                className="w-full border border-line-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        {!book && !isSuper && (
+          // Muassasa admin/kutubxonachi: viloyat/tuman avtomat (o'z muassasasi),
+          // faqat filial (kutubxona) tanlanadi.
+          <Section title={t("form.sectionLibrary")}>
+            <FormField id="book-branch" label={t("form.branchLabel")} error={errors.library}>
+              <NativeSelect value={form.libraryId} onChange={(e) => set("libraryId", e.target.value)}>
                 <option value="">{t("form.select")}</option>
                 {libraries.map((l) => (
                   <option key={l.id} value={l.id}>{l.name}{l.type ? ` — ${libTypeLabel(l.type)}` : ""}</option>
                 ))}
-              </select>
-            </div>
-          )}
-        </div>
+              </NativeSelect>
+            </FormField>
+          </Section>
+        )}
 
         {/* Saqlash natijasi: dublikat nusxa (yashil-axborot) yoki xato (qizil) */}
         {saveMessage && (
-          <div className="mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+          <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            <Icon.success aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
             {saveMessage}
           </div>
         )}
         {saveError && (
-          <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <Icon.error aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
             {saveError}
           </div>
         )}
-
-        <div className="flex gap-3 justify-end mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">
-            {saveMessage ? t("form.close") : t("form.cancel")}
-          </button>
-          {saveMessage ? (
-            // Dublikat: nusxa qo'shildi — ro'yxatni yangilab modalni yopamiz.
-            <button
-              onClick={onSaved}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700"
-            >
-              {t("form.done")}
-            </button>
-          ) : (
-            <button
-              disabled={!form.isbn || !form.title || !form.author || !form.libraryId || save.isPending}
-              onClick={() => save.mutate()}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
-            >
-              {save.isPending ? t("form.saving") : t("form.save")}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

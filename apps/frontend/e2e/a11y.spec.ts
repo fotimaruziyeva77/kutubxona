@@ -126,4 +126,14 @@ test.describe("WCAG 2.1 AA — axe, haqiqiy sahifalar", () => {
     await settle(page);
     await expectNoSeriousViolations(page, "dashboard-muassasa");
   });
+
+  // Fond boshqaruvi — kutubxonachining asosiy ish sahifasi (TZ R4: UI oddiy
+  // bo'lishi kerak): jadval, filtrlar, inventarizatsiya kartalari.
+  test("dashboard — kitob fondi, kutubxonachi (login)", async ({ page }) => {
+    await login(page, ACCOUNTS.librarian, `**/${LOCALE}/dashboard**`);
+    await page.goto(`/${LOCALE}/dashboard/books`);
+    await settle(page);
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await expectNoSeriousViolations(page, "dashboard-books");
+  });
 });

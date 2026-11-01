@@ -56,11 +56,19 @@ describe("BooksController", () => {
     expect(isPublic(controller.scanQr)).toBeUndefined();
   });
 
-  it("findAll: page/limit Number'ga, berilmasa undefined (servis default'i)", async () => {
+  it("findAll: filtrlar obyektda, page/limit Number'ga, available faqat 'true'/'1' da true", async () => {
     await controller.findAll();
-    expect(svc.findAll).toHaveBeenCalledWith(undefined, undefined, undefined);
-    await controller.findAll("lib-1", "2", "50");
-    expect(svc.findAll).toHaveBeenLastCalledWith("lib-1", 2, 50);
+    expect(svc.findAll).toHaveBeenCalledWith({
+      libraryId: undefined, q: undefined, genre: undefined, lang: undefined,
+      available: false, page: undefined, limit: undefined,
+    });
+    await controller.findAll("lib-1", "Alpomish", "Epik", "uz", "true", "2", "50");
+    expect(svc.findAll).toHaveBeenLastCalledWith({
+      libraryId: "lib-1", q: "Alpomish", genre: "Epik", lang: "uz", available: true, page: 2, limit: 50,
+    });
+    // Query-string "false" — mavjudlik filtri YOQILMAYDI (string truthy tuzog'i)
+    await controller.findAll(undefined, undefined, undefined, undefined, "false");
+    expect(svc.findAll).toHaveBeenLastCalledWith(expect.objectContaining({ available: false }));
   });
 
   it("search / lookupIsbn / findOne / scanQr — to'g'ridan-to'g'ri delegatsiya", async () => {

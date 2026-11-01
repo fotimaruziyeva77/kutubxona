@@ -44,7 +44,11 @@
       "genre": "Janr",
       "year": "Jıl",
       "totalAvailable": "Barlıǵı/Bar",
-      "actions": "Ámeller"
+      "actions": "Ámeller",
+      "book": "Kitap",
+      "lang": "Til",
+      "copies": "Nusqa",
+      "copiesHint": "bar / barlıǵı"
     },
     "edit": "Redaktorlaw",
     "delete": "Óshiriw",
@@ -59,7 +63,13 @@
       "titleNamed": "\"{title}\" kitabın óshiriw",
       "title": "Kitaptı óshiriw",
       "description": "Kitap fondtan pútkilley óshiriledi. Bul ámeldi qaytarıp bolmaydı.",
-      "confirm": "Óshiriw"
+      "confirm": "Óshiriw",
+      "meta": "{author} · ISBN {isbn}",
+      "copiesRow": "{available} / {total} nusqa bar",
+      "borrowedWarning": "{count} nusqa házir oqıwshılarda. Aldın qaytarılsın — keyin óshiriw múmkin.",
+      "forbidden": "Tek mákeme admini yamasa super admin óshire aladı.",
+      "failed": "Óshirip bolmadı",
+      "deleted": "Kitap fondtan óshirildi"
     },
     "form": {
       "editTitle": "Kitaptı redaktorlaw",
@@ -108,7 +118,68 @@
       "cancel": "Biykar etiw",
       "done": "Tayar",
       "saving": "Saqlanbaqta…",
-      "save": "Saqlaw"
+      "save": "Saqlaw",
+      "sectionIsbn": "ISBN hám avtotoltırıw",
+      "sectionMain": "Tiykarǵı maǵlıwmat",
+      "sectionPublish": "Basılım hám nusqalar",
+      "sectionCover": "Muqaba hám sıpatlama",
+      "sectionLibrary": "Kitapxana",
+      "isbnHint": "13 san, sızıqsha menen de boladı. «Izlew» atı, avtor hám muqabanı avtomat toltıradı.",
+      "isbnChecksum": "Qadaǵalaw sanı sáykes emes — ISBN'di qayta tekseriń",
+      "titleRequired": "Atı kiritiliwi shárt",
+      "authorRequired": "Avtor kiritiliwi shárt",
+      "yearPlaceholder": "mısalı, 2020",
+      "yearInvalid": "Jıl {min}–{max} aralıǵında bolıwı kerek",
+      "pagesPlaceholder": "mısalı, 320",
+      "copiesHint": "Fondtaǵı barlıq nusqalar",
+      "copiesMin": "{count} nusqa oqıwshılarda — keminde sonsha bolıwı kerek",
+      "coverHint": "JPG yamasa PNG; 360 px ge shekem kishireytiledi. Súwret bolmasa muqaba avtomat sızıladı.",
+      "requiredNote": "* — májbúriy maydanlar",
+      "libraryRequired": "Kitapxana tańlań"
+    },
+    "toolbar": {
+      "searchLabel": "Fondtan izlew",
+      "searchPlaceholder": "Atı, avtor yamasa ISBN…",
+      "clearSearch": "Izlewdi tazalaw",
+      "genre": "Janr",
+      "anyGenre": "Barlıq janrlar",
+      "lang": "Til",
+      "anyLang": "Barlıq tiller",
+      "onlyAvailable": "Tek bar bolǵanlar",
+      "resetFilters": "Filtrlerdi tazalaw",
+      "found": "{count} tabıldı",
+      "totalCount": "{count} atama"
+    },
+    "summary": {
+      "copies": "Nusqalar",
+      "available": "Bar",
+      "borrowed": "Oqıwshılarda",
+      "declared": "Dizimdegi fond",
+      "discrepancy": "Ayırma: {count} nusqa ({pct}%)",
+      "inSync": "Dizim menen sáykes"
+    },
+    "availability": {
+      "none": "Joq",
+      "all": "Hámmesi ornında",
+      "out": "{count} oqıwshılarda"
+    },
+    "toast": {
+      "created": "Kitap fondqa qosıldı",
+      "updated": "Ózgerisler saqlandı"
+    },
+    "emptyFund": {
+      "title": "Fond ele bos",
+      "description": "Birinshi kitaptı qosıń yamasa Excel shablon arqalı pútkil fondtı bir jola júkleń.",
+      "add": "Kitap qosıw"
+    },
+    "noResults": {
+      "title": "Hesh nárse tabılmadı",
+      "description": "Izlew sózin yamasa filtrlerdi ózgertip kóriń.",
+      "reset": "Filtrlerdi tazalaw"
+    },
+    "pagination": {
+      "range": "{from}–{to} / {total}",
+      "pageOf": "Bet {page} / {pages}"
     }
   }
 }

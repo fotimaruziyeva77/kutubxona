@@ -44,7 +44,11 @@
       "genre": "Janr",
       "year": "Yil",
       "totalAvailable": "Jami/Mavjud",
-      "actions": "Amallar"
+      "actions": "Amallar",
+      "book": "Kitob",
+      "lang": "Til",
+      "copies": "Nusxa",
+      "copiesHint": "mavjud / jami"
     },
     "edit": "Tahrirlash",
     "delete": "O'chirish",
@@ -59,7 +63,13 @@
       "titleNamed": "\"{title}\" kitobini o'chirish",
       "title": "Kitobni o'chirish",
       "description": "Kitob fonddan butunlay o'chiriladi. Bu amalni qaytarib bo'lmaydi.",
-      "confirm": "O'chirish"
+      "confirm": "O'chirish",
+      "meta": "{author} · ISBN {isbn}",
+      "copiesRow": "{available} / {total} nusxa mavjud",
+      "borrowedWarning": "{count} ta nusxa hozir kitobxonlarda. Avval qaytarilsin — keyin o'chirish mumkin.",
+      "forbidden": "Faqat muassasa admini yoki super admin o'chira oladi.",
+      "failed": "O'chirib bo'lmadi",
+      "deleted": "Kitob fonddan o'chirildi"
     },
     "form": {
       "editTitle": "Kitobni tahrirlash",
@@ -108,7 +118,68 @@
       "cancel": "Bekor qilish",
       "done": "Tayyor",
       "saving": "Saqlanmoqda…",
-      "save": "Saqlash"
+      "save": "Saqlash",
+      "sectionIsbn": "ISBN va avtoto'ldirish",
+      "sectionMain": "Asosiy ma'lumot",
+      "sectionPublish": "Nashr va nusxalar",
+      "sectionCover": "Muqova va tavsif",
+      "sectionLibrary": "Kutubxona",
+      "isbnHint": "13 raqam, chiziqcha bilan ham bo'ladi. «Qidirish» nom, muallif va muqovani avtomatik to'ldiradi.",
+      "isbnChecksum": "Nazorat raqami mos emas — ISBN'ni qayta tekshiring",
+      "titleRequired": "Nomi kiritilishi shart",
+      "authorRequired": "Muallif kiritilishi shart",
+      "yearPlaceholder": "masalan, 2020",
+      "yearInvalid": "Yil {min}–{max} oralig'ida bo'lishi kerak",
+      "pagesPlaceholder": "masalan, 320",
+      "copiesHint": "Fonddagi jami nusxalar",
+      "copiesMin": "{count} ta nusxa kitobxonlarda — kamida shuncha bo'lishi kerak",
+      "coverHint": "JPG yoki PNG; 360 px gacha kichraytiriladi. Rasm bo'lmasa muqova avtomatik chiziladi.",
+      "requiredNote": "* — majburiy maydonlar",
+      "libraryRequired": "Kutubxona tanlang"
+    },
+    "toolbar": {
+      "searchLabel": "Fondda qidirish",
+      "searchPlaceholder": "Nomi, muallif yoki ISBN…",
+      "clearSearch": "Qidiruvni tozalash",
+      "genre": "Janr",
+      "anyGenre": "Barcha janrlar",
+      "lang": "Til",
+      "anyLang": "Barcha tillar",
+      "onlyAvailable": "Faqat mavjud",
+      "resetFilters": "Filtrlarni tozalash",
+      "found": "{count} ta topildi",
+      "totalCount": "{count} ta nom"
+    },
+    "summary": {
+      "copies": "Nusxalar",
+      "available": "Mavjud",
+      "borrowed": "Kitobxonlarda",
+      "declared": "Xatlovdagi fond",
+      "discrepancy": "Farq: {count} nusxa ({pct}%)",
+      "inSync": "Xatlov bilan mos"
+    },
+    "availability": {
+      "none": "Mavjud emas",
+      "all": "Hammasi joyida",
+      "out": "{count} ta kitobxonlarda"
+    },
+    "toast": {
+      "created": "Kitob fondga qo'shildi",
+      "updated": "O'zgarishlar saqlandi"
+    },
+    "emptyFund": {
+      "title": "Fond hali bo'sh",
+      "description": "Birinchi kitobni qo'shing yoki Excel shablon orqali butun fondni bir yo'la yuklang.",
+      "add": "Kitob qo'shish"
+    },
+    "noResults": {
+      "title": "Hech narsa topilmadi",
+      "description": "Qidiruv so'zi yoki filtrlarni o'zgartirib ko'ring.",
+      "reset": "Filtrlarni tozalash"
+    },
+    "pagination": {
+      "range": "{from}–{to} / {total}",
+      "pageOf": "Sahifa {page} / {pages}"
     }
   }
 }

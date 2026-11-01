@@ -1,4 +1,4 @@
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import type { Queue } from "bullmq";
 import { BooksService } from "../books.service";
 import { PrismaService } from "../../../infra/prisma/prisma.service";
@@ -56,6 +56,10 @@ const mockPrisma = {
   },
   user: {
     findUnique: jest.fn()
+  },
+  // remove(): berish/qaytarish tarixi tekshiruvi (FK Restrict → 409)
+  bookTransaction: {
+    count: jest.fn()
   }
 };
 
@@ -107,16 +111,50 @@ describe("BooksService", () => {
 
   // ── findAll ───────────────────────────────────────────────────────────────
   describe("findAll", () => {
-    it("barcha kitoblarni library bilan qaytaradi", async () => {
+    it("barcha kitoblarni library bilan va jami son bilan qaytaradi ({ total, page, limit, data })", async () => {
       mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+      mockPrisma.book.count.mockResolvedValue(1);
       const result = await service.findAll();
-      expect(result).toHaveLength(1);
-      expect(result[0].title).toBe("Alpomish");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].title).toBe("Alpomish");
+      expect(result).toEqual(expect.objectContaining({ total: 1, page: 1, limit: 50 }));
     });
 
-    it("libraryId filtr bilan qaytaradi", async () => {
+    it("libraryId filtr bilan qaytaradi (findMany va count bir xil where)", async () => {
       mockPrisma.book.findMany.mockResolvedValue([mockBook]);
-      await service.findAll("lib1");
+      mockPrisma.book.count.mockResolvedValue(1);
+      await service.findAll({ libraryId: "lib1" });
+      expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { libraryId: "lib1" } })
+      );
+      expect(mockPrisma.book.count).toHaveBeenCalledWith({ where: { libraryId: "lib1" } });
+    });
+
+    it("fond filtrlari: q — nomi/muallif (insensitive) + ISBN (chiziqchasiz), janr, til, faqat mavjud", async () => {
+      mockPrisma.book.findMany.mockResolvedValue([]);
+      mockPrisma.book.count.mockResolvedValue(0);
+      await service.findAll({ q: " 978-9943 ", genre: "epik", lang: "uz", available: true });
+      expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [
+              { title: { contains: "978-9943", mode: "insensitive" } },
+              { author: { contains: "978-9943", mode: "insensitive" } },
+              { isbn: { contains: "9789943" } }
+            ],
+            genre: { contains: "epik", mode: "insensitive" },
+            // "uz" → "uz", "uz-Latn", "uz-Cyrl" (DB'da kodlar aralash)
+            lang: { startsWith: "uz", mode: "insensitive" },
+            availableCount: { gt: 0 }
+          }
+        })
+      );
+    });
+
+    it("available: false → mavjudlik filtri qo'shilmaydi", async () => {
+      mockPrisma.book.findMany.mockResolvedValue([]);
+      mockPrisma.book.count.mockResolvedValue(0);
+      await service.findAll({ libraryId: "lib1", available: false });
       expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { libraryId: "lib1" } })
       );
@@ -125,6 +163,7 @@ describe("BooksService", () => {
     // AUDIT-REPORT M16 — majburiy pagination
     it("M16: default take 50, skip 0 (avval butun jadval qaytarilardi)", async () => {
       mockPrisma.book.findMany.mockResolvedValue([]);
+      mockPrisma.book.count.mockResolvedValue(0);
       await service.findAll();
       expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 50, skip: 0 })
@@ -133,15 +172,18 @@ describe("BooksService", () => {
 
     it("M16: limit 100000 → take 200 ga clamp qilinadi", async () => {
       mockPrisma.book.findMany.mockResolvedValue([]);
-      await service.findAll(undefined, 1, 100000);
+      mockPrisma.book.count.mockResolvedValue(0);
+      const result = await service.findAll({ page: 1, limit: 100000 });
       expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 200 })
       );
+      expect(result.limit).toBe(200);
     });
 
     it("M16: page 3 + limit 10 → skip 20", async () => {
       mockPrisma.book.findMany.mockResolvedValue([]);
-      await service.findAll("lib1", 3, 10);
+      mockPrisma.book.count.mockResolvedValue(0);
+      await service.findAll({ libraryId: "lib1", page: 3, limit: 10 });
       expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { libraryId: "lib1" }, skip: 20, take: 10 })
       );
@@ -149,7 +191,7 @@ describe("BooksService", () => {
 
     it("M16: noto'g'ri (NaN/manfiy) qiymatlar xavfsiz defaultlarga tushadi", async () => {
       mockPrisma.book.findMany.mockResolvedValue([]);
-      await service.findAll(undefined, Number("abc"), -5);
+      await service.findAll({ page: Number("abc"), limit: -5 });
       expect(mockPrisma.book.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 0, take: 50 })
       );
@@ -331,13 +373,33 @@ describe("BooksService", () => {
 
   // ── remove ────────────────────────────────────────────────────────────────
   describe("remove", () => {
-    it("kitobni o'chiradi", async () => {
+    it("kitobni o'chiradi (barcha nusxalar joyida, tarix yo'q)", async () => {
       mockPrisma.book.findUnique.mockResolvedValue(mockBook);
+      mockPrisma.bookTransaction.count.mockResolvedValue(0);
       mockPrisma.book.delete.mockResolvedValue({});
 
       const result = await service.remove("b1");
       expect(result.message).toContain("o'chirildi");
+      expect(mockPrisma.bookTransaction.count).toHaveBeenCalledWith({ where: { bookId: "b1" } });
       expect(mockEs.delete).toHaveBeenCalledWith(expect.objectContaining({ id: "b1" }));
+    });
+
+    it("kitobxonlardagi nusxa bo'lsa 409 — avval qaytarilishi kerak", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue({ ...mockBook, totalCount: 5, availableCount: 3 });
+      mockPrisma.book.delete.mockClear();
+
+      await expect(service.remove("b1")).rejects.toThrow(ConflictException);
+      await expect(service.remove("b1")).rejects.toThrow("2 ta nusxa hozir kitobxonlarda");
+      expect(mockPrisma.book.delete).not.toHaveBeenCalled();
+    });
+
+    it("berish/qaytarish tarixi bo'lsa 409 (FK Restrict → avval 500 chiqardi)", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue(mockBook);
+      mockPrisma.bookTransaction.count.mockResolvedValue(4);
+      mockPrisma.book.delete.mockClear();
+
+      await expect(service.remove("b1")).rejects.toThrow("4 ta berish/qaytarish yozuvi");
+      expect(mockPrisma.book.delete).not.toHaveBeenCalled();
     });
   });
 

@@ -44,7 +44,11 @@
       "genre": "Жанр",
       "year": "Йил",
       "totalAvailable": "Жами/Мавжуд",
-      "actions": "Амаллар"
+      "actions": "Амаллар",
+      "book": "Китоб",
+      "lang": "Тил",
+      "copies": "Нусха",
+      "copiesHint": "мавжуд / жами"
     },
     "edit": "Таҳрирлаш",
     "delete": "Ўчириш",
@@ -59,7 +63,13 @@
       "titleNamed": "\"{title}\" китобини ўчириш",
       "title": "Китобни ўчириш",
       "description": "Китоб фонддан бутунлай ўчирилади. Бу амални қайтариб бўлмайди.",
-      "confirm": "Ўчириш"
+      "confirm": "Ўчириш",
+      "meta": "{author} · ISBN {isbn}",
+      "copiesRow": "{available} / {total} нусха мавжуд",
+      "borrowedWarning": "{count} та нусха ҳозир китобхонларда. Аввал қайтарилсин — кейин ўчириш мумкин.",
+      "forbidden": "Фақат муассаса админи ёки супер админ ўчира олади.",
+      "failed": "Ўчириб бўлмади",
+      "deleted": "Китоб фонддан ўчирилди"
     },
     "form": {
       "editTitle": "Китобни таҳрирлаш",
@@ -108,7 +118,68 @@
       "cancel": "Бекор қилиш",
       "done": "Тайёр",
       "saving": "Сақланмоқда…",
-      "save": "Сақлаш"
+      "save": "Сақлаш",
+      "sectionIsbn": "ISBN ва автотўлдириш",
+      "sectionMain": "Асосий маълумот",
+      "sectionPublish": "Нашр ва нусхалар",
+      "sectionCover": "Муқова ва тавсиф",
+      "sectionLibrary": "Кутубхона",
+      "isbnHint": "13 рақам, чизиқча билан ҳам бўлади. «Қидириш» ном, муаллиф ва муқовани автоматик тўлдиради.",
+      "isbnChecksum": "Назорат рақами мос эмас — ISBN'ни қайта текширинг",
+      "titleRequired": "Номи киритилиши шарт",
+      "authorRequired": "Муаллиф киритилиши шарт",
+      "yearPlaceholder": "масалан, 2020",
+      "yearInvalid": "Йил {min}–{max} оралиғида бўлиши керак",
+      "pagesPlaceholder": "масалан, 320",
+      "copiesHint": "Фонддаги жами нусхалар",
+      "copiesMin": "{count} та нусха китобхонларда — камида шунча бўлиши керак",
+      "coverHint": "JPG ёки PNG; 360 px гача кичрайтирилади. Расм бўлмаса муқова автоматик чизилади.",
+      "requiredNote": "* — мажбурий майдонлар",
+      "libraryRequired": "Кутубхона танланг"
+    },
+    "toolbar": {
+      "searchLabel": "Фондда қидириш",
+      "searchPlaceholder": "Номи, муаллиф ёки ISBN…",
+      "clearSearch": "Қидирувни тозалаш",
+      "genre": "Жанр",
+      "anyGenre": "Барча жанрлар",
+      "lang": "Тил",
+      "anyLang": "Барча тиллар",
+      "onlyAvailable": "Фақат мавжуд",
+      "resetFilters": "Филтрларни тозалаш",
+      "found": "{count} та топилди",
+      "totalCount": "{count} та ном"
+    },
+    "summary": {
+      "copies": "Нусхалар",
+      "available": "Мавжуд",
+      "borrowed": "Китобхонларда",
+      "declared": "Хатловдаги фонд",
+      "discrepancy": "Фарқ: {count} нусха ({pct}%)",
+      "inSync": "Хатлов билан мос"
+    },
+    "availability": {
+      "none": "Мавжуд эмас",
+      "all": "Ҳаммаси жойида",
+      "out": "{count} та китобхонларда"
+    },
+    "toast": {
+      "created": "Китоб фондга қўшилди",
+      "updated": "Ўзгаришлар сақланди"
+    },
+    "emptyFund": {
+      "title": "Фонд ҳали бўш",
+      "description": "Биринчи китобни қўшинг ёки Excel шаблон орқали бутун фондни бир йўла юкланг.",
+      "add": "Китоб қўшиш"
+    },
+    "noResults": {
+      "title": "Ҳеч нарса топилмади",
+      "description": "Қидирув сўзи ёки филтрларни ўзгартириб кўринг.",
+      "reset": "Филтрларни тозалаш"
+    },
+    "pagination": {
+      "range": "{from}–{to} / {total}",
+      "pageOf": "Саҳифа {page} / {pages}"
     }
   }
 }

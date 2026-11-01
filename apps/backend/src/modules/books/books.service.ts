@@ -147,17 +147,58 @@ export class BooksService {
   // AUDIT-REPORT M16 — majburiy pagination: default 50, maksimum 200. Avval
   // butun books jadvali bitta so'rovda qaytarilardi. Javob shakli (massiv)
   // o'zgarmagan — mavjud chaqiruvchilar buzilmaydi, faqat hajm chegaralanadi.
-  async findAll(libraryId?: string, page = 1, limit = FIND_ALL_LIMIT_DEFAULT) {
-    const take = clampLimit(limit, FIND_ALL_LIMIT_DEFAULT, FIND_ALL_LIMIT_MAX);
-    const pageNum = Number(page);
+  /**
+   * Fond ro'yxati (boshqaruv paneli) — DB'dan, TO'LIQ qatorlar bilan.
+   *
+   * Nega `search()` emas: ES indeksida `totalCount`, `coverUrl`, `description`
+   * yo'q (indexBook) — fond jadvali uchun ular shart. Shuning uchun bu yerda
+   * Prisma, ixtiyoriy filtrlar (q — nomi/muallif/ISBN, janr, til, mavjudlik)
+   * va jami son. Javob: { total, page, limit, data } — sahifalash uchun
+   * (2026-11-01; avval faqat massiv edi, yagona chaqiruvchi — fond sahifasi).
+   */
+  async findAll(
+    params: {
+      libraryId?: string;
+      q?: string;
+      genre?: string;
+      lang?: string;
+      available?: boolean;
+      page?: number;
+      limit?: number;
+    } = {}
+  ) {
+    const take = clampLimit(params.limit, FIND_ALL_LIMIT_DEFAULT, FIND_ALL_LIMIT_MAX);
+    const pageNum = Number(params.page ?? 1);
     const safePage = Number.isFinite(pageNum) && pageNum >= 1 ? Math.floor(pageNum) : 1;
-    return this.prisma.book.findMany({
-      where: libraryId ? { libraryId } : {},
-      orderBy: { createdAt: "desc" },
-      include: { library: true },
-      skip: (safePage - 1) * take,
-      take
-    });
+    const q = params.q?.trim();
+    const genre = params.genre?.trim();
+    const where = {
+      ...(params.libraryId ? { libraryId: params.libraryId } : {}),
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: "insensitive" as const } },
+              { author: { contains: q, mode: "insensitive" as const } },
+              { isbn: { contains: q.replace(/[-\s]/g, "") } }
+            ]
+          }
+        : {}),
+      ...(genre ? { genre: { contains: genre, mode: "insensitive" as const } } : {}),
+      // Til kodlari DB'da aralash ("uz", "uz-Latn", "uz-Cyrl") — prefiks bo'yicha.
+      ...(params.lang ? { lang: { startsWith: params.lang, mode: "insensitive" as const } } : {}),
+      ...(params.available ? { availableCount: { gt: 0 } } : {})
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.book.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: { library: true },
+        skip: (safePage - 1) * take,
+        take
+      }),
+      this.prisma.book.count({ where })
+    ]);
+    return { total, page: safePage, limit: take, data };
   }
 
   // ── Excel import shabloni (.xlsx) ──────────────────────────────────────────
@@ -321,6 +362,23 @@ export class BooksService {
   // ── Kitob o'chirish ───────────────────────────────────────────────────────
   async remove(id: string) {
     const book = await this.findOne(id);
+    // Kitobxonlardagi (qaytarilmagan) nusxalar bo'lsa — o'chirib bo'lmaydi:
+    // faol tranzaksiya kitobsiz qolardi. Avval qaytarilsin.
+    const borrowed = book.totalCount - book.availableCount;
+    if (borrowed > 0) {
+      throw new ConflictException(
+        `${borrowed} ta nusxa hozir kitobxonlarda — avval qaytarilishi kerak`
+      );
+    }
+    // Berish/qaytarish tarixi (BookTransaction.bookId, Restrict): avval FK
+    // xatosi → 500 "Internal server error" chiqardi. Tarix Reading Index va
+    // audit uchun saqlanadi — aniq 409 bilan tushuntiramiz (2026-11-01).
+    const history = await this.prisma.bookTransaction.count({ where: { bookId: id } });
+    if (history > 0) {
+      throw new ConflictException(
+        `Bu kitob bo'yicha ${history} ta berish/qaytarish yozuvi bor — tarix saqlanishi uchun o'chirib bo'lmaydi. Nusxalar sonini kamaytiring.`
+      );
+    }
     await this.prisma.book.delete({ where: { id } });
     await this.removeBookFromIndex(id);
     await this.updateLibraryFundCount(book.libraryId);

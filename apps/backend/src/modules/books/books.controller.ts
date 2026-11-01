@@ -33,23 +33,38 @@ export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
   // ── Ochiq qidiruv endpointlari (auth kerak emas — @Public, INFRA-03) ──────
-  // AUDIT-REPORT M16 — majburiy pagination (default 50, max 200); javob
-  // shakli (massiv) o'zgarmagan, mavjud chaqiruvchilar buzilmaydi.
+  // AUDIT-REPORT M16 — majburiy pagination (default 50, max 200).
+  // 2026-11-01: javob { total, page, limit, data } (avval faqat massiv) —
+  // fond sahifasi sahifalash uchun jami songa muhtoj; yagona chaqiruvchi
+  // (apps/frontend lib/api/libraries.ts getBooks) shu bilan yangilandi.
+  // Filtrlar: q (nomi/muallif/ISBN), genre, lang, available=true.
   @Public()
   @Get()
   @ApiQuery({ name: "libraryId", required: false })
+  @ApiQuery({ name: "q", required: false, description: "Nomi / muallif / ISBN bo'yicha qidiruv" })
+  @ApiQuery({ name: "genre", required: false })
+  @ApiQuery({ name: "lang", required: false })
+  @ApiQuery({ name: "available", required: false, description: "true — faqat mavjud nusxasi borlar" })
   @ApiQuery({ name: "page", required: false, description: "Sahifa (default 1)" })
   @ApiQuery({ name: "limit", required: false, description: "Sahifa hajmi (default 50, max 200)" })
   findAll(
     @Query("libraryId") libraryId?: string,
+    @Query("q") q?: string,
+    @Query("genre") genre?: string,
+    @Query("lang") lang?: string,
+    @Query("available") available?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string
   ) {
-    return this.booksService.findAll(
+    return this.booksService.findAll({
       libraryId,
-      page !== undefined ? Number(page) : undefined,
-      limit !== undefined ? Number(limit) : undefined
-    );
+      q,
+      genre,
+      lang,
+      available: available === "true" || available === "1",
+      page: page !== undefined ? Number(page) : undefined,
+      limit: limit !== undefined ? Number(limit) : undefined
+    });
   }
 
   @Public()

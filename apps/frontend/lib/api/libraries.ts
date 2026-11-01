@@ -150,9 +150,38 @@ export const getNearbyLibraries = (lat: number, lon: number, radius = 10, book?:
 
 // ── Books API ─────────────────────────────────────────────────────────────────
 
-export const getBooks = (libraryId?: string, page?: number, limit?: number) =>
+/** Fond ro'yxati filtrlari — GET /books (DB, to'liq qatorlar; ES emas). */
+export interface BookListParams {
+  libraryId?: string;
+  /** Nomi / muallif / ISBN bo'yicha (backend: contains, insensitive). */
+  q?: string;
+  genre?: string;
+  lang?: string;
+  /** true — faqat mavjud nusxasi borlar. */
+  available?: boolean;
+  page?: number;
+  limit?: number;
+}
+export interface BookListResult {
+  total: number;
+  page: number;
+  limit: number;
+  data: Book[];
+}
+// 2026-11-01: javob { total, page, limit, data } — sahifalashda jami son uchun
+// (avval faqat Book[] edi). `available` faqat true bo'lganda yuboriladi:
+// query-string'dagi "false" ham backend'da truthy bo'lardi.
+export const getBooks = (params: BookListParams = {}) =>
   apiClient
-    .get<Book[]>("/books", { params: { libraryId, page, limit } })
+    .get<BookListResult>("/books", {
+      params: {
+        ...params,
+        q: params.q || undefined,
+        genre: params.genre || undefined,
+        lang: params.lang || undefined,
+        available: params.available ? "true" : undefined
+      }
+    })
     .then((r) => r.data);
 
 // Kitob import shabloni (.xlsx) yuklab olish — kutubxonachi/muassasa admini.
@@ -199,8 +228,12 @@ export const lookupIsbn = (isbn: string) =>
     >(`/books/isbn/${isbn}`)
     .then((r) => r.data);
 
-export const createBook = (dto: Omit<Book, "id" | "createdAt" | "library">) =>
-  apiClient.post<Book>("/books", dto).then((r) => r.data);
+// availableCount backend'da totalCount ga teng qilib o'rnatiladi — klient yubormaydi.
+export type CreateBookInput = Omit<Book, "id" | "createdAt" | "library" | "availableCount">;
+export const createBook = (dto: CreateBookInput) =>
+  apiClient
+    .post<Book & { duplicate?: boolean; message?: string }>("/books", dto)
+    .then((r) => r.data);
 
 export const updateBook = (id: string, dto: Partial<Book>) =>
   apiClient.put<Book>(`/books/${id}`, dto).then((r) => r.data);
