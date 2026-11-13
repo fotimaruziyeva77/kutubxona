@@ -2,9 +2,25 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "apps/backend"
+      ],
+      "port": 4000
+    },
+    {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "apps/frontend"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "apps/frontend"
+      ],
       "port": 3000,
       "autoPort": true
     }
