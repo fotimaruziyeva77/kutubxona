@@ -44,9 +44,9 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { ElasticsearchService } from "@nestjs/elasticsearch";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import type { BookImportJobData } from "./books.service";
+import { bulkIndexBooks, ensureBooksIndex } from "./books-search-index";
 
 const BATCH_SIZE = 100;
-const ES_INDEX = "books";
 
 interface RowError {
   row: number;
@@ -266,27 +266,28 @@ export class BookImportProcessor extends WorkerHost {
     return result.count;
   }
 
+  /**
+   * Partiyadagi kitoblarni `sifat_books` ga `_id` = Postgres ID bilan yozadi.
+   *
+   * Avval hujjatlar `_id`siz (ES tasodifiy ID bergan) va eski `books`
+   * indeksiga yozilardi: kitobni keyin yangilab/o'chirib bo'lmasdi, qayta
+   * import dublikat hujjat yaratardi. `createMany` ID qaytarmaydi — shuning
+   * uchun (libraryId, isbn) bo'yicha (unique) qayta o'qiymiz; skipDuplicates
+   * o'tkazgan, avval bor kitoblar ham shu bilan qayta indekslanadi (zararsiz).
+   */
   private async _bulkIndex(batch: ParsedRow[]): Promise<void> {
-    if (batch.length === 0) return;
-    const body: Array<Record<string, unknown>> = [];
-    for (const r of batch) {
-      body.push({ index: { _index: ES_INDEX } });
-      body.push({
-        isbn: r.isbn,
-        title: r.title,
-        author: r.author,
-        genre: r.genre,
-        lang: r.lang,
-        pages: r.pages,
-        year: r.year,
-        availableCount: r.totalCount,
-        libraryId: r.libraryId
-      });
-    }
-    try {
-      await this.es.bulk({ operations: body });
-    } catch {
-      // Swallowed — fallback path handles search if ES is unavailable.
+    if (batch.length === 0 || process.env.ELASTICSEARCH_ENABLED === "false") return;
+    const libraryId = batch[0].libraryId;
+    const books = await this.prisma.book.findMany({
+      where: { libraryId, isbn: { in: batch.map((r) => r.isbn) } },
+      include: { library: { select: { name: true, type: true, regionId: true, latitude: true, longitude: true } } }
+    });
+    if (books.length === 0) return;
+    // Yozishdan oldin — aks holda ES indeksni dinamik mapping bilan yaratadi.
+    await ensureBooksIndex(this.es);
+    const { failed } = await bulkIndexBooks(this.es, books);
+    if (failed > 0) {
+      this.logger.warn(`Elasticsearch: ${failed}/${books.length} ta kitob indekslanmadi (5 daqiqalik sinxronizatsiya qayta urinadi)`);
     }
   }
 

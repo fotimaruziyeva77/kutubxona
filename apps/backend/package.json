@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
+    "es:reindex": "ts-node --transpile-only src/scripts/es-reindex.ts",
     "lint": "eslint src",
     "test": "jest",
     "test:cov": "jest --coverage",

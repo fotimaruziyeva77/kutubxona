@@ -1,4 +1,4 @@
-import { NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, ConflictException, ServiceUnavailableException } from "@nestjs/common";
 import type { Queue } from "bullmq";
 import { BooksService } from "../books.service";
 import { PrismaService } from "../../../infra/prisma/prisma.service";
@@ -66,7 +66,16 @@ const mockPrisma = {
 const mockEs = {
   index: jest.fn().mockResolvedValue({}),
   search: jest.fn(),
-  delete: jest.fn().mockResolvedValue({})
+  delete: jest.fn().mockResolvedValue({}),
+  // `sifat_books` indeksi (books-search-index.ts): yaratish, bulk, son
+  count: jest.fn().mockResolvedValue({ count: 0 }),
+  bulk: jest.fn().mockResolvedValue({ errors: false, items: [] }),
+  indices: {
+    exists: jest.fn().mockResolvedValue(true),
+    create: jest.fn().mockResolvedValue({}),
+    delete: jest.fn().mockResolvedValue({}),
+    refresh: jest.fn().mockResolvedValue({})
+  }
 };
 
 const mockImportQueue = {
@@ -517,17 +526,71 @@ describe("BooksService", () => {
 
   // ── search (ES fallback) ──────────────────────────────────────────────────
   describe("search", () => {
-    it("Elasticsearch mavjud bo'lsa ES natijalarini qaytaradi", async () => {
+    it("ES: `sifat_books` dan ID + tartib + jami; maydonlar (kutubxona bilan) bazadan, ES tartibida", async () => {
       mockEs.search.mockResolvedValue({
-        hits: {
-          total: { value: 1 },
-          hits: [{ _id: "b1", _source: { title: "Alpomish", author: "Xalq dostoni" } }]
-        }
+        hits: { total: { value: 2 }, hits: [{ _id: "b2" }, { _id: "b1" }] }
       });
+      const b2 = { ...mockBook, id: "b2", title: "Mehrobdan chayon" };
+      mockPrisma.book.findMany.mockResolvedValue([mockBook, b2]); // baza tartibi boshqacha
+
+      const result = await service.search({ q: "Alpomish" });
+
+      expect(mockEs.search).toHaveBeenCalledWith(
+        expect.objectContaining({ index: "sifat_books", _source: false, track_total_hits: true })
+      );
+      expect(mockPrisma.book.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ["b2", "b1"] } },
+        include: { library: true }
+      });
+      expect(result.total).toBe(2);
+      expect(result.data.map((b) => (b as { id: string }).id)).toEqual(["b2", "b1"]);
+      // Avval ES yo'lida `library` yo'q edi — karta kutubxonaga havola bera olmasdi
+      expect((result.data[1] as { library: { name: string } }).library.name).toBe("Karmana kutubxonasi");
+    });
+
+    it("ES bazada yo'q (eskirgan) ID qaytarsa — natijadan tashlab yuboriladi", async () => {
+      mockEs.search.mockResolvedValue({
+        hits: { total: { value: 2 }, hits: [{ _id: "b1" }, { _id: "ghost" }] }
+      });
+      mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+
+      const result = await service.search({ q: "Alpomish" });
+      expect(result.data).toHaveLength(1);
+    });
+
+    it("ES 0 natija (bo'sh/eskirgan indeks) — bazada qayta tekshiriladi, kitob yo'qolmaydi", async () => {
+      mockEs.search.mockResolvedValue({ hits: { total: { value: 0 }, hits: [] } });
+      mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+      mockPrisma.book.count.mockResolvedValue(1);
 
       const result = await service.search({ q: "Alpomish" });
       expect(result.total).toBe(1);
       expect((result.data[0] as Record<string, unknown>)["title"]).toBe("Alpomish");
+      // Bu ES xatosi emas — cooldown boshlanmaydi
+      expect((service as unknown as { esCooldownUntil: number }).esCooldownUntil).toBe(0);
+    });
+
+    it("noto'g'ri sahifa (?page=abc) — 1-sahifa; ES xato bermaydi, cooldown yoqilmaydi", async () => {
+      mockEs.search.mockResolvedValue({ hits: { total: { value: 1 }, hits: [{ _id: "b1" }] } });
+      mockPrisma.book.findMany.mockResolvedValue([mockBook]);
+
+      const result = await service.search({ q: "Alpomish", page: "abc" as unknown as number });
+
+      expect(mockEs.search).toHaveBeenCalledWith(expect.objectContaining({ from: 0 }));
+      expect(result.page).toBe(1);
+      expect((service as unknown as { esCooldownUntil: number }).esCooldownUntil).toBe(0);
+    });
+
+    it("fallback: til prefiks bo'yicha; query-string'dagi available=\"false\" filtrlamaydi", async () => {
+      mockEs.search.mockRejectedValue(new Error("ES unavailable"));
+      mockPrisma.book.findMany.mockResolvedValue([]);
+      mockPrisma.book.count.mockResolvedValue(0);
+
+      await service.search({ lang: "uz", available: "false" as unknown as boolean });
+
+      const where = mockPrisma.book.findMany.mock.calls[0][0].where;
+      expect(where.lang).toEqual({ startsWith: "uz", mode: "insensitive" });
+      expect(where).not.toHaveProperty("availableCount");
     });
 
     it("ES down bo'lganda Prisma fallback ishlatadi", async () => {
@@ -617,6 +680,104 @@ describe("BooksService", () => {
       const findManyWhere = mockPrisma.book.findMany.mock.calls[0][0].where;
       const countWhere = mockPrisma.book.count.mock.calls[0][0].where;
       expect(countWhere).toEqual(findManyWhere);
+    });
+  });
+
+  // ── Elasticsearch indeksi: yozish, qayta to'ldirish, sinxronizatsiya ──────
+  describe("ES indeksi (sifat_books)", () => {
+    it("indexBook: indeks bir marta tekshiriladi, hujjat `_id` = kitob ID, kutubxona nomi bilan", async () => {
+      await service.indexBook(mockBook);
+      await service.indexBook({ ...mockBook, id: "b2" });
+
+      expect(mockEs.indices.exists).toHaveBeenCalledTimes(1);
+      expect(mockEs.index).toHaveBeenCalledWith({
+        index: "sifat_books",
+        id: "b1",
+        document: expect.objectContaining({ id: "b1", title: "Alpomish", libraryName: "Karmana kutubxonasi" })
+      });
+    });
+
+    it("indexBook: indeks yo'q bo'lsa — avval mapping bilan yaratiladi (ES dinamik yaratmasin)", async () => {
+      mockEs.indices.exists.mockResolvedValueOnce(false);
+      await service.indexBook(mockBook);
+      expect(mockEs.indices.create).toHaveBeenCalledWith(expect.objectContaining({ index: "sifat_books", mappings: expect.any(Object) }));
+      expect(mockEs.indices.create.mock.invocationCallOrder[0]).toBeLessThan(mockEs.index.mock.invocationCallOrder[0]);
+    });
+
+    it("indexBook: ES xatosi kitobni saqlashni to'xtatmaydi va indeks keyingi safar qayta tekshiriladi", async () => {
+      mockEs.index.mockRejectedValueOnce(new Error("ES down"));
+      await expect(service.indexBook(mockBook)).resolves.toBeUndefined();
+      await service.indexBook(mockBook);
+      expect(mockEs.indices.exists).toHaveBeenCalledTimes(2);
+    });
+
+    it("remove: hujjat `sifat_books` dan o'chiriladi", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue(mockBook);
+      mockPrisma.bookTransaction.count.mockResolvedValue(0);
+      mockPrisma.book.delete.mockResolvedValue({});
+      await service.remove("b1");
+      expect(mockEs.delete).toHaveBeenCalledWith({ index: "sifat_books", id: "b1" });
+    });
+
+    it("reindexAll: ES o'chiq bo'lsa 503", async () => {
+      (service as unknown as { esEnabled: boolean }).esEnabled = false;
+      await expect(service.reindexAll()).rejects.toThrow(ServiceUnavailableException);
+      expect(mockEs.bulk).not.toHaveBeenCalled();
+    });
+
+    it("reindexAll: bazadagi barcha kitoblar yoziladi, refresh, cooldown tozalanadi", async () => {
+      (service as unknown as { esCooldownUntil: number }).esCooldownUntil = Date.now() + 60_000;
+      mockPrisma.book.count.mockResolvedValue(2);
+      mockPrisma.book.findMany.mockResolvedValueOnce([mockBook, { ...mockBook, id: "b2" }]).mockResolvedValue([]);
+
+      const result = await service.reindexAll({ recreate: true });
+
+      expect(mockEs.indices.delete).toHaveBeenCalledWith({ index: "sifat_books" });
+      expect(mockEs.bulk).toHaveBeenCalledTimes(1);
+      expect(mockEs.indices.refresh).toHaveBeenCalledWith({ index: "sifat_books" });
+      expect(result).toMatchObject({ index: "sifat_books", indexState: "recreated", total: 2, indexed: 2, failed: 0 });
+      expect((service as unknown as { esCooldownUntil: number }).esCooldownUntil).toBe(0);
+    });
+
+    it("backfillIfEmpty: indeks bo'sh va bazada kitob bor — to'liq to'ldiradi; bo'sh emas — tegmaydi", async () => {
+      mockEs.count.mockResolvedValueOnce({ count: 0 });
+      mockPrisma.book.count.mockResolvedValue(1);
+      mockPrisma.book.findMany.mockResolvedValueOnce([mockBook]).mockResolvedValue([]);
+      await expect(service.backfillIfEmpty()).resolves.toBe(true);
+      expect(mockEs.bulk).toHaveBeenCalledTimes(1);
+
+      mockEs.bulk.mockClear();
+      mockEs.count.mockResolvedValueOnce({ count: 214 });
+      await expect(service.backfillIfEmpty()).resolves.toBe(false);
+      expect(mockEs.bulk).not.toHaveBeenCalled();
+    });
+
+    it("onApplicationBootstrap: ES ishlamasa ham ishga tushish yiqilmaydi", async () => {
+      mockEs.count.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
+      await new Promise((r) => setImmediate(r));
+    });
+
+    it("syncChangedBooks: oxirgi sinxronizatsiyadan (−1 daqiqa) beri o'zgargan kitoblarni indekslaydi", async () => {
+      (service as unknown as { esBackfillChecked: boolean }).esBackfillChecked = true;
+      const lastSync = new Date("2020-01-01T10:00:00.000Z");
+      (service as unknown as { lastEsSyncAt: Date }).lastEsSyncAt = lastSync;
+      mockPrisma.book.findMany.mockResolvedValueOnce([mockBook]).mockResolvedValue([]);
+
+      await expect(service.syncChangedBooks()).resolves.toEqual({ indexed: 1, failed: 0 });
+
+      const where = mockPrisma.book.findMany.mock.calls[0][0].where;
+      expect(where.updatedAt.gte.toISOString()).toBe("2020-01-01T09:59:00.000Z");
+      expect((service as unknown as { lastEsSyncAt: Date }).lastEsSyncAt.getTime()).toBeGreaterThan(lastSync.getTime());
+    });
+
+    it("syncChangedBooks: ES o'chiq yoki cooldown'da — hech narsa qilmaydi", async () => {
+      (service as unknown as { esCooldownUntil: number }).esCooldownUntil = Date.now() + 60_000;
+      await expect(service.syncChangedBooks()).resolves.toBeNull();
+      (service as unknown as { esEnabled: boolean }).esEnabled = false;
+      (service as unknown as { esCooldownUntil: number }).esCooldownUntil = 0;
+      await expect(service.syncChangedBooks()).resolves.toBeNull();
+      expect(mockEs.bulk).not.toHaveBeenCalled();
     });
   });
 

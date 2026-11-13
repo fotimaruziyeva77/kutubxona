@@ -1,15 +1,30 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
-  ConflictException
+  ConflictException,
+  ServiceUnavailableException,
+  type OnApplicationBootstrap
 } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { ElasticsearchService } from "@nestjs/elasticsearch";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import { StoreService } from "../store/store.service";
+import {
+  BOOKS_SEARCH_INDEX,
+  buildBookSearchQuery,
+  ensureBooksIndex,
+  indexBooksWhere,
+  isTruthyFlag,
+  reindexAllBooks,
+  toBookDocument,
+  type BookForIndex,
+  type ReindexResult
+} from "./books-search-index";
 import * as ExcelJS from "exceljs";
 
 export interface CreateBookDto {
@@ -86,8 +101,6 @@ export interface SearchBooksDto {
   limit?: number;
 }
 
-const ES_INDEX = "books";
-
 // AUDIT-REPORT M16 — pagination chegaralari. search() uchun limit har doim
 // [1, 100] oralig'iga, findAll() uchun [1, 200] oralig'iga qisqartiriladi —
 // aks holda ?limit=100000 bilan butun jadvalni tortib olish mumkin edi.
@@ -102,6 +115,14 @@ function clampLimit(raw: number | undefined, def: number, max: number): number {
   const n = Number(raw ?? def);
   if (!Number.isFinite(n) || n < 1) return def;
   return Math.min(Math.floor(n), max);
+}
+
+// Sahifa raqami ham query-string'dan keladi: "abc" → NaN → ES `from: NaN` xato
+// berib, HAMMA uchun 60 s cooldown yoqilardi (har kim ?page=abc bilan ES'ni
+// o'chirib qo'ya olardi); Prisma `skip: NaN` esa 500. Noto'g'ri qiymat → 1.
+function clampPage(raw: number | string | undefined): number {
+  const n = Math.floor(Number(raw ?? 1));
+  return Number.isFinite(n) && n >= 1 ? n : 1;
 }
 
 export interface BookImportJobData {
@@ -121,7 +142,9 @@ export interface BookImportStatus {
 }
 
 @Injectable()
-export class BooksService {
+export class BooksService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(BooksService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly es: ElasticsearchService,
@@ -142,6 +165,15 @@ export class BooksService {
   // ishlashda davom etadi).
   private static readonly ES_COOLDOWN_MS = 60_000;
   private esCooldownUntil = 0;
+
+  // `sifat_books` mapping bilan mavjudligi tekshirilganmi (yozishdan oldin —
+  // aks holda ES indeksni dinamik mapping bilan o'zi yaratib qo'yadi). ES
+  // xatosida qayta tekshirish uchun false ga qaytariladi.
+  private booksIndexReady = false;
+  // Bo'sh indeksni bir marta to'ldirish tekshiruvi (bootstrap yoki cron'da).
+  private esBackfillChecked = false;
+  // "O'zgargan kitoblar" sinxronizatsiyasining oxirgi muvaffaqiyatli vaqti.
+  private lastEsSyncAt = new Date();
 
   // ── Barcha kitoblar ───────────────────────────────────────────────────────
   // AUDIT-REPORT M16 — majburiy pagination: default 50, maksimum 200. Avval
@@ -540,61 +572,54 @@ export class BooksService {
 
   // ── Elasticsearch full-text qidiruv ───────────────────────────────────────
   async search(dto: SearchBooksDto) {
-    const { q, genre, lang, libraryId, available, page = 1 } = dto;
+    const { q } = dto;
+    const page = clampPage(dto.page);
     // AUDIT-REPORT M16 — limit ES yo'lida ham clamp qilinadi (max 100).
     const limit = clampLimit(dto.limit, SEARCH_LIMIT_DEFAULT, SEARCH_LIMIT_MAX);
     const from = (page - 1) * limit;
 
-    let libraryResult: { total: number | unknown; page: number; limit: number; data: object[] };
-
-    try {
-      // ES o'chirilgan bo'lsa darhol fallback'ga o'tamiz (catch ushlaydi) —
-      // o'lik ES portiga ulanish ~8s osilishining oldini oladi.
-      if (!this.esEnabled) throw new Error("Elasticsearch disabled");
-      if (Date.now() < this.esCooldownUntil) throw new Error("Elasticsearch cooldown");
-      const must: object[] = [];
-      const filter: object[] = [];
-
-      if (q) {
-        must.push({
-          multi_match: {
-            query: q,
-            fields: ["title^3", "author^2", "genre", "isbn"],
-            fuzziness: "AUTO"
-          }
+    // 1) ES: faqat ID'lar + relevantlik tartibi + jami son. O'chirilgan yoki
+    //    cooldown'da bo'lsa umuman murojaat qilinmaydi (o'lik portga ~8 s
+    //    osilish yo'q). ES'ning O'ZI yiqilsa — cooldown boshlanadi.
+    let es: { total: number; ids: string[] } | null = null;
+    if (this.esEnabled && Date.now() >= this.esCooldownUntil) {
+      try {
+        const { query, sort } = buildBookSearchQuery(dto);
+        const esResult = await this.es.search({
+          index: BOOKS_SEARCH_INDEX,
+          from,
+          size: limit,
+          query,
+          sort,
+          track_total_hits: true,
+          _source: false
         });
-      }
-      if (genre) filter.push({ term: { genre } });
-      if (lang) filter.push({ term: { lang } });
-      if (libraryId) filter.push({ term: { libraryId } });
-      if (available) filter.push({ range: { availableCount: { gt: 0 } } });
-
-      const esResult = await this.es.search({
-        index: ES_INDEX,
-        from,
-        size: limit,
-        query: {
-          bool: {
-            must: must.length ? must : [{ match_all: {} }],
-            filter
-          }
-        }
-      });
-
-      const hits = esResult.hits.hits as { _id: string; _source: Record<string, unknown> }[];
-      libraryResult = {
-        total: typeof esResult.hits.total === "object" ? esResult.hits.total.value : esResult.hits.total,
-        page,
-        limit,
-        data: hits.map((h) => ({ id: h._id, ...h._source }))
-      };
-    } catch {
-      // Elasticsearch mavjud bo'lmasa Prisma fallback. ES'ning O'ZI yiqilgan
-      // bo'lsa (o'chirilgan yoki cooldown emas) — cooldown boshlanadi.
-      if (this.esEnabled && Date.now() >= this.esCooldownUntil) {
+        const total = esResult.hits.total;
+        es = {
+          total: typeof total === "object" ? total.value : (total ?? 0),
+          ids: esResult.hits.hits.map((h) => h._id).filter((id): id is string => typeof id === "string")
+        };
+      } catch (err) {
         this.esCooldownUntil = Date.now() + BooksService.ES_COOLDOWN_MS;
+        this.booksIndexReady = false;
+        this.logger.warn(`ES qidiruv xatosi — ${BooksService.ES_COOLDOWN_MS / 1000} s Prisma: ${(err as Error).message}`);
       }
+    }
+
+    // 2) Natija maydonlari (muqova, nusxalar, kutubxona) — HAR DOIM Postgres'dan:
+    //    ES hujjatida ular yo'q va mavjudlik soni eskirgan bo'lishi mumkin.
+    //    ES 0 natija bersa — bazada qayta tekshiriladi: indeks bo'sh yoki
+    //    eskirgan bo'lsa ham kitob "topilmadi" deb ko'rsatilmaydi.
+    let libraryResult: { total: number; page: number; limit: number; data: object[] };
+    if (es && es.total > 0) {
+      libraryResult = { total: es.total, page, limit, data: await this.hydrateBooks(es.ids) };
+    } else {
       libraryResult = await this.searchFallback(dto);
+      if (es && libraryResult.total > 0) {
+        this.logger.warn(
+          `ES 0 natija, bazada ${libraryResult.total} ta — "${BOOKS_SEARCH_INDEX}" indeksi to'liq emas (npm run es:reindex)`
+        );
+      }
     }
 
     // Phase 8 Plan 08-02: include store results alongside library results (SHOP-04)
@@ -635,7 +660,8 @@ export class BooksService {
 
   // ── Prisma fallback qidiruv (ES down bo'lganda) ───────────────────────────
   async searchFallback(dto: SearchBooksDto) {
-    const { q, genre, lang, libraryId, available, page = 1 } = dto;
+    const { q, genre, lang, libraryId, available } = dto;
+    const page = clampPage(dto.page);
     // AUDIT-REPORT M16 — limit fallback yo'lida ham clamp qilinadi (max 100).
     const limit = clampLimit(dto.limit, SEARCH_LIMIT_DEFAULT, SEARCH_LIMIT_MAX);
     const skip = (page - 1) * limit;
@@ -651,9 +677,12 @@ export class BooksService {
           }
         : {}),
       ...(genre ? { genre: { contains: genre, mode: "insensitive" as const } } : {}),
-      ...(lang ? { lang } : {}),
+      // Til kodlari bazada aralash ("uz", "uz-Latn", "uz-Cyrl") — prefiks
+      // bo'yicha (ES so'rovi va fond ro'yxati bilan bir xil ma'no).
+      ...(lang ? { lang: { startsWith: lang, mode: "insensitive" as const } } : {}),
       ...(libraryId ? { libraryId } : {}),
-      ...(available ? { availableCount: { gt: 0 } } : {})
+      // Query-string'dagi "false" satri truthy — faqat haqiqiy "true" filtrlaydi.
+      ...(isTruthyFlag(available) ? { availableCount: { gt: 0 } } : {})
     };
 
     // AUDIT-REPORT M16 — total endi sahifadagi elementlar soni emas, balki
@@ -696,46 +725,132 @@ export class BooksService {
   }
 
   // ── Elasticsearch indekslash ──────────────────────────────────────────────
-  async indexBook(book: {
-    id: string;
-    isbn: string;
-    title: string;
-    author: string;
-    genre: string;
-    lang: string;
-    pages: number;
-    year: number;
-    availableCount: number;
-    libraryId: string;
-  }) {
+  // Indeks, hujjat shakli va so'rov — `./books-search-index.ts` (yagona manba).
+
+  /** `sifat_books` mapping bilan mavjud bo'lishini (bir marta) ta'minlaydi. */
+  private async ensureIndexOnce(): Promise<void> {
+    if (this.booksIndexReady) return;
+    await ensureBooksIndex(this.es);
+    this.booksIndexReady = true;
+  }
+
+  async indexBook(book: BookForIndex) {
     if (!this.esEnabled) return;
     try {
-      await this.es.index({
-        index: ES_INDEX,
-        id: book.id,
-        document: {
-          isbn: book.isbn,
-          title: book.title,
-          author: book.author,
-          genre: book.genre,
-          lang: book.lang,
-          pages: book.pages,
-          year: book.year,
-          availableCount: book.availableCount,
-          libraryId: book.libraryId
-        }
-      });
-    } catch {
-      // ES indekslash muvaffaqiyatsiz bo'lsa log qilamiz, lekin xato chiqarmaymiz
+      await this.ensureIndexOnce();
+      await this.es.index({ index: BOOKS_SEARCH_INDEX, id: book.id, document: toBookDocument(book) });
+    } catch (err) {
+      // Indekslash xatosi kitobni saqlashni to'xtatmaydi: qidiruv Prisma
+      // fallback'da topadi, 5 daqiqalik sinxronizatsiya keyin tiklaydi.
+      this.booksIndexReady = false;
+      this.logger.debug(`ES indekslash o'tkazib yuborildi (${book.id}): ${(err as Error).message}`);
     }
   }
 
   private async removeBookFromIndex(id: string) {
     if (!this.esEnabled) return;
     try {
-      await this.es.delete({ index: ES_INDEX, id });
+      await this.es.delete({ index: BOOKS_SEARCH_INDEX, id });
     } catch {
-      // ignore
+      // Hujjat yo'q bo'lishi mumkin — e'tiborsiz; qidiruv natijasi baribir
+      // bazadan to'ldiriladi (o'chirilgan kitob ko'rinmaydi).
+    }
+  }
+
+  /** ES ID'lari tartibida Postgres'dan to'liq kitoblar (kutubxona bilan). */
+  private async hydrateBooks(ids: string[]) {
+    if (ids.length === 0) return [];
+    const rows = await this.prisma.book.findMany({
+      where: { id: { in: ids } },
+      include: { library: true }
+    });
+    const byId = new Map(rows.map((b) => [b.id, b]));
+    const ordered = ids.map((id) => byId.get(id)).filter((b): b is NonNullable<typeof b> => b !== undefined);
+    if (ordered.length < ids.length) {
+      this.logger.warn(
+        `ES ${ids.length - ordered.length} ta bazada yo'q hujjat qaytardi — npm run es:reindex -- --recreate tavsiya etiladi`
+      );
+    }
+    return ordered;
+  }
+
+  /**
+   * Indeksni Postgres'dagi barcha kitoblar bilan qayta to'ldiradi (idempotent).
+   * `recreate` — indeksni o'chirib, mapping bilan qayta yaratadi (eskirgan
+   * hujjatlar ham tozalanadi). SUPER_ADMIN endpoint va `npm run es:reindex`.
+   */
+  async reindexAll(opts: { recreate?: boolean } = {}): Promise<ReindexResult> {
+    if (!this.esEnabled) {
+      throw new ServiceUnavailableException(
+        "Elasticsearch o'chirilgan (ELASTICSEARCH_ENABLED=false) — qidiruv Prisma orqali ishlaydi"
+      );
+    }
+    const startedAt = new Date();
+    const result = await reindexAllBooks({ prisma: this.prisma, es: this.es }, { recreate: opts.recreate });
+    this.booksIndexReady = true;
+    this.esBackfillChecked = true;
+    this.esCooldownUntil = 0;
+    this.lastEsSyncAt = startedAt;
+    this.logger.log(
+      `ES "${result.index}" qayta to'ldirildi: ${result.indexed}/${result.total} (xato ${result.failed}, ${result.tookMs} ms)`
+    );
+    return result;
+  }
+
+  /**
+   * Indeks bo'sh, bazada kitob bor bo'lsa — to'liq to'ldiradi. ES birinchi
+   * marta yoqilganda qidiruv o'zi ishlab ketsin (qo'lda reindex unutilsa ham).
+   * Qaytaradi: to'ldirildimi.
+   */
+  async backfillIfEmpty(): Promise<boolean> {
+    if (!this.esEnabled) return false;
+    await this.ensureIndexOnce();
+    const { count } = await this.es.count({ index: BOOKS_SEARCH_INDEX });
+    if (count > 0) {
+      this.esBackfillChecked = true;
+      return false;
+    }
+    const dbCount = await this.prisma.book.count();
+    if (dbCount === 0) {
+      this.esBackfillChecked = true;
+      return false;
+    }
+    this.logger.log(`ES "${BOOKS_SEARCH_INDEX}" bo'sh — ${dbCount} ta kitob indekslanmoqda`);
+    await this.reindexAll();
+    return true;
+  }
+
+  async onApplicationBootstrap(): Promise<void> {
+    if (!this.esEnabled) return;
+    // Fon rejimi: ES sekin/o'chiq bo'lsa ham ilova ishga tushishi kutmaydi.
+    void this.backfillIfEmpty().catch((err) =>
+      this.logger.warn(`ES dastlabki to'ldirish o'tkazib yuborildi (cron qayta urinadi): ${(err as Error).message}`)
+    );
+  }
+
+  /**
+   * Har 5 daqiqada: oxirgi sinxronizatsiyadan beri o'zgargan kitoblarni
+   * (`updatedAt`) qayta indekslaydi. Mavjudlik soni berish/qaytarish/roaming'da
+   * (transactions, libraries modullari) o'zgaradi — ularning har biriga ES
+   * chaqiruvini qo'shish o'rniga bitta joy. Ko'rsatiladigan son baribir bazadan;
+   * bu faqat "Faqat mavjud" filtrini ≤5 daqiqa aniqlikda ushlab turadi.
+   */
+  @Cron("*/5 * * * *", { name: "books-es-sync", timeZone: "Asia/Tashkent" })
+  async syncChangedBooks(): Promise<{ indexed: number; failed: number } | null> {
+    if (!this.esEnabled || Date.now() < this.esCooldownUntil) return null;
+    const tickStart = new Date();
+    try {
+      if (!this.esBackfillChecked && (await this.backfillIfEmpty())) return null;
+      await this.ensureIndexOnce();
+      // 1 daqiqalik ustma-ustlik — uzoq tranzaksiyalar va soat farqi uchun.
+      const since = new Date(this.lastEsSyncAt.getTime() - 60_000);
+      const result = await indexBooksWhere({ prisma: this.prisma, es: this.es }, { updatedAt: { gte: since } });
+      this.lastEsSyncAt = tickStart;
+      return result;
+    } catch (err) {
+      this.booksIndexReady = false;
+      this.logger.warn(`ES sinxronizatsiya o'tkazib yuborildi: ${(err as Error).message}`);
+      return null;
     }
   }
 

@@ -32,7 +32,10 @@ const config: Config = {
     "!**/common/decorators/**",
     "!**/__tests__/**",
     "!**/__mocks__/**",
-    "!**/dist/**"
+    "!**/dist/**",
+    // CLI skriptlar (es-reindex) — klientlarni yaratib umumiy funksiyani chaqiradi;
+    // mantiqning o'zi books-search-index.spec.ts da sinaladi.
+    "!**/scripts/**"
   ],
   coverageThreshold: {
     global: {

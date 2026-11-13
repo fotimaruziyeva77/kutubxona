@@ -31,7 +31,7 @@ describe("BooksController", () => {
     svc = Object.fromEntries(
       [
         "findAll", "search", "lookupIsbn", "scanUserQr", "buildBookTemplate", "findOne",
-        "create", "enqueueImport", "getImportStatus", "update", "remove",
+        "create", "enqueueImport", "getImportStatus", "update", "remove", "reindexAll",
       ].map((m) => [m, jest.fn().mockResolvedValue({ ok: m })])
     );
     controller = new BooksController(svc as unknown as BooksService);
@@ -107,6 +107,21 @@ describe("BooksController", () => {
     expect(svc.remove).toHaveBeenCalledWith("b-1");
     await controller.getImportStatus("job-7");
     expect(svc.getImportStatus).toHaveBeenCalledWith("job-7");
+  });
+
+  it("reindex: faqat SUPER_ADMIN; ?recreate=true|1 — indeksni qayta yaratish", async () => {
+    expect(roles(controller.reindex)).toEqual([UserRole.SUPER_ADMIN]);
+    expect(Reflect.getMetadata(GUARDS_METADATA, controller.reindex)).toEqual([JwtAuthGuard, RolesGuard]);
+    expect(isPublic(controller.reindex)).toBeUndefined();
+
+    await controller.reindex();
+    expect(svc.reindexAll).toHaveBeenCalledWith({ recreate: false });
+    await controller.reindex("true");
+    expect(svc.reindexAll).toHaveBeenLastCalledWith({ recreate: true });
+    await controller.reindex("1");
+    expect(svc.reindexAll).toHaveBeenLastCalledWith({ recreate: true });
+    await controller.reindex("false");
+    expect(svc.reindexAll).toHaveBeenLastCalledWith({ recreate: false });
   });
 
   it("importExcel: fayl buferi, kutubxona va so'rovchi id'si bilan navbatga (202 Accepted)", async () => {

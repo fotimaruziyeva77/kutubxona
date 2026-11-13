@@ -149,6 +149,18 @@ export class BooksController {
     return this.booksService.getImportStatus(jobId);
   }
 
+  // Elasticsearch `sifat_books` indeksini Postgres'dan qayta to'ldirish.
+  // ?recreate=true — indeksni o'chirib, mapping bilan qayta yaratadi.
+  // ES o'chiq bo'lsa 503. CLI muqobili: `npm run es:reindex -w apps/backend`.
+  @Post("reindex")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiQuery({ name: "recreate", required: false, description: "true — indeksni qayta yaratish" })
+  reindex(@Query("recreate") recreate?: string) {
+    return this.booksService.reindexAll({ recreate: recreate === "true" || recreate === "1" });
+  }
+
   @Put(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.KUTUBXONACHI, UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
