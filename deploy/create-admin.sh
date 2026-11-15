@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Birinchi SUPER_ADMIN akkaunti (yoki mavjudining parolini yangilash).
-#   cd /srv/sifat/deploy && sudo bash create-admin.sh
+#   sudo bash /srv/kutubxona/deploy/create-admin.sh
 # Ma'lumotlar so'raladi; parol ekranda ko'rinmaydi va hech qayerga yozilmaydi.
 set -euo pipefail
 cd "$(dirname "$0")"

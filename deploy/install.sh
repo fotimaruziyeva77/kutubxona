@@ -1,119 +1,129 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# SIFAT LIBRARY — serverga birinchi o'rnatish (Ubuntu 22.04/24.04, Debian 12)
+# SIFAT LIBRARY — serverga birinchi o'rnatish (boshqa saytlar bor server)
 #
-#   curl -fsSL https://raw.githubusercontent.com/fotimaruziyeva77/kutubxona/feature/frontend-fixes/deploy/install.sh -o install.sh
-#   sudo bash install.sh
+#   sudo bash /srv/kutubxona/deploy/install.sh
 #
+# Talablar (serverda allaqachon bor): Docker + compose, nginx, certbot.
 # Nima qiladi:
-#   1) RAM kam bo'lsa swap qo'shadi (build uchun)   4) deploy/.env yaratadi (sirlar)
-#   2) Docker o'rnatadi (yo'q bo'lsa)                5) build + ishga tushirish
-#   3) Kodni /srv/sifat ga yuklaydi                  6) migratsiya + geo/badge seed
-# Demo akkauntlar YARATILMAYDI (NODE_ENV=production).
+#   1) kodni feature/frontend-fixes branch'ga o'tkazadi
+#   2) deploy/.env yaratadi (tasodifiy sirlar)
+#   3) tayyor image'larni ghcr.io dan yuklaydi (serverda build YO'Q)
+#   4) baza: migratsiya + geo/badge seed (demo akkauntlar YO'Q)
+#   5) ilovani 127.0.0.1:3020 / :4020 da ishga tushiradi
+#   6) nginx'ga sifatlibrary.uz blokini qo'shadi (nginx -t xato bersa — darhol
+#      olib tashlanadi, boshqa saytlarga tegmaydi), DNS tayyor bo'lsa certbot
 # Qayta ishga tushirish xavfsiz: mavjud .env va ma'lumotlar saqlanadi.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/fotimaruziyeva77/kutubxona.git}"
 BRANCH="${BRANCH:-feature/frontend-fixes}"
-APP_DIR="${APP_DIR:-/srv/sifat}"
 DOMAIN="${DOMAIN:-sifatlibrary.uz}"
+DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$(dirname "$DEPLOY_DIR")"
 
 say() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
+warn() { printf '\n\033[1;33m!! %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31mXATO: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "root sifatida ishga tushiring: sudo bash install.sh"
-
-# ── 1. Swap ──────────────────────────────────────────────────────────────────
-mem_mb=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-swap_mb=$(awk '/SwapTotal/{print int($2/1024)}' /proc/meminfo)
-say "RAM: ${mem_mb} MB, swap: ${swap_mb} MB"
-if [ "$mem_mb" -lt 6000 ] && [ "$swap_mb" -lt 2000 ]; then
-  say "Swap 4 GB qo'shilmoqda (/swapfile)"
-  fallocate -l 4G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=4096
-  chmod 600 /swapfile
-  mkswap /swapfile >/dev/null
-  swapon /swapfile
-  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
-fi
-
-# ── 2. Docker ────────────────────────────────────────────────────────────────
-if ! command -v docker >/dev/null 2>&1; then
-  say "Docker o'rnatilmoqda"
-  apt-get update -y
-  apt-get install -y ca-certificates curl git openssl
-  curl -fsSL https://get.docker.com | sh
-fi
-command -v git >/dev/null || { apt-get update -y; apt-get install -y git; }
-command -v openssl >/dev/null || { apt-get update -y; apt-get install -y openssl; }
+command -v docker >/dev/null || die "docker topilmadi"
 docker compose version >/dev/null 2>&1 || die "docker compose plagini topilmadi"
-systemctl enable --now docker >/dev/null 2>&1 || true
+command -v nginx >/dev/null || die "nginx topilmadi"
 
-# ── 3. Kod ───────────────────────────────────────────────────────────────────
-if [ -d "$APP_DIR/.git" ]; then
-  say "Kod yangilanmoqda ($BRANCH)"
-  git -C "$APP_DIR" fetch --depth 1 origin "$BRANCH"
-  git -C "$APP_DIR" checkout -B "$BRANCH" FETCH_HEAD
-else
-  say "Kod yuklanmoqda: $REPO_URL ($BRANCH)"
-  git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
-fi
-cd "$APP_DIR/deploy"
+# ── 1. Kod ───────────────────────────────────────────────────────────────────
+say "Kod: $BRANCH ($APP_DIR)"
+git -C "$APP_DIR" fetch origin "$BRANCH"
+git -C "$APP_DIR" checkout -B "$BRANCH" "origin/$BRANCH"
+git -C "$APP_DIR" log -1 --oneline
+cd "$DEPLOY_DIR"
 
-# ── 4. .env ──────────────────────────────────────────────────────────────────
+# ── 2. .env ──────────────────────────────────────────────────────────────────
 if [ ! -f .env ]; then
   say ".env yaratilmoqda (tasodifiy sirlar)"
   cp .env.example .env
   while grep -q 'CHANGE_ME' .env; do
     sed -i "0,/CHANGE_ME/s//$(openssl rand -hex 32)/" .env
   done
-  sed -i "s#^PUBLIC_URL=.*#PUBLIC_URL=https://${DOMAIN}#; s#^SITE_ADDRESS=.*#SITE_ADDRESS=${DOMAIN}#; s#^WWW_ADDRESS=.*#WWW_ADDRESS=www.${DOMAIN}#" .env
+  sed -i "s#^PUBLIC_URL=.*#PUBLIC_URL=https://${DOMAIN}#" .env
   chmod 600 .env
 else
   say ".env mavjud — o'zgartirilmadi"
 fi
-mkdir -p backups
+mkdir -p secrets backups
+FRONTEND_PORT=$(grep -E '^FRONTEND_PORT=' .env | cut -d= -f2); FRONTEND_PORT=${FRONTEND_PORT:-3020}
+BACKEND_PORT=$(grep -E '^BACKEND_PORT=' .env | cut -d= -f2); BACKEND_PORT=${BACKEND_PORT:-4020}
 
-# ── 5. Firewall (ufw bo'lsa) ─────────────────────────────────────────────────
-if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
-  ufw allow 22/tcp >/dev/null; ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; ufw allow 443/udp >/dev/null
+# Portlar bo'shmi? (o'zimizning konteynerlar bo'lsa — normal)
+for p in "$FRONTEND_PORT" "$BACKEND_PORT"; do
+  if ss -tln | grep -q ":$p " && ! docker compose ps --format '{{.Ports}}' 2>/dev/null | grep -q ":$p->"; then
+    die "127.0.0.1:$p band — .env da FRONTEND_PORT/BACKEND_PORT ni boshqa bo'sh portga o'zgartiring"
+  fi
+done
+
+# ── 3. Image'lar ─────────────────────────────────────────────────────────────
+say "Image'lar yuklanmoqda (ghcr.io)"
+if ! docker compose --profile tools pull; then
+  die "Image yuklanmadi. GitHub → Actions → pilot-images muvaffaqiyatli tugaganini
+  tekshiring. Paket yopiq bo'lsa: docker login ghcr.io (README, 'Image yuklanmasa')."
 fi
 
-# ── 6. Build va ishga tushirish ──────────────────────────────────────────────
-say "Image'lar yig'ilmoqda (birinchi marta 10–20 daqiqa)"
-docker compose build tools
-docker compose build backend
-docker compose build frontend
-
-say "Baza va servislar ishga tushmoqda"
+# ── 4. Baza ──────────────────────────────────────────────────────────────────
+say "Baza va ichki servislar"
 docker compose up -d postgres redis vault minio kafka
-
 say "Migratsiya"
 docker compose run --rm tools npx prisma migrate deploy
-
 say "Seed: faqat geo (viloyat/tuman/mahalla) + badge katalogi"
 docker compose run --rm tools npx ts-node --transpile-only prisma/seed.ts
 
+# ── 5. Ilova ─────────────────────────────────────────────────────────────────
 say "Ilova ishga tushmoqda"
-docker compose up -d
-
-say "Backend tayyor bo'lishini kutish"
-for i in $(seq 1 40); do
-  if docker compose exec -T backend wget -qO- http://127.0.0.1:4000/health >/dev/null 2>&1; then
-    ok=1; break
-  fi
+docker compose up -d backend frontend
+ok=0
+for _ in $(seq 1 40); do
+  if curl -fsS "http://127.0.0.1:${BACKEND_PORT}/health" >/dev/null 2>&1; then ok=1; break; fi
   sleep 5
 done
-[ "${ok:-0}" = 1 ] || { docker compose logs --tail 80 backend; die "backend ishga tushmadi (log yuqorida)"; }
+[ "$ok" = 1 ] || { docker compose logs --tail 80 backend; die "backend ishga tushmadi (log yuqorida)"; }
+
+# ── 6. nginx + HTTPS ─────────────────────────────────────────────────────────
+SITE=/etc/nginx/sites-available/${DOMAIN}
+if [ -f "$SITE" ] && grep -q "listen 443" "$SITE"; then
+  say "nginx: $SITE allaqachon HTTPS bilan — o'zgartirilmadi"
+else
+  say "nginx: $DOMAIN bloki qo'shilmoqda"
+  sed -e "s/sifatlibrary\.uz/${DOMAIN}/g" \
+      -e "s/127\.0\.0\.1:4020/127.0.0.1:${BACKEND_PORT}/g" \
+      -e "s/127\.0\.0\.1:3020/127.0.0.1:${FRONTEND_PORT}/g" \
+      nginx/sifatlibrary.uz.conf > "$SITE"
+  ln -sf "$SITE" "/etc/nginx/sites-enabled/${DOMAIN}"
+  if ! nginx -t; then
+    rm -f "/etc/nginx/sites-enabled/${DOMAIN}"
+    die "nginx -t xato — blok olib tashlandi, boshqa saytlar o'zgarmadi"
+  fi
+  systemctl reload nginx
+fi
+
+server_ip=$(curl -fsS4 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+dns_ip=$(getent ahostsv4 "$DOMAIN" | awk 'NR==1{print $1}')
+if [ -n "$dns_ip" ] && [ "$dns_ip" = "$server_ip" ]; then
+  if ! grep -q "listen 443" "$SITE"; then
+    say "HTTPS sertifikat (certbot)"
+    certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --redirect --non-interactive --keep-until-expiring \
+      || warn "certbot muvaffaqiyatsiz — keyinroq qo'lda: certbot --nginx -d $DOMAIN -d www.$DOMAIN --redirect"
+  fi
+else
+  warn "DNS hali bu serverga ko'rsatmayapti ($DOMAIN → ${dns_ip:-topilmadi}, server: $server_ip).
+   DNS o'zgargach bajaring:  certbot --nginx -d $DOMAIN -d www.$DOMAIN --redirect"
+fi
 
 docker compose ps
 cat <<EOF
 
 ────────────────────────────────────────────────────────────────
  O'rnatildi.  Sayt: https://${DOMAIN}
- (DNS yangi IP ga o'tgan bo'lsa, HTTPS sertifikat 1–2 daqiqada olinadi)
 
  Keyingi qadam — birinchi super admin:
-   cd ${APP_DIR}/deploy && sudo bash create-admin.sh
+   sudo bash ${DEPLOY_DIR}/create-admin.sh
 ────────────────────────────────────────────────────────────────
 EOF
