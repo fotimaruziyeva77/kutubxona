@@ -25,6 +25,16 @@ WORKDIR /app
 # Telemetry o'chirish
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# NEXT_PUBLIC_* build paytida bundle'ga yoziladi (runtime'da o'zgarmaydi).
+#   NEXT_PUBLIC_API_URL  — brauzer chaqiradigan backend origin ("" = nisbiy /api)
+#   BACKEND_PROXY_TARGET — next.config rewrites manzili (build paytida qotadi)
+ARG NEXT_PUBLIC_API_URL=""
+ARG BACKEND_PROXY_TARGET="http://backend:4000"
+ARG NEXT_PUBLIC_SITE_URL=""
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV BACKEND_PROXY_TARGET=$BACKEND_PROXY_TARGET
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY apps/frontend/ apps/frontend/

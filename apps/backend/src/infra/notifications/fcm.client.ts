@@ -52,6 +52,15 @@ export class FcmClient implements OnModuleInit {
   }
 
   onModuleInit(): void {
+    // "disabled" — operatorning ANIQ qarori (masalan pilot: Firebase kaliti
+    // hali yo'q). Bo'sh qiymatdan farqli o'laroq prod tekshiruvidan o'tadi,
+    // lekin noto'g'ri fayl yo'li kabi jim qolmaydi — log'da ko'rinadi.
+    if (this.keyPath?.trim().toLowerCase() === "disabled") {
+      this.logger.warn(
+        "FCM_SERVICE_ACCOUNT_KEY_PATH=disabled — push bildirishnomalar o'chirilgan",
+      );
+      return;
+    }
     if (!this.keyPath) {
       // Dev no-op: NEVER throw — mirrors EskizSmsClient PITFALLS C3.
       this.logger.warn(

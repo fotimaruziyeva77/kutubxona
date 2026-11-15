@@ -8,8 +8,12 @@
 # ── Stage 1: Builder ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
-# Puppeteer/Chromium uchun kerakli tizim paketlari
+# Puppeteer/Chromium uchun kerakli tizim paketlari.
+# openssl MAJBURIY: Prisma `openssl version` orqali engine turini tanlaydi;
+# busiz OpenSSL 1.1 engine tushadi va Alpine'dagi libssl.so.3 bilan
+# yuklanmaydi ("Could not parse schema engine response").
 RUN apk add --no-cache \
+    openssl \
     chromium \
     nss \
     freetype \
@@ -40,6 +44,7 @@ FROM node:20-alpine AS runner
 # Tizim paketlari (Chromium runtime + timezone DB)
 # tzdata MAJBURIY: Alpine da timezone bazasi yo'q, shusiz TZ env e'tiborga olinmaydi (INFRA-05)
 RUN apk add --no-cache \
+    openssl \
     chromium \
     nss \
     freetype \

@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Plan 05-09 Task 3 (LAND-03) — schema.org JSON-LD for the landing page.
@@ -17,11 +18,11 @@ export function JsonLdStructuredData() {
     "@type": "GovernmentOrganization",
     name: "SIFAT LIBRARY",
     alternateName: "Milliy Kitobxonlik Indeksi Platformasi",
-    url: "https://sifat.uz",
+    url: SITE_URL,
     description:
       "O'zbekiston Respublikasining milliy kutubxonlik monitoring va reyting platformasi. PQ-9 qarori asosida ishlab chiqilgan.",
-    logo: "https://sifat.uz/brand/app-icon-512.png",
-    image: "https://sifat.uz/icons/og-main.png",
+    logo: `${SITE_URL}/brand/app-icon-512.png`,
+    image: `${SITE_URL}/icons/og-main.png`,
     address: {
       "@type": "PostalAddress",
       addressCountry: "UZ",

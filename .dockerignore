@@ -6,6 +6,7 @@
 .planning
 backup
 infra
+deploy
 k6
 tests
 scripts

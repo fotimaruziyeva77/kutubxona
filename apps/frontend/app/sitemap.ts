@@ -1,7 +1,8 @@
 import { MetadataRoute } from "next";
 import { locales } from "../i18n";
+import { SITE_URL } from "@/lib/site";
 
-const BASE_URL = "https://sifat.uz";
+const BASE_URL = SITE_URL;
 
 // Statik sahifalar
 const STATIC_PAGES = [

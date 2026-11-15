@@ -22,6 +22,7 @@ import {
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import { apiBase } from "@/lib/api/base";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Landing page — SIFAT LIBRARY.
@@ -63,7 +64,7 @@ export async function generateMetadata({
       title: "SIFAT LIBRARY",
       description,
       type: "website",
-      url: "https://sifat.uz",
+      url: SITE_URL,
       images: [{ url: "/icons/og-main.png", width: 1200, height: 630 }],
     },
     twitter: {

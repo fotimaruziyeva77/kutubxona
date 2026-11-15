@@ -14,6 +14,7 @@ import {
   LiteModeProvider,
 } from "@/components/offline/LiteModeBanner";
 import "@/app/globals.css";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Inter — loyihaning asosiy matn shrifti.
@@ -42,7 +43,7 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
 });
 
-const BASE_URL = "https://sifat.uz";
+const BASE_URL = SITE_URL;
 
 export async function generateMetadata({
   params,

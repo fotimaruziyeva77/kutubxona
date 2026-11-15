@@ -34,3 +34,7 @@ node-compile-cache/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Server zaxira nusxalari (deploy/backup.sh)
+deploy/backups/
+deploy/secrets/

@@ -1,0 +1,30 @@
+# SIFAT LIBRARY — Caddy (HTTPS avtomatik, Let's Encrypt)
+# SITE_ADDRESS / WWW_ADDRESS / PUBLIC_URL — deploy/.env dan.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# next.config: images.unoptimized — rasm optimizatori ishlatilmaydi.
+	handle /_next/image* {
+		respond 404
+	}
+
+	# API, WebSocket va health — to'g'ridan-to'g'ri backendga.
+	@backend path /api/* /socket.io/* /ws /ws/* /health /health/*
+	handle @backend {
+		reverse_proxy backend:4000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
+
+{$WWW_ADDRESS} {
+	redir {$PUBLIC_URL}{uri} permanent
+}

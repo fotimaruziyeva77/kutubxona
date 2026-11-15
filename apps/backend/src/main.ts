@@ -100,7 +100,15 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // ── CORS ─────────────────────────────────────────────────────────────────
-  const allowedOrigins = isProd
+  // CORS_ORIGINS (vergul bilan) berilsa — aynan shu ro'yxat (masalan pilot
+  // domeni https://sifatlibrary.uz). Berilmasa — eski standart ro'yxat.
+  const envOrigins = (process.env.CORS_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  const allowedOrigins = envOrigins.length
+    ? envOrigins
+    : isProd
     ? ["https://sifat.uz", "https://www.sifat.uz"]
     : [
         "http://localhost:3000",
