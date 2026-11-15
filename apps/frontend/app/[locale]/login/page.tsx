@@ -171,7 +171,7 @@ export default function LoginPage() {
       setMode("forgot-verify");
       startResendTimer();
     } catch (e: unknown) {
-      setError(humanizeError(e, "SMS yuborishda xato"));
+      setError(humanizeError(e, "Kod yuborishda xato"));
     } finally { setLoading(false); }
   };
 
@@ -242,7 +242,7 @@ export default function LoginPage() {
             <CardTitle>
               {mode === "login"         && "Tizimga kirish"}
               {mode === "forgot-send"   && (skipOtp ? t("login.devBypassReset.title") : "Parolni tiklash")}
-              {mode === "forgot-verify" && "SMS kodni tasdiqlang"}
+              {mode === "forgot-verify" && "Telegram'dagi kodni kiriting"}
               {mode === "forgot-reset"  && "Yangi parol o'rnating"}
             </CardTitle>
           </CardHeader>
@@ -304,7 +304,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button className="w-full" size="lg" onClick={handleForgotSendOtp} disabled={loading}>
-                  {loading ? "Yuborilmoqda..." : "SMS olish"}
+                  {loading ? "Yuborilmoqda..." : "Telegram orqali kod olish"}
                 </Button>
                 <button
                   className="w-full text-sm text-slate-500 hover:text-slate-700"

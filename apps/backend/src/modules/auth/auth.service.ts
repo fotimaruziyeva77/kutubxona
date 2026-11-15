@@ -169,7 +169,7 @@ export class AuthService {
       update: { code: otp, expiresAt, attempts: 0 }
     });
 
-    await this.sms.sendOtp(phone, otp);
+    await this.sms.sendOtp(phone, otp, OTP_TTL_MS / 1000);
     this.logger.log(`OTP yuborildi [${purpose}]: ${phone}`);
 
     return { message: "SMS yuborildi" };

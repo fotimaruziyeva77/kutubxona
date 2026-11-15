@@ -80,13 +80,16 @@ cd /srv/kutubxona/deploy && docker compose up -d backend
 
 | Kalit | Usiz ishlamaydigan funksiya |
 |---|---|
-| `ESKIZ_*` | **SMS: telefon orqali ro'yhatdan o'tish (OTP)**, eslatmalar |
+| `TELEGRAM_GATEWAY_TOKEN` | **Ro'yhatdan o'tish va parol tiklash kodi** (`OTP_CHANNEL=telegram`) |
+| `ESKIZ_*` | SMS eslatmalar (va `OTP_CHANNEL=sms` bo'lsa ro'yhat kodi) |
 | `PAYME_*`, `CLICK_*` | Obuna va donat to'lovlari |
 | `SMTP_*` | Email bildirishnomalar, PDF hisobotlarni yuborish |
 | `FCM_SERVICE_ACCOUNT_KEY_PATH` | Push bildirishnomalar. Hozir `disabled`. Kalit kelganda faylni `deploy/secrets/fcm.json` ga qo'ying va qiymatni `/app/apps/backend/secrets/fcm.json` ga o'zgartiring |
 | `IDUZ_*` | ID.UZ (OneID) orqali kirish |
 
-> **Muhim:** Eskiz kaliti kelmaguncha kitobxonlar ro'yhatdan o'ta olmaydi, chunki ro'yhat faqat SMS kod bilan ishlaydi. Admin panel esa faqat xodimlarni yaratadi: viloyat, tuman va muassasa adminlari hamda kutubxonachilar.
+> **Muhim:** `TELEGRAM_GATEWAY_TOKEN` qo'yilmaguncha kitobxonlar ro'yhatdan o'ta olmaydi, chunki ro'yhat tasdiqlash kodi bilan ishlaydi.
+> Token olish: https://gateway.telegram.org → Telegram raqamingiz bilan kiring → balansni to'ldiring → **API** bo'limidan tokenni nusxalang.
+> Kod faqat Telegram'da ro'yhatdan o'tgan raqamlarga keladi. Admin panel esa faqat xodimlarni yaratadi: viloyat, tuman va muassasa adminlari hamda kutubxonachilar.
 
 ## Hozircha cheklovlar
 
