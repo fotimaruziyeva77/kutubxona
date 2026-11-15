@@ -80,16 +80,17 @@ cd /srv/kutubxona/deploy && docker compose up -d backend
 
 | Kalit | Usiz ishlamaydigan funksiya |
 |---|---|
-| `TELEGRAM_GATEWAY_TOKEN` | **Ro'yhatdan o'tish va parol tiklash kodi** (`OTP_CHANNEL=telegram`) |
+| `TELEGRAM_BOT_TOKEN` | **Ro'yhatdan o'tish va parol tiklash kodi** — bepul bot (`OTP_CHANNEL=telegram-bot`) |
+| `TELEGRAM_GATEWAY_TOKEN` | Pullik muqobil: kod botsiz keladi (`OTP_CHANNEL=telegram`) |
 | `ESKIZ_*` | SMS eslatmalar (va `OTP_CHANNEL=sms` bo'lsa ro'yhat kodi) |
 | `PAYME_*`, `CLICK_*` | Obuna va donat to'lovlari |
 | `SMTP_*` | Email bildirishnomalar, PDF hisobotlarni yuborish |
 | `FCM_SERVICE_ACCOUNT_KEY_PATH` | Push bildirishnomalar. Hozir `disabled`. Kalit kelganda faylni `deploy/secrets/fcm.json` ga qo'ying va qiymatni `/app/apps/backend/secrets/fcm.json` ga o'zgartiring |
 | `IDUZ_*` | ID.UZ (OneID) orqali kirish |
 
-> **Muhim:** `TELEGRAM_GATEWAY_TOKEN` qo'yilmaguncha kitobxonlar ro'yhatdan o'ta olmaydi, chunki ro'yhat tasdiqlash kodi bilan ishlaydi.
-> Token olish: https://gateway.telegram.org → Telegram raqamingiz bilan kiring → balansni to'ldiring → **API** bo'limidan tokenni nusxalang.
-> Kod faqat Telegram'da ro'yhatdan o'tgan raqamlarga keladi. Admin panel esa faqat xodimlarni yaratadi: viloyat, tuman va muassasa adminlari hamda kutubxonachilar.
+> **Muhim:** `TELEGRAM_BOT_TOKEN` qo'yilmaguncha kitobxonlar ro'yhatdan o'ta olmaydi, chunki ro'yhat tasdiqlash kodi bilan ishlaydi.
+> Token olish (bepul): Telegram'da **@BotFather** → `/newbot` → bot nomi va `..._bot` bilan tugaydigan username → berilgan tokenni `.env` ga yozing.
+> Kitobxon saytdagi "Telegram botni ochish" tugmasi orqali botga kirib raqamini ulashadi, kod shu botga keladi. Admin panel esa faqat xodimlarni yaratadi: viloyat, tuman va muassasa adminlari hamda kutubxonachilar.
 
 ## Hozircha cheklovlar
 

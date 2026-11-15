@@ -137,6 +137,10 @@ export class AuthService {
     return this.generateTokenPair(user.id, user.phone, user.role);
   }
 
+  otpChannelInfo() {
+    return this.sms.otpChannelInfo();
+  }
+
   // ── OTP YUBORISH (ro'yhat va parol tiklash uchun) ────────────────────
   async sendOtp(rawPhone: string, purpose: "register" | "reset" = "register"): Promise<{ message: string }> {
     const phone = this.normalizePhone(rawPhone);

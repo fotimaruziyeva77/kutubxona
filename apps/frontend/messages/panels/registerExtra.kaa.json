@@ -45,7 +45,7 @@
       "continuing": "Dawam etilmekte...",
       "sendSms": "Telegram arqalı kod alıw",
       "sending": "Jiberilmekte...",
-      "otpSentTo": "<strong>{phone}</strong> nomerine 6 sanlı kod Telegram arqalı jiberildi (\"Verification Codes\" chatı)",
+      "otpSentTo": "<strong>{phone}</strong> nomerine 6 sanlı kod Telegram arqalı jiberildi",
       "otpLabel": "Tastıyıqlaw kodı",
       "verify": "Tastıyıqlaw",
       "verifying": "Tekserilmekte...",

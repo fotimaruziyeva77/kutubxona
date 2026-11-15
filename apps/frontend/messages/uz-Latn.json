@@ -57,6 +57,8 @@
     "otpPlaceholder": "6 xonali kod",
     "verifyOtp": "Tasdiqlash",
     "otpSent": "Kod Telegram'ga yuborildi",
+    "tgBotHint": "Tasdiqlash kodi Telegram botimiz orqali keladi. Botni oching, «Start» ni bosing va telefon raqamingizni ulashing — kod darhol keladi.",
+    "tgBotOpen": "Telegram botni ochish",
     "resendIn": "{seconds} soniyadan keyin qayta yuborish",
     "firstName": "Ism",
     "lastName": "Familiya",

@@ -45,7 +45,7 @@
       "continuing": "Давом этилмоқда...",
       "sendSms": "Telegram орқали код олиш",
       "sending": "Юборилмоқда...",
-      "otpSentTo": "<strong>{phone}</strong> рақамига 6 рақамли код Telegram орқали юборилди (\"Verification Codes\" чати)",
+      "otpSentTo": "<strong>{phone}</strong> рақамига 6 рақамли код Telegram орқали юборилди",
       "otpLabel": "Тасдиқлаш коди",
       "verify": "Тасдиқлаш",
       "verifying": "Текширилмоқда...",

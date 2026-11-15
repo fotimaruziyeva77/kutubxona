@@ -57,6 +57,8 @@
     "otpPlaceholder": "6-значный код",
     "verifyOtp": "Подтвердить",
     "otpSent": "Код отправлен в Telegram",
+    "tgBotHint": "Код подтверждения приходит через наш Telegram-бот. Откройте бота, нажмите «Start» и поделитесь номером телефона — код придёт сразу.",
+    "tgBotOpen": "Открыть Telegram-бот",
     "resendIn": "Повторить через {seconds} секунд",
     "firstName": "Имя",
     "lastName": "Фамилия",

@@ -57,6 +57,8 @@
     "otpPlaceholder": "6 хонали код",
     "verifyOtp": "Тасдиқлаш",
     "otpSent": "Код Telegram'га юборилди",
+    "tgBotHint": "Тасдиқлаш коди Telegram ботимиз орқали келади. Ботни очинг, «Start» ни босинг ва телефон рақамингизни улашинг — код дарҳол келади.",
+    "tgBotOpen": "Telegram ботни очиш",
     "resendIn": "{seconds} сониядан кейин қайта юбориш",
     "firstName": "Исм",
     "lastName": "Фамилия",

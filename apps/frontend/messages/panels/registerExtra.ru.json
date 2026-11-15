@@ -45,7 +45,7 @@
       "continuing": "Продолжение...",
       "sendSms": "Получить код в Telegram",
       "sending": "Отправка...",
-      "otpSentTo": "На номер <strong>{phone}</strong> отправлен 6-значный код в Telegram (чат \"Verification Codes\")",
+      "otpSentTo": "На номер <strong>{phone}</strong> отправлен 6-значный код в Telegram",
       "otpLabel": "Код подтверждения",
       "verify": "Подтвердить",
       "verifying": "Проверка...",

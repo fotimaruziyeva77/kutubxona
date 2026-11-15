@@ -57,6 +57,8 @@
     "otpPlaceholder": "6 sanlı kod",
     "verifyOtp": "Tastıyıqlaw",
     "otpSent": "Kod Telegram'ǵa jiberildi",
+    "tgBotHint": "Tastıyıqlaw kodı Telegram botımız arqalı keledi. Bottı ashıń, «Start» tı basıń hám telefon nomerińizdi bólisiń — kod dárhal keledi.",
+    "tgBotOpen": "Telegram bottı ashıw",
     "resendIn": "{seconds} sekund keyin qayta jiberiw",
     "firstName": "Atı",
     "lastName": "Familiyası",

@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
@@ -131,6 +132,14 @@ export class AuthController {
     );
     setRefreshCookie(res, refreshToken);
     return { accessToken };
+  }
+
+  // ── OTP kanali (frontend "kod qayerga keladi" ko'rsatmasi uchun) ────────
+  @Public()
+  @Get("otp/channel")
+  @ApiOperation({ summary: "OTP kanali: telegram-bot | telegram | sms (+ bot havolasi)" })
+  otpChannel() {
+    return this.authService.otpChannelInfo();
   }
 
   // ── OTP yuborish (faqat ro'yhat va parol tiklash uchun) ─────────────────

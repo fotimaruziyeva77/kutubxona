@@ -45,7 +45,7 @@
       "continuing": "Davom etilmoqda...",
       "sendSms": "Telegram orqali kod olish",
       "sending": "Yuborilmoqda...",
-      "otpSentTo": "<strong>{phone}</strong> raqamiga 6 raqamli kod Telegram orqali yuborildi (\"Verification Codes\" chati)",
+      "otpSentTo": "<strong>{phone}</strong> raqamiga 6 raqamli kod Telegram orqali yuborildi",
       "otpLabel": "Tasdiqlash kodi",
       "verify": "Tasdiqlash",
       "verifying": "Tekshirilmoqda...",
