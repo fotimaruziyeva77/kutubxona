@@ -58,8 +58,10 @@ jobs:
           file: ${{ matrix.file }}
           target: ${{ matrix.target }}
           push: true
+          # NEXT_PUBLIC_API_URL bo'sh — brauzer o'z domenidagi /api ga so'raydi
+          # (image bir nechta domenda ishlaydi; nginx /api ni backendga uzatadi).
           build-args: |
-            NEXT_PUBLIC_API_URL=${{ env.PILOT_URL }}
+            NEXT_PUBLIC_API_URL=
             NEXT_PUBLIC_SITE_URL=${{ env.PILOT_URL }}
             BACKEND_PROXY_TARGET=http://backend:4000
           tags: |

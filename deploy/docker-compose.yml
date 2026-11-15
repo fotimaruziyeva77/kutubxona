@@ -46,7 +46,8 @@ services:
       ELASTICSEARCH_ENABLED: "false"
       FRONTEND_URL: ${PUBLIC_URL}
       PUBLIC_BASE_URL: ${PUBLIC_URL}
-      CORS_ORIGINS: ${PUBLIC_URL}
+      # Qo'shimcha domenlar (vergul bilan) — add-domain.sh to'ldiradi.
+      CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_URL}}
       # Bitta proxy (nginx yoki Caddy) — X-Forwarded-For dan haqiqiy IP.
       TRUSTED_PROXY: "1"
     ports:
@@ -76,7 +77,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         # Brauzer API'ni shu manzilga yuboradi (proxy /api ni backendga uzatadi).
-        NEXT_PUBLIC_API_URL: ${PUBLIC_URL}
+        NEXT_PUBLIC_API_URL: ""
         NEXT_PUBLIC_SITE_URL: ${PUBLIC_URL}
         BACKEND_PROXY_TARGET: http://backend:4000
     restart: unless-stopped
