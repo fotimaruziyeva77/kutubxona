@@ -189,7 +189,7 @@ export class LibrariesService {
       );
     }
 
-    const code = await this.generateCode(dto.type, dto.tumanId ?? dto.regionId);
+    const code = await this.generateCode(dto.type, dto.tumanId, dto.regionId);
 
     const library = await this.prisma.library.create({
       data: {
@@ -542,15 +542,36 @@ export class LibrariesService {
   }
 
   // ── Kod generatsiya ───────────────────────────────────────────────────────
-  private async generateCode(type: LibraryType, tumanIdOrRegion: string): Promise<string> {
+  // TZ 3.1: LIB-[TIP]-[tuman kodi]-[NNN], masalan LIB-SCH-08012-008.
+  // Tuman kodi Tuman.code ("08-012") dan olinadi — DB cuid emas.
+  private async generateCode(type: LibraryType, tumanId?: string, regionId?: string): Promise<string> {
     const prefix = TYPE_PREFIX[type];
-    // tumanIdOrRegion could be a tuman DB id or a legacy regionId string
-    const regionPart = tumanIdOrRegion.replace(/-/g, "").slice(0, 8).toUpperCase();
-    const count = await this.prisma.library.count({
-      where: { code: { startsWith: `LIB-${prefix}-${regionPart}` } }
-    });
-    const seq = String(count + 1).padStart(3, "0");
-    return `LIB-${prefix}-${regionPart}-${seq}`;
+    const regionPart = await this.resolveRegionPart(tumanId, regionId);
+    const base = `LIB-${prefix}-${regionPart}-`;
+    // count+1 emas: o'chirilgan kutubxonadan keyin kod takrorlanib, @unique
+    // xatosi chiqmasligi uchun eng katta tartib raqamidan davom etamiz.
+    const existing =
+      (await this.prisma.library.findMany({
+        where: { code: { startsWith: base } },
+        select: { code: true },
+      })) ?? [];
+    const maxSeq = existing.reduce((max, { code }) => {
+      const n = Number.parseInt(code.slice(base.length), 10);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+    return `${base}${String(maxSeq + 1).padStart(3, "0")}`;
+  }
+
+  private async resolveRegionPart(tumanId?: string, regionId?: string): Promise<string> {
+    for (const id of [tumanId, regionId]) {
+      if (!id) continue;
+      const tuman = await this.prisma.tuman.findUnique({ where: { id }, select: { code: true } });
+      if (tuman?.code) return tuman.code.replace(/\D/g, "");
+    }
+    // regionId geo kod ko'rinishida bo'lsa: "UZ-08-012" yoki "08-012" → "08012"
+    const geo = regionId?.match(/^(?:UZ-)?(\d{2})-(\d{3})$/i);
+    if (geo) return `${geo[1]}${geo[2]}`;
+    throw new BadRequestException("Tuman topilmadi — kutubxona kodi uchun tuman tanlanishi shart");
   }
 
   // ── Haversine formulasi (km) ──────────────────────────────────────────────

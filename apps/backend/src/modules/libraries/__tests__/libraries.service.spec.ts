@@ -44,6 +44,9 @@ const mockPrisma = {
   libraryApprovalLog: {
     create: jest.fn()
   },
+  tuman: {
+    findUnique: jest.fn()
+  },
   book: {
     aggregate: jest.fn(),
     update: jest.fn()
@@ -77,6 +80,8 @@ describe("LibrariesService", () => {
     // Testlar kerak bo'lsa o'zi qayta yozadi.
     mockPrisma.institution.findFirst.mockResolvedValue(null);
     mockPrisma.user.count.mockResolvedValue(0);
+    mockPrisma.tuman.findUnique.mockResolvedValue({ code: "08-012" });
+    mockPrisma.library.findMany.mockResolvedValue([]);
   });
 
   // ── findAll ───────────────────────────────────────────────────────────────
@@ -139,6 +144,34 @@ describe("LibrariesService", () => {
 
       expect(mockPrisma.library.create).toHaveBeenCalled();
       expect(result.code).toContain("LIB-GOV");
+    });
+
+    it("kod TZ formatida: tuman kodi (08-012 → 08012) + tartib raqami", async () => {
+      mockPrisma.library.findMany.mockResolvedValue([{ code: "LIB-SCH-08012-001" }, { code: "LIB-SCH-08012-004" }]);
+      mockPrisma.library.create.mockResolvedValue(mockLib);
+
+      await service.create({ type: LibraryType.SCH, name: "8-maktab kutubxonasi", regionId: "t1", tumanId: "t1" });
+
+      expect(mockPrisma.tuman.findUnique).toHaveBeenCalledWith({ where: { id: "t1" }, select: { code: true } });
+      // count+1 emas — eng katta raqamdan davom etadi (o'chirilganidan keyin to'qnashmaydi)
+      expect(mockPrisma.library.create.mock.calls[0][0].data.code).toBe("LIB-SCH-08012-005");
+    });
+
+    it("regionId geo kod bo'lsa (UZ-14-001) — 14001", async () => {
+      mockPrisma.tuman.findUnique.mockResolvedValue(null);
+      mockPrisma.library.create.mockResolvedValue(mockLib);
+
+      await service.create({ type: LibraryType.GOV, name: "Test kutubxona", regionId: "UZ-14-001" });
+
+      expect(mockPrisma.library.create.mock.calls[0][0].data.code).toBe("LIB-GOV-14001-001");
+    });
+
+    it("tuman topilmasa — kutubxona yaratilmaydi", async () => {
+      mockPrisma.tuman.findUnique.mockResolvedValue(null);
+      await expect(
+        service.create({ type: LibraryType.GOV, name: "Test kutubxona", regionId: "nomalum" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.library.create).not.toHaveBeenCalled();
     });
 
     it("maktab kutubxonasi SCH prefiksi bilan", async () => {
