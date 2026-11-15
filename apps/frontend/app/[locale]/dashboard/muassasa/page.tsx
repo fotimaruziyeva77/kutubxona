@@ -36,9 +36,15 @@ async function getInventoryReport(libraryId: string) {
   return data as InventoryReport;
 }
 
+// GET /books 2026-11-01 dan { total, page, limit, data } qaytaradi (avval massiv
+// edi — massiv deb o'qilganda sahifa `books.filter is not a function` bilan
+// yiqilardi). Panel statistikasi shu ro'yxatdan hisoblanadi, shuning uchun
+// backend maksimumi (200) so'raladi.
 async function getLibraryBooks(libraryId: string) {
-  const { data } = await apiClient.get("/books", { params: { libraryId } });
-  return data as Book[];
+  const { data } = await apiClient.get<{ total: number; data: Book[] }>("/books", {
+    params: { libraryId, limit: 200 }
+  });
+  return data.data;
 }
 
 async function getPendingUsers() {

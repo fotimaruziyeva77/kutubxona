@@ -54,7 +54,9 @@ async function fetchBrowseBooks(): Promise<BookCardData[]> {
   const res = await apiClient("/books?limit=12");
   if (!res.ok) return [];
   const data = await res.json();
-  const list = Array.isArray(data) ? data : (data?.items ?? []);
+  // GET /books → { total, page, limit, data } (2026-11-01). `data` o'qilmasa
+  // blok kitoblar bor bo'lsa ham «fond hali to'ldirilmoqda» deb ko'rsatardi.
+  const list = Array.isArray(data) ? data : (data?.data ?? data?.items ?? []);
   return list as BookCardData[];
 }
 

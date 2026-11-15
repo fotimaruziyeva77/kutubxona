@@ -57,6 +57,10 @@ function describeViolation(v: AxeViolation): string {
 }
 
 async function expectNoSeriousViolations(page: Page, name: string) {
+  // Xato sahifasi (error boundary) ham axe'dan toza o'tadi — 2026-11-14 da
+  // kutubxonachi paneli `books.filter is not a function` bilan yiqilgani
+  // shu sabab sezilmagan. Avval sahifaning o'zi ochilganini tekshiramiz.
+  await expect(page.getByText("Kutilmagan xatolik yuz berdi"), `${name}: sahifa xato bilan yiqildi`).toHaveCount(0);
   const { violations, passes, incomplete } = await runAxe(page);
   const blocking = violations.filter((v) => v.impact === "critical" || v.impact === "serious");
   const advisory = violations.filter((v) => !blocking.includes(v));
@@ -101,6 +105,9 @@ test.describe("WCAG 2.1 AA — axe, haqiqiy sahifalar", () => {
   test("profile — kitobxon (login)", async ({ page }) => {
     await login(page);
     await settle(page);
+    // Seed fondida kitoblar bor: «fond hali to'ldirilmoqda» chiqsa, /books javobi
+    // noto'g'ri o'qilgan (2026-11-14 regressiyasi).
+    await expect(page.getByText("Kutubxona fondi hali to'ldirilmoqda")).toHaveCount(0);
     await expectNoSeriousViolations(page, "profile");
   });
 
