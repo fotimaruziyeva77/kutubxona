@@ -30,6 +30,17 @@
     "bronCancelled": "Bron biykar etildi",
     "passport": "Kitapxana pasportı",
     "qrHint": "Kitapxanada usı QR kodtı kórsetiń. Kod hár 5 minutta jańalanadı — skrinshot emes, janlı kodtı kórsetiń.",
+    "hideQr": "Jabıw",
+    "start": {
+      "title": "Birinshi kitabıńızdı qalay alasız",
+      "subtitle": "Úsh ápiwayı qádem — kitapxanaǵa bir ret barıw jeterli.",
+      "s1": "Kitap tabıń",
+      "s1d": "Izlewden yamasa tómendegi dizimnen ózińizge unaǵan kitaptı tańlań.",
+      "s2": "Bron qılıń",
+      "s2d": "«Bron qılıw» dı basıń. Kitapxanashı tastıyıqlaǵannan keyin kitap siz ushın ajıratıp qoyıladı.",
+      "s3": "QR kodtı kórsetiń",
+      "s3d": "Kitapxanaǵa barıp QR kodıńızdı kórsetiń — kitap sizge beriledi."
+    },
     "newBadge": "Jańa belgi qolǵa kirgizildi!",
     "levelUpNamed": "Qutlıqlaymız — {level}-dárejege kóterildińiz!",
     "levelUp": "Qutlıqlaymız — jańa dárejege kóterildińiz!",
@@ -299,7 +310,10 @@
       "fromFund": "Kitapxana fondınan",
       "all": "Barlıǵı",
       "emptyFund": "Kitapxana fondı ele toltırılmaqta.",
-      "goSearch": "Izlewge ótiw"
+      "goSearch": "Izlewge ótiw",
+      "nearby": "Jaqın kitapxanalarda",
+      "nearbyTuman": "Rayonıńızdaǵı kitapxanalar fondınan",
+      "nearbyViloyat": "Wálayatıńızdaǵı kitapxanalar fondınan"
     },
     "searchBar": {
       "label": "Qaysı kitaptı izlep atırsız?",

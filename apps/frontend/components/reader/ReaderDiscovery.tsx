@@ -50,22 +50,61 @@ async function fetchRecommendations(): Promise<Recommendation[]> {
   return Array.isArray(data) ? data : [];
 }
 
-async function fetchBrowseBooks(): Promise<BookCardData[]> {
-  const res = await apiClient("/books?limit=12");
+type BrowseScope = "tuman" | "viloyat" | "all";
+
+async function fetchBooksPage(query: string): Promise<BookCardData[]> {
+  const res = await apiClient(`/books?limit=12&activeLibraries=true${query}`);
   if (!res.ok) return [];
   const data = await res.json();
-  // GET /books → { total, page, limit, data } (2026-11-01). `data` o'qilmasa
-  // blok kitoblar bor bo'lsa ham «fond hali to'ldirilmoqda» deb ko'rsatardi.
   const list = Array.isArray(data) ? data : (data?.data ?? data?.items ?? []);
   return list as BookCardData[];
 }
 
+/**
+ * Yaqin fond birinchi: avval kitobxon tumani, yetmasa viloyati, keyin butun
+ * respublika. Faqat FAOL kutubxonalar — tasdiqlanmagan kutubxonadagi kitobni
+ * bron qilib bo'lmaydi. `scope` — birinchi natijalar qaysi hududdan kelgani.
+ */
+async function fetchBrowseBooks(
+  viloyatId?: string,
+  tumanId?: string,
+): Promise<{ books: BookCardData[]; scope: BrowseScope }> {
+  const MIN = 4;
+  const seen = new Set<string>();
+  const books: BookCardData[] = [];
+  const add = (list: BookCardData[]) => {
+    for (const b of list) if (!seen.has(b.id)) { seen.add(b.id); books.push(b); }
+  };
+  let scope: BrowseScope = "all";
+  if (tumanId) {
+    add(await fetchBooksPage(`&tumanId=${encodeURIComponent(tumanId)}`));
+    if (books.length) scope = "tuman";
+  }
+  if (books.length < MIN && viloyatId) {
+    add(await fetchBooksPage(`&viloyatId=${encodeURIComponent(viloyatId)}`));
+    if (books.length && scope === "all") scope = "viloyat";
+  }
+  if (books.length < MIN) add(await fetchBooksPage(""));
+  return { books, scope };
+}
+
+// Telefonda kartalar yonga suriladi (sahifa cheksiz uzun bo'lmasin),
+// planshet/kompyuterda — to'r.
+const ROW =
+  "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4";
+const CELL = "w-[46%] shrink-0 snap-start sm:w-auto";
+
 export function ReaderDiscovery({
   locale,
   onToast,
+  viloyatId,
+  tumanId,
 }: {
   locale: string;
   onToast: (msg: string) => void;
+  /** Kitobxon manzili — yaqin kutubxonalar fondi birinchi ko'rsatiladi. */
+  viloyatId?: string;
+  tumanId?: string;
 }) {
   const t = useTranslations("ReaderBits.discovery");
   const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
@@ -81,11 +120,13 @@ export function ReaderDiscovery({
     staleTime: 300_000,
   });
 
-  const { data: browse = [], isLoading } = useQuery({
-    queryKey: ["reader-browse-books"],
-    queryFn: fetchBrowseBooks,
+  const { data: browseData, isLoading } = useQuery({
+    queryKey: ["reader-browse-books", viloyatId ?? null, tumanId ?? null],
+    queryFn: () => fetchBrowseBooks(viloyatId, tumanId),
     staleTime: 300_000,
   });
+  const browse = browseData?.books ?? [];
+  const scope = browseData?.scope ?? "all";
 
   const handleReserve = async (bookId: string, card?: BookCardData) => {
     setPendingId(bookId);
@@ -167,15 +208,16 @@ export function ReaderDiscovery({
           <p className="mb-4 text-xs text-slate-500">
             {recs.length === 1 ? recs[0].reason : t("forYouHint")}
           </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={ROW}>
             {recCards.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onReserve={(id) => handleReserve(id, book)}
-                reserving={pendingId === book.id}
-                reserved={reservedIds.has(book.id)}
-              />
+              <div key={book.id} className={CELL}>
+                <BookCard
+                  book={book}
+                  onReserve={(id) => handleReserve(id, book)}
+                  reserving={pendingId === book.id}
+                  reserved={reservedIds.has(book.id)}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -191,9 +233,16 @@ export function ReaderDiscovery({
                 size={ICON_SIZE.sm}
                 className="text-brand-500"
               />
-              <h2 className="text-base font-bold text-slate-900">
-                {t("fromFund")}
-              </h2>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  {scope === "all" ? t("fromFund") : t("nearby")}
+                </h2>
+                {scope !== "all" && !isLoading && (
+                  <p className="text-xs text-slate-500">
+                    {scope === "tuman" ? t("nearbyTuman") : t("nearbyViloyat")}
+                  </p>
+                )}
+              </div>
             </div>
             <Link
               href={`/${locale}/search`}
@@ -205,24 +254,25 @@ export function ReaderDiscovery({
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className={ROW}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[2/3] animate-pulse rounded-2xl bg-surface-sunken"
+                  className={`${CELL} aspect-[2/3] animate-pulse rounded-2xl bg-surface-sunken`}
                 />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className={ROW}>
               {browseCards.map((book) => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  onReserve={(id) => handleReserve(id, book)}
-                  reserving={pendingId === book.id}
-                  reserved={reservedIds.has(book.id)}
-                />
+                <div key={book.id} className={CELL}>
+                  <BookCard
+                    book={book}
+                    onReserve={(id) => handleReserve(id, book)}
+                    reserving={pendingId === book.id}
+                    reserved={reservedIds.has(book.id)}
+                  />
+                </div>
               ))}
             </div>
           )}

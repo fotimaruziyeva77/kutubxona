@@ -30,6 +30,17 @@
     "bronCancelled": "Bron bekor qilindi",
     "passport": "Kutubxona pasporti",
     "qrHint": "Kutubxonada shu QR kodni ko'rsating. Kod har 5 daqiqada yangilanadi — skrinshot emas, jonli kodni ko'rsating.",
+    "hideQr": "Yopish",
+    "start": {
+      "title": "Birinchi kitobingizni qanday olasiz",
+      "subtitle": "Uch oddiy qadam — kutubxonaga bir marta borish kifoya.",
+      "s1": "Kitob toping",
+      "s1d": "Qidiruvdan yoki pastdagi ro'yxatdan o'zingizga yoqqan kitobni tanlang.",
+      "s2": "Bron qiling",
+      "s2d": "«Bron qilish» ni bosing. Kutubxonachi tasdiqlagach, kitob siz uchun ajratib qo'yiladi.",
+      "s3": "QR kodni ko'rsating",
+      "s3d": "Kutubxonaga borib QR kodingizni ko'rsating — kitob sizga beriladi."
+    },
     "newBadge": "Yangi nishon qo'lga kiritildi!",
     "levelUpNamed": "Tabriklaymiz — {level}-darajaga ko'tarildingiz!",
     "levelUp": "Tabriklaymiz — yangi darajaga ko'tarildingiz!",
@@ -299,7 +310,10 @@
       "fromFund": "Kutubxona fondidan",
       "all": "Barchasi",
       "emptyFund": "Kutubxona fondi hali to'ldirilmoqda.",
-      "goSearch": "Qidiruvga o'tish"
+      "goSearch": "Qidiruvga o'tish",
+      "nearby": "Yaqin kutubxonalarda",
+      "nearbyTuman": "Tumaningizdagi kutubxonalar fondidan",
+      "nearbyViloyat": "Viloyatingizdagi kutubxonalar fondidan"
     },
     "searchBar": {
       "label": "Qaysi kitobni izlayapsiz?",

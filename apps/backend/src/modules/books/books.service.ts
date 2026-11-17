@@ -199,6 +199,11 @@ export class BooksService implements OnApplicationBootstrap {
       genre?: string;
       lang?: string;
       available?: boolean;
+      /** Kitobxon kashfiyoti: o'z hududidagi kutubxonalar fondi. */
+      viloyatId?: string;
+      tumanId?: string;
+      /** true — faqat faol (tasdiqlangan) kutubxonalar fondi. */
+      activeLibraries?: boolean;
       page?: number;
       limit?: number;
     } = {}
@@ -222,7 +227,16 @@ export class BooksService implements OnApplicationBootstrap {
       ...(genre ? { genre: { contains: genre, mode: "insensitive" as const } } : {}),
       // Til kodlari DB'da aralash ("uz", "uz-Latn", "uz-Cyrl") — prefiks bo'yicha.
       ...(params.lang ? { lang: { startsWith: params.lang, mode: "insensitive" as const } } : {}),
-      ...(params.available ? { availableCount: { gt: 0 } } : {})
+      ...(params.available ? { availableCount: { gt: 0 } } : {}),
+      ...(params.viloyatId || params.tumanId || params.activeLibraries
+        ? {
+            library: {
+              ...(params.viloyatId ? { viloyatId: params.viloyatId } : {}),
+              ...(params.tumanId ? { tumanId: params.tumanId } : {}),
+              ...(params.activeLibraries ? { status: "ACTIVE" as const } : {})
+            }
+          }
+        : {})
     };
     const [data, total] = await Promise.all([
       this.prisma.book.findMany({

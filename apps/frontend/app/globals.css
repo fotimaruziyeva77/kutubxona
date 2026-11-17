@@ -434,6 +434,12 @@ body {
   gap: 0.375rem;
 }
 
+/* Kitobxon qobig'i (ReaderShell) o'z sarlavhasida inline nusxani chizadi —
+   suzuvchi nusxa "Chiqish" tugmasi ustiga tushib qolmasin. */
+body:has([data-reader-shell]) .locale-theme-control {
+  display: none;
+}
+
 /* ===========================================================================
    SUCCESS CHECK — mikro-animatsiya
    ---------------------------------------------------------------------------

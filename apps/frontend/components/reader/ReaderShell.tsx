@@ -34,6 +34,7 @@ import { hasAuthHintCookie } from "@/lib/auth-cookie";
 import { useAuthStore } from "@/store/auth.store";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
 import { LogoMark } from "@/components/brand/Logo";
+import { LocaleThemeControl } from "@/components/LocaleThemeControl";
 
 type NavItem = {
   key: string;
@@ -104,10 +105,10 @@ export function ReaderShell({
   const isActive = (m: string) => stripped === m || stripped.startsWith(`${m}/`);
 
   return (
-    <div className="min-h-screen bg-surface-muted">
+    <div className="min-h-screen bg-surface-muted" data-reader-shell="">
       {/* ── Yuqori qator ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-16 max-w-3xl items-center gap-2 px-4 sm:gap-3">
           {backHref ? (
             <Link
               href={backHref}
@@ -162,6 +163,9 @@ export function ReaderShell({
             })}
           </nav>
 
+          <div className="shrink-0">
+            <LocaleThemeControl inline />
+          </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
       </header>

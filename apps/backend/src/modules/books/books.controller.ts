@@ -45,6 +45,9 @@ export class BooksController {
   @ApiQuery({ name: "genre", required: false })
   @ApiQuery({ name: "lang", required: false })
   @ApiQuery({ name: "available", required: false, description: "true — faqat mavjud nusxasi borlar" })
+  @ApiQuery({ name: "viloyatId", required: false, description: "Shu viloyat kutubxonalari fondi" })
+  @ApiQuery({ name: "tumanId", required: false, description: "Shu tuman kutubxonalari fondi" })
+  @ApiQuery({ name: "activeLibraries", required: false, description: "true — faqat faol kutubxonalar" })
   @ApiQuery({ name: "page", required: false, description: "Sahifa (default 1)" })
   @ApiQuery({ name: "limit", required: false, description: "Sahifa hajmi (default 50, max 200)" })
   findAll(
@@ -54,7 +57,10 @@ export class BooksController {
     @Query("lang") lang?: string,
     @Query("available") available?: string,
     @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
+    @Query("viloyatId") viloyatId?: string,
+    @Query("tumanId") tumanId?: string,
+    @Query("activeLibraries") activeLibraries?: string
   ) {
     return this.booksService.findAll({
       libraryId,
@@ -62,6 +68,9 @@ export class BooksController {
       genre,
       lang,
       available: available === "true" || available === "1",
+      viloyatId: viloyatId || undefined,
+      tumanId: tumanId || undefined,
+      activeLibraries: activeLibraries === "true" || activeLibraries === "1",
       page: page !== undefined ? Number(page) : undefined,
       limit: limit !== undefined ? Number(limit) : undefined
     });
