@@ -210,7 +210,7 @@ export class BookImportProcessor extends WorkerHost {
       return { error: "ISBN, Nomi va Muallif majburiy" };
     }
 
-    const isbn = isbnRaw.replace(/[-\s]/g, "");
+    const isbn = this._toIsbn13(isbnRaw.replace(/[-\s]/g, "").toUpperCase());
     if (!this._isValidIsbn(isbn)) {
       return { error: `ISBN noto'g'ri: ${isbnRaw}` };
     }
@@ -227,6 +227,14 @@ export class BookImportProcessor extends WorkerHost {
       totalCount,
       libraryId
     };
+  }
+
+  // ISBN-10 → ISBN-13 (978 + 9 raqam + yangi nazorat raqami); qolganlari o'zgarmaydi.
+  private _toIsbn13(isbn: string): string {
+    if (!/^\d{9}[\dX]$/.test(isbn)) return isbn;
+    const body = "978" + isbn.slice(0, 9);
+    const sum = body.split("").reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+    return body + String((10 - (sum % 10)) % 10);
   }
 
   private _isValidIsbn(isbn: string): boolean {

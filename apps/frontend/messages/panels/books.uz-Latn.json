@@ -124,7 +124,7 @@
       "sectionPublish": "Nashr va nusxalar",
       "sectionCover": "Muqova va tavsif",
       "sectionLibrary": "Kutubxona",
-      "isbnHint": "13 raqam, chiziqcha bilan ham bo'ladi. «Qidirish» nom, muallif va muqovani avtomatik to'ldiradi.",
+      "isbnHint": "Kitob orqasidagi shtrix-kodni skanerlang yoki 13 raqamni kiriting — nom, muallif va muqova avtomatik to'ldiriladi.",
       "isbnChecksum": "Nazorat raqami mos emas — ISBN'ni qayta tekshiring",
       "titleRequired": "Nomi kiritilishi shart",
       "authorRequired": "Muallif kiritilishi shart",
@@ -135,7 +135,14 @@
       "copiesMin": "{count} ta nusxa kitobxonlarda — kamida shuncha bo'lishi kerak",
       "coverHint": "JPG yoki PNG; 360 px gacha kichraytiriladi. Rasm bo'lmasa muqova avtomatik chiziladi.",
       "requiredNote": "* — majburiy maydonlar",
-      "libraryRequired": "Kutubxona tanlang"
+      "libraryRequired": "Kutubxona tanlang",
+      "scan": "Skanerlash",
+      "scanTitle": "Kamera bilan shtrix-kodni o'qish",
+      "noIsbn": "Kitobda ISBN yo'q (eski yoki mahalliy nashr)",
+      "noIsbnHint": "Tizim kitobga ichki shtrix-kod beradi. Nom va muallifni kiriting.",
+      "saveAndNext": "Saqlash va yana qo'shish",
+      "saveAndClose": "Saqlash va yopish",
+      "addedCount": "Shu oynada qo'shildi: {count} ta kitob"
     },
     "toolbar": {
       "searchLabel": "Fondda qidirish",
@@ -165,7 +172,8 @@
     },
     "toast": {
       "created": "Kitob fondga qo'shildi",
-      "updated": "O'zgarishlar saqlandi"
+      "updated": "O'zgarishlar saqlandi",
+      "createdNamed": "«{title}» fondga qo'shildi"
     },
     "emptyFund": {
       "title": "Fond hali bo'sh",
@@ -180,6 +188,12 @@
     "pagination": {
       "range": "{from}–{to} / {total}",
       "pageOf": "Sahifa {page} / {pages}"
+    },
+    "scanner": {
+      "hint": "Shtrix-kodni ramka ichiga to'g'rilang",
+      "close": "Yopish",
+      "denied": "Kameraga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering yoki ISBN'ni qo'lda kiriting.",
+      "unsupported": "Bu brauzerda kamera orqali skanerlash ishlamaydi — ISBN'ni qo'lda kiriting."
     }
   }
 }

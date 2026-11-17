@@ -124,7 +124,7 @@
       "sectionPublish": "Basılım hám nusqalar",
       "sectionCover": "Muqaba hám sıpatlama",
       "sectionLibrary": "Kitapxana",
-      "isbnHint": "13 san, sızıqsha menen de boladı. «Izlew» atı, avtor hám muqabanı avtomat toltıradı.",
+      "isbnHint": "Kitaptıń artındaǵı shtrix-kodtı skanerleń yamasa 13 sandı kiritiń — atı, avtorı hám muqabası avtomat toltırıladı.",
       "isbnChecksum": "Qadaǵalaw sanı sáykes emes — ISBN'di qayta tekseriń",
       "titleRequired": "Atı kiritiliwi shárt",
       "authorRequired": "Avtor kiritiliwi shárt",
@@ -135,7 +135,14 @@
       "copiesMin": "{count} nusqa oqıwshılarda — keminde sonsha bolıwı kerek",
       "coverHint": "JPG yamasa PNG; 360 px ge shekem kishireytiledi. Súwret bolmasa muqaba avtomat sızıladı.",
       "requiredNote": "* — májbúriy maydanlar",
-      "libraryRequired": "Kitapxana tańlań"
+      "libraryRequired": "Kitapxana tańlań",
+      "scan": "Skanerlew",
+      "scanTitle": "Kamera menen shtrix-kodtı oqıw",
+      "noIsbn": "Kitapta ISBN joq (eski yamasa jergilikli baspa)",
+      "noIsbnHint": "Sistema kitapqa ishki shtrix-kod beredi. Atı hám avtorın kiritiń.",
+      "saveAndNext": "Saqlaw hám jáne qosıw",
+      "saveAndClose": "Saqlaw hám jabıw",
+      "addedCount": "Usı aynada qosıldı: {count} kitap"
     },
     "toolbar": {
       "searchLabel": "Fondtan izlew",
@@ -165,7 +172,8 @@
     },
     "toast": {
       "created": "Kitap fondqa qosıldı",
-      "updated": "Ózgerisler saqlandı"
+      "updated": "Ózgerisler saqlandı",
+      "createdNamed": "«{title}» fondqa qosıldı"
     },
     "emptyFund": {
       "title": "Fond ele bos",
@@ -180,6 +188,12 @@
     "pagination": {
       "range": "{from}–{to} / {total}",
       "pageOf": "Bet {page} / {pages}"
+    },
+    "scanner": {
+      "hint": "Shtrix-kodtı ramka ishine durıslań",
+      "close": "Jabıw",
+      "denied": "Kameraǵa ruqsat berilmedi. Brauzer sazlamalarınan ruqsat beriń yamasa ISBN dı qolda kiritiń.",
+      "unsupported": "Bul brauzerde kamera arqalı skanerlew islemeydi — ISBN dı qolda kiritiń."
     }
   }
 }

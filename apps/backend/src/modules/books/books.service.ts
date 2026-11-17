@@ -26,6 +26,10 @@ import {
   type ReindexResult
 } from "./books-search-index";
 import * as ExcelJS from "exceljs";
+import { randomInt } from "crypto";
+
+// ISBN'siz kitoblar uchun ichki EAN-13 kod prefiksi (GS1: 2xx — ichki foydalanish).
+export const INTERNAL_CODE_PREFIX = "2";
 
 export interface CreateBookDto {
   isbn: string;
@@ -283,12 +287,18 @@ export class BooksService implements OnApplicationBootstrap {
   // ular baribir yaroqli 13 xonali ISBN. Format-only tolerantligi demo va
   // real dunyo kitoblarining ikkalasi ham saqlanishini ta'minlaydi.
   async create(dto: CreateBookDto): Promise<CreateBookResult> {
-    if (!this.isIsbnFormat(dto.isbn))
+    // ISBN'siz kitob (eski nashrlar, qo'lyozma, mahalliy nashriyot): ISBN bo'sh
+    // keladi → ichki kod (2xxxxxxxxxxxx) beriladi. Shu kutubxonada nomi va
+    // muallifi bir xil ISBN'siz kitob bo'lsa — yangi yozuv emas, nusxa qo'shiladi.
+    const noIsbn = !(dto.isbn ?? "").trim();
+    if (!noIsbn && !this.isIsbnFormat(this.normalizeIsbn(dto.isbn)))
       throw new BadRequestException(
-        "ISBN noto'g'ri — 13 xonali raqam bo'lishi kerak (978/979 bilan)"
+        "ISBN noto'g'ri — 13 xonali (978/979 bilan) yoki 10 xonali bo'lishi kerak. ISBN yo'q bo'lsa, maydonni bo'sh qoldiring."
       );
+    if (noIsbn && (!dto.title?.trim() || !dto.author?.trim()))
+      throw new BadRequestException("ISBN'siz kitob uchun nom va muallif majburiy");
 
-    const cleanIsbn = dto.isbn.replace(/[-\s]/g, "");
+    let cleanIsbn = noIsbn ? "" : this.normalizeIsbn(dto.isbn);
     // CreateBookDto interface'dir (klass emas) — ValidationPipe transform
     // ishlamaydi, shuning uchun raqamlar string/null/NaN/undefined kelishi
     // mumkin. Prisma Int maydoniga string berilsa 500 bo'ladi — bu yerda
@@ -301,9 +311,19 @@ export class BooksService implements OnApplicationBootstrap {
     // nusxa qo'shamiz (total + available). Book modelida ISBN ga @@unique
     // yo'q, shuning uchun bu DB darajasida emas, biznes-mantiq darajasida
     // hal qilinadi. Boshqa kutubxonada bo'lsa — yangi yozuv yaratiladi.
-    const existing = await this.prisma.book.findFirst({
-      where: { isbn: cleanIsbn, libraryId: dto.libraryId }
-    });
+    const existing = noIsbn
+      ? await this.prisma.book.findFirst({
+          where: {
+            libraryId: dto.libraryId,
+            isbn: { startsWith: INTERNAL_CODE_PREFIX },
+            title: { equals: dto.title.trim(), mode: "insensitive" },
+            author: { equals: dto.author.trim(), mode: "insensitive" },
+          },
+        })
+      : await this.prisma.book.findFirst({
+          where: { isbn: cleanIsbn, libraryId: dto.libraryId }
+        });
+    if (noIsbn && !existing) cleanIsbn = await this.generateInternalCode(dto.libraryId);
 
     if (existing) {
       const updated = await this.prisma.book.update({
@@ -439,12 +459,41 @@ export class BooksService implements OnApplicationBootstrap {
     return /^(?:978|979)\d{10}$/.test(clean);
   }
 
+  // Chiziqcha/bo'shliqni olib tashlaydi; ISBN-10 bo'lsa ISBN-13 ga aylantiradi
+  // (978 + 9 raqam + yangi nazorat raqami). Boshqa ko'rinishlar o'zgarishsiz.
+  normalizeIsbn(raw: string): string {
+    const clean = (raw ?? "").replace(/[-\s]/g, "").toUpperCase();
+    if (/^\d{9}[\dX]$/.test(clean)) {
+      const body = "978" + clean.slice(0, 9);
+      return body + this.ean13CheckDigit(body);
+    }
+    return clean;
+  }
+
+  private ean13CheckDigit(first12: string): string {
+    const sum = first12.split("").reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+    return String((10 - (sum % 10)) % 10);
+  }
+
+  // ISBN'siz kitob uchun ichki EAN-13 kod: "2" bilan boshlanadi — bu oraliq
+  // do'kon/tashkilot ichki kodlari uchun ajratilgan, haqiqiy ISBN (978/979)
+  // bilan hech qachon to'qnashmaydi; shtrix-kod sifatida chop etish mumkin.
+  private async generateInternalCode(libraryId: string): Promise<string> {
+    for (let i = 0; i < 5; i++) {
+      const body = INTERNAL_CODE_PREFIX + String(randomInt(0, 1e11)).padStart(11, "0");
+      const code = body + this.ean13CheckDigit(body);
+      const taken = await this.prisma.book.findFirst({ where: { libraryId, isbn: code }, select: { id: true } });
+      if (!taken) return code;
+    }
+    throw new ConflictException("Ichki kod yaratib bo'lmadi — qayta urinib ko'ring");
+  }
+
   // lookupIsbn — HECH QACHON xato chiqarmaydi. Format noto'g'ri yoki Open
   // Library'da yozuv bo'lmasa null qaytaradi (controller 200 + null beradi),
   // shunda frontend "topilmadi — qo'lda to'ldiring" yumshoq maslahatini
   // ko'rsatadi, qizil xato toast emas.
   async lookupIsbn(isbn: string): Promise<IsbnLookupResult | null> {
-    const cleanIsbn = (isbn ?? "").replace(/[-\s]/g, "");
+    const cleanIsbn = this.normalizeIsbn(isbn);
     if (cleanIsbn.length < 10) return null;
 
     // 1) LOKAL BAZA BIRINCHI — bu ISBN avval qo'shilgan bo'lsa, o'sha kitobning
@@ -474,8 +523,11 @@ export class BooksService implements OnApplicationBootstrap {
     if (!this.isIsbnFormat(cleanIsbn)) return null;
 
     try {
-      const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
-      if (!res.ok) return null;
+      const res = await fetch(
+        `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`,
+        { signal: AbortSignal.timeout(6000) },
+      );
+      if (!res.ok) return this.lookupGoogleBooks(cleanIsbn);
       const data = (await res.json()) as Record<string, unknown>;
       const book = data[`ISBN:${cleanIsbn}`] as {
         title?: string;
@@ -486,7 +538,7 @@ export class BooksService implements OnApplicationBootstrap {
         cover?: { medium?: string };
       } | undefined;
 
-      if (!book) return null;
+      if (!book) return this.lookupGoogleBooks(cleanIsbn);
 
       return {
         isbn: cleanIsbn,
@@ -496,6 +548,51 @@ export class BooksService implements OnApplicationBootstrap {
         year: book.publish_date ? parseInt(book.publish_date.slice(-4)) || 0 : 0,
         genre: book.subjects?.[0]?.name ?? "Umumiy",
         coverUrl: book.cover?.medium,
+        source: "external"
+      };
+    } catch {
+      return this.lookupGoogleBooks(cleanIsbn);
+    }
+  }
+
+  // Zaxira manba: Google Books (kalitsiz ochiq API). Open Library'da yo'q
+  // kitoblar (jumladan ba'zi o'zbek/rus nashrlari) ko'pincha shu yerda bor.
+  private async lookupGoogleBooks(cleanIsbn: string): Promise<IsbnLookupResult | null> {
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1`,
+        { signal: AbortSignal.timeout(6000) },
+      );
+      if (!res.ok) return null;
+      const data = (await res.json()) as {
+        items?: {
+          volumeInfo?: {
+            title?: string;
+            subtitle?: string;
+            authors?: string[];
+            pageCount?: number;
+            publishedDate?: string;
+            categories?: string[];
+            language?: string;
+            description?: string;
+            imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+          };
+        }[];
+      };
+      const v = data.items?.[0]?.volumeInfo;
+      if (!v?.title) return null;
+      const lang = v.language && ["uz", "ru", "en", "kaa"].includes(v.language) ? v.language : undefined;
+      const cover = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail;
+      return {
+        isbn: cleanIsbn,
+        title: v.subtitle ? `${v.title}: ${v.subtitle}` : v.title,
+        author: v.authors?.join(", "),
+        pages: v.pageCount,
+        year: v.publishedDate ? parseInt(v.publishedDate.slice(0, 4)) || 0 : 0,
+        genre: v.categories?.[0],
+        lang,
+        coverUrl: cover?.replace(/^http:/, "https:"),
+        description: v.description?.slice(0, 1000),
         source: "external"
       };
     } catch {

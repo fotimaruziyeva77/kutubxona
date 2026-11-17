@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { BookCover } from "@/components/books/BookCover";
 import { BookRow } from "@/components/books/BookCard";
+import { IsbnBarcodeScanner, isValidEan13 } from "@/components/books/IsbnBarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { Input, FormField } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
@@ -890,6 +891,7 @@ export default function BooksPage() {
           libraries={libraries}
           onClose={() => { setShowAdd(false); setEditBook(null); }}
           onSaved={() => { invalidateFund(); setShowAdd(false); setEditBook(null); }}
+          onAdded={invalidateFund}
         />
       )}
     </DashboardPage>
@@ -938,13 +940,16 @@ function BookFormModal({
   libraryId,
   libraries,
   onClose,
-  onSaved
+  onSaved,
+  onAdded
 }: {
   book: Book | null;
   libraryId: string;
   libraries: Library[];
   onClose: () => void;
   onSaved: () => void;
+  /** "Saqlash va yana qo'shish": ro'yxatni yangilaydi, modal ochiq qoladi. */
+  onAdded: () => void;
 }) {
   // Super admin barcha kutubxonalarni ko'radi → Viloyat→Tuman→Kutubxona
   // kaskadi orqali tanlaydi. Muassasa admin/kutubxonachi esa faqat o'z
@@ -983,6 +988,14 @@ function BookFormModal({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState("");
+  // ISBN'siz kitob (eski/mahalliy nashr) — backend ichki shtrix-kod beradi.
+  const [noIsbn, setNoIsbn] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  // "Saqlash va yana qo'shish" bilan shu oynada qo'shilgan kitoblar soni.
+  const [addedCount, setAddedCount] = useState(0);
+  const isbnInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const lastLookupRef = useRef("");
 
   // ── Super admin kaskad filtri (faqat add rejimida) ─────────────────────────
   const [filterViloyat, setFilterViloyat] = useState("");
@@ -1046,7 +1059,7 @@ function BookFormModal({
   const yearNum = form.year.trim() ? Number(form.year) : undefined;
   const copiesNum = Number(form.totalCount);
   const errors = {
-    isbn: submitted && !form.isbn.trim() ? t("form.isbnTooShort") : undefined,
+    isbn: submitted && !noIsbn && !form.isbn.trim() ? t("form.isbnTooShort") : undefined,
     title: submitted && !form.title.trim() ? t("form.titleRequired") : undefined,
     author: submitted && !form.author.trim() ? t("form.authorRequired") : undefined,
     year:
@@ -1061,15 +1074,28 @@ function BookFormModal({
         : undefined,
     library: submitted && !form.libraryId ? t("form.libraryRequired") : undefined
   };
-  const isbnWarning = form.isbn.trim() && !isbnChecksumOk(form.isbn) ? t("form.isbnChecksum") : "";
+  const isbnWarning = !noIsbn && form.isbn.trim() && !isbnChecksumOk(form.isbn) ? t("form.isbnChecksum") : "";
   const requiredOk =
-    !!form.isbn.trim() && !!form.title.trim() && !!form.author.trim() && !!form.libraryId;
+    (noIsbn || !!form.isbn.trim()) && !!form.title.trim() && !!form.author.trim() && !!form.libraryId;
   const canSubmit = requiredOk && !errors.year && !errors.copies;
 
+  const resetForNext = () => {
+    // Kutubxona va til saqlanadi — odatda bir partiyada bir xil bo'ladi.
+    setForm((f) => ({
+      ...f,
+      isbn: "", title: "", author: "", genre: "", pages: "", year: "",
+      coverUrl: "", description: "", totalCount: "1"
+    }));
+    setSubmitted(false);
+    setIsbnOk(""); setIsbnHint(""); setSaveMessage(""); setSaveError(""); setCoverError("");
+    lastLookupRef.current = "";
+    setTimeout(() => (noIsbn ? titleInputRef : isbnInputRef).current?.focus(), 0);
+  };
+
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: (_opts: { again: boolean }) => {
       const payload: CreateBookInput = {
-        isbn: form.isbn.trim(),
+        isbn: noIsbn ? "" : form.isbn.trim(),
         title: form.title.trim(),
         author: form.author.trim(),
         genre: form.genre.trim(),
@@ -1084,7 +1110,19 @@ function BookFormModal({
       };
       return book ? updateBook(book.id, payload) : createBook(payload);
     },
-    onSuccess: (result) => {
+    onSuccess: (result, { again }) => {
+      if (!book && again) {
+        const r = (result ?? {}) as { duplicate?: boolean; message?: string };
+        toast.success(
+          r.duplicate
+            ? r.message ?? t("form.duplicateFallback")
+            : t("toast.createdNamed", { title: form.title.trim() })
+        );
+        setAddedCount((n) => n + 1);
+        onAdded();
+        resetForNext();
+        return;
+      }
       // Qo'shishda dublikat bo'lsa (shu kutubxonada bor edi — nusxa qo'shildi)
       // aniq xabarni ko'rsatamiz va modalni ochiq qoldiramiz; aks holda yopamiz.
       if (!book && result && (result as { duplicate?: boolean }).duplicate) {
@@ -1104,16 +1142,17 @@ function BookFormModal({
     }
   });
 
-  const submit = () => {
+  const submit = (again = false) => {
     setSubmitted(true);
     if (!canSubmit || save.isPending) return;
-    save.mutate();
+    save.mutate({ again });
   };
 
-  const handleIsbnLookup = async () => {
+  const handleIsbnLookup = async (isbnArg?: string) => {
+    const isbn = isbnArg ?? form.isbn;
     setIsbnOk("");
     // Yumshoq format tekshiruvi.
-    if (form.isbn.replace(/[-\s]/g, "").length < 10) {
+    if (isbn.replace(/[-\s]/g, "").length < 10) {
       setIsbnHint(t("form.isbnTooShort"));
       return;
     }
@@ -1122,7 +1161,8 @@ function BookFormModal({
     try {
       // Backend AVVAL lokal bazani tekshiradi (avval qo'shilgan kitob), keyin
       // Open Library — shuning uchun mavjud ISBN bo'lsa ma'lumot avtomat keladi.
-      const data = await lookupIsbn(form.isbn);
+      lastLookupRef.current = isbn.replace(/[-\s]/g, "").toUpperCase();
+      const data = await lookupIsbn(isbn);
       if (data) {
         setForm((f) => ({
           ...f,
@@ -1143,6 +1183,7 @@ function BookFormModal({
       } else {
         // 200 + null: ma'lumot topilmadi — yumshoq maslahat, xato emas.
         setIsbnHint(t("form.isbnNotFound"));
+        titleInputRef.current?.focus();
       }
     } catch {
       // Tarmoq/server xatosi ham bloklovchi emas — qo'lda to'ldirish mumkin.
@@ -1173,6 +1214,25 @@ function BookFormModal({
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  // To'liq va to'g'ri ISBN kiritilsa (yoki kamera/USB-skaner yozsa) — tugmani
+  // bosmasdan avtomatik qidiramiz. Tahrirlashda emas (ma'lumot ustiga yozilmasin).
+  useEffect(() => {
+    if (book || noIsbn) return;
+    const clean = form.isbn.replace(/[-\s]/g, "").toUpperCase();
+    const complete = isValidEan13(clean) || (/^\d{9}[\dX]$/.test(clean) && isbnChecksumOk(clean));
+    if (!complete || clean === lastLookupRef.current) return;
+    const id = setTimeout(() => void handleIsbnLookup(clean), 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.isbn, book, noIsbn]);
+
+  const handleScanned = useCallback((code: string) => {
+    setScanning(false);
+    setIsbnHint("");
+    setForm((f) => ({ ...f, isbn: code })); // avto-qidiruv effekti ishga tushadi
+  }, []);
+  const closeScanner = useCallback(() => setScanning(false), []);
+
   return (
     <Modal
       open
@@ -1181,10 +1241,24 @@ function BookFormModal({
       maxWidth="max-w-2xl"
       footer={
         <>
-          <span className="self-center text-xs text-slate-500 sm:mr-auto">{t("form.requiredNote")}</span>
+          <span className="self-center text-xs text-slate-500 sm:mr-auto">
+            {addedCount > 0 ? t("form.addedCount", { count: addedCount }) : t("form.requiredNote")}
+          </span>
           <Button type="button" variant="outline" onClick={onClose}>
             {saveMessage ? t("form.close") : t("form.cancel")}
           </Button>
+          {!book && !saveMessage && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => submit(true)}
+              className="whitespace-nowrap"
+              isLoading={save.isPending && save.variables?.again === true}
+              disabled={save.isPending || (submitted && !canSubmit)}
+            >
+              {t("form.saveAndNext")}
+            </Button>
+          )}
           {saveMessage ? (
             // Dublikat: nusxa qo'shildi — ro'yxatni yangilab modalni yopamiz.
             <Button type="button" onClick={onSaved}>{t("form.done")}</Button>
@@ -1192,10 +1266,11 @@ function BookFormModal({
             <Button
               type="submit"
               form="book-form"
-              isLoading={save.isPending}
-              disabled={submitted && !canSubmit}
+              className="whitespace-nowrap"
+              isLoading={save.isPending && save.variables?.again !== true}
+              disabled={save.isPending || (submitted && !canSubmit)}
             >
-              {save.isPending ? t("form.saving") : t("form.save")}
+              {save.isPending ? t("form.saving") : addedCount > 0 ? t("form.saveAndClose") : t("form.save")}
             </Button>
           )}
         </>
@@ -1212,15 +1287,18 @@ function BookFormModal({
       >
         {/* ── ISBN + avtoto'ldirish ─────────────────────────────────────────── */}
         <Section title={t("form.sectionIsbn")}>
+          {!noIsbn && (
           <div className="flex items-start gap-2">
             <FormField
               id="book-isbn"
               label={t("form.isbnLabel")}
               className="flex-1"
               error={errors.isbn}
-              hint={isbnOk || isbnWarning || isbnHint || t("form.isbnHint")}
+              hint={isbnOk ? undefined : isbnWarning || isbnHint || t("form.isbnHint")}
             >
               <Input
+                ref={isbnInputRef}
+                autoFocus={!book}
                 value={form.isbn}
                 onChange={(e) => set("isbn", e.target.value)}
                 onKeyDown={(e) => {
@@ -1235,17 +1313,54 @@ function BookFormModal({
                 className="font-mono"
               />
             </FormField>
+            {!book && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setScanning((v) => !v)}
+                className="mt-6 shrink-0 gap-1.5"
+                aria-pressed={scanning}
+                title={t("form.scanTitle")}
+              >
+                <Icon.camera aria-hidden="true" size={ICON_SIZE.sm} />
+                <span className="hidden sm:inline">{t("form.scan")}</span>
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
-              onClick={handleIsbnLookup}
+              onClick={() => void handleIsbnLookup()}
               isLoading={isbnLoading}
               className="mt-6 shrink-0 gap-1.5"
+              title={t("form.isbnSearch")}
             >
               <Icon.search aria-hidden="true" size={ICON_SIZE.sm} />
-              {t("form.isbnSearch")}
+              <span className="hidden sm:inline">{t("form.isbnSearch")}</span>
             </Button>
           </div>
+          )}
+          {scanning && !noIsbn && (
+            <IsbnBarcodeScanner onDetected={handleScanned} onClose={closeScanner} />
+          )}
+          {!book && (
+            <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-line-strong"
+                checked={noIsbn}
+                onChange={(e) => {
+                  setNoIsbn(e.target.checked);
+                  setScanning(false);
+                  setIsbnOk(""); setIsbnHint("");
+                  if (e.target.checked) setTimeout(() => titleInputRef.current?.focus(), 0);
+                }}
+              />
+              <span>
+                {t("form.noIsbn")}
+                {noIsbn && <span className="mt-0.5 block text-xs text-slate-500">{t("form.noIsbnHint")}</span>}
+              </span>
+            </label>
+          )}
           {isbnOk && (
             <p className="-mt-1 flex items-center gap-1.5 text-xs text-green-700">
               <Icon.check aria-hidden="true" size={ICON_SIZE.xs} />
@@ -1257,7 +1372,7 @@ function BookFormModal({
         {/* ── Asosiy ma'lumot ───────────────────────────────────────────────── */}
         <Section title={t("form.sectionMain")}>
           <FormField id="book-title" label={t("form.nameLabel")} error={errors.title}>
-            <Input value={form.title} onChange={(e) => set("title", e.target.value)} autoComplete="off" />
+            <Input ref={titleInputRef} value={form.title} onChange={(e) => set("title", e.target.value)} autoComplete="off" />
           </FormField>
           <FormField id="book-author" label={t("form.authorLabel")} error={errors.author}>
             <Input value={form.author} onChange={(e) => set("author", e.target.value)} autoComplete="off" />

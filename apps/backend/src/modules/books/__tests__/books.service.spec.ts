@@ -369,6 +369,46 @@ describe("BooksService", () => {
   });
 
   // ── update ────────────────────────────────────────────────────────────────
+  describe("create — ISBN-10 va ISBN'siz kitob", () => {
+    it("ISBN-10 ni ISBN-13 ga aylantirib saqlaydi", async () => {
+      mockPrisma.book.findFirst.mockResolvedValue(null);
+      mockPrisma.book.create.mockResolvedValue(mockBook);
+
+      await service.create({ isbn: "5-17-012345-X", title: "Kitob", author: "Muallif", genre: "Umumiy", libraryId: "lib1" });
+
+      const saved = mockPrisma.book.create.mock.calls[0][0].data.isbn;
+      expect(saved).toMatch(/^978517012345\d$/);
+      expect(service.isValidIsbn(saved)).toBe(true);
+    });
+
+    it("ISBN bo'sh bo'lsa ichki EAN-13 kod (2...) beradi", async () => {
+      mockPrisma.book.findFirst.mockResolvedValue(null);
+      mockPrisma.book.create.mockResolvedValue(mockBook);
+
+      await service.create({ isbn: "", title: "Eski kitob", author: "Muallif", genre: "Umumiy", libraryId: "lib1" });
+
+      const code = mockPrisma.book.create.mock.calls[0][0].data.isbn;
+      expect(code).toMatch(/^2\d{12}$/);
+      expect(service.isValidIsbn(code)).toBe(true); // nazorat raqami to'g'ri — shtrix-kod sifatida o'qiladi
+    });
+
+    it("ISBN'siz kitob shu kutubxonada bor bo'lsa — nusxa qo'shadi", async () => {
+      mockPrisma.book.findFirst.mockResolvedValue({ ...mockBook, isbn: "2000000000015", totalCount: 2, availableCount: 2 });
+      mockPrisma.book.update.mockResolvedValue({ ...mockBook, totalCount: 3 });
+
+      const result = await service.create({ isbn: "", title: "Eski kitob", author: "Muallif", genre: "Umumiy", libraryId: "lib1", totalCount: 1 });
+
+      expect(result.duplicate).toBe(true);
+      expect(mockPrisma.book.create).not.toHaveBeenCalled();
+    });
+
+    it("ISBN'siz kitobda nom yoki muallif bo'lmasa — 400", async () => {
+      await expect(
+        service.create({ isbn: "", title: "", author: "Muallif", genre: "Umumiy", libraryId: "lib1" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe("update", () => {
     it("kitob ma'lumotlarini yangilaydi", async () => {
       mockPrisma.book.findUnique.mockResolvedValue(mockBook);
@@ -458,6 +498,24 @@ describe("BooksService", () => {
       const result = await service.lookupIsbn("123");
       expect(result).toBeNull();
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it("Open Library'da yo'q bo'lsa Google Books'dan oladi", async () => {
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            items: [{ volumeInfo: { title: "O'tkan kunlar", authors: ["Abdulla Qodiriy"], pageCount: 400, publishedDate: "2019-05-01", language: "uz", imageLinks: { thumbnail: "http://books.google.com/x.jpg" } } }]
+          })
+        });
+
+      const result = await service.lookupIsbn("9789943452787");
+      expect(result?.title).toBe("O'tkan kunlar");
+      expect(result?.author).toBe("Abdulla Qodiriy");
+      expect(result?.year).toBe(2019);
+      expect(result?.coverUrl).toBe("https://books.google.com/x.jpg");
+      expect((global.fetch as jest.Mock).mock.calls[1][0]).toContain("googleapis.com/books/v1/volumes?q=isbn:9789943452787");
     });
 
     it("Open Library 404/5xx bo'lsa null qaytaradi", async () => {
