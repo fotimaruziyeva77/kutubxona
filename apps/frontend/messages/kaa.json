@@ -383,6 +383,14 @@
     "findNearby": "Jaqın kitapxanalardan tabıw"
   },
   "landing": {
+    "newBooks": {
+      "eyebrow": "Fondtan",
+      "title": "Kitapxanalardaǵı kitaplar",
+      "subtitle": "Kitapxanalarǵa jańa qosılǵan kitaplar. Dizimnen ótiń, bron qılıń hám kitapxanadan alıń.",
+      "all": "Barlıq kitaplar",
+      "available": "Bar: {count}",
+      "unavailable": "Házir bánt"
+    },
     "meta": {
       "title": "SIFAT LIBRARY — Milliy Kitap Oqıw Indeksi",
       "description": "Ózbekistan Respublikasınıń milliy kitap oqıw monitoringi hám reyting platforması. PQ-9 qararı tiykarında islep shıǵılǵan."

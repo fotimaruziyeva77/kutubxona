@@ -401,6 +401,25 @@ export class BooksService implements OnApplicationBootstrap {
     return { ...(book as unknown as BookWithLibrary), duplicate: false };
   }
 
+  // ── Muqova rasmi (GET /books/:id/cover) ───────────────────────────────────
+  // Faqat xavfsiz raster formatlar: SVG (ichida skript bo'lishi mumkin) va
+  // boshqa turlar shu domendan berilmaydi. Tashqi URL (Open Library/Google)
+  // bo'lsa — o'sha manzilga yo'naltiramiz.
+  async getCover(
+    id: string,
+  ): Promise<{ kind: "image"; mime: string; data: Buffer } | { kind: "redirect"; url: string }> {
+    const book = await this.prisma.book.findUnique({ where: { id }, select: { coverUrl: true } });
+    const url = book?.coverUrl?.trim();
+    if (!url) throw new NotFoundException("Muqova yo'q");
+    const m = url.match(/^data:(image\/(?:jpeg|jpg|png|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/i);
+    if (m) {
+      const mime = m[1].toLowerCase() === "image/jpg" ? "image/jpeg" : m[1].toLowerCase();
+      return { kind: "image", mime, data: Buffer.from(m[2], "base64") };
+    }
+    if (/^https:\/\//i.test(url)) return { kind: "redirect", url };
+    throw new NotFoundException("Muqova yo'q");
+  }
+
   // ── Kitob tahrirlash ──────────────────────────────────────────────────────
   async update(id: string, dto: UpdateBookDto) {
     const book = await this.findOne(id);

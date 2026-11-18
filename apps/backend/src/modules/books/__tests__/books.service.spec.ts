@@ -409,6 +409,30 @@ describe("BooksService", () => {
     });
   });
 
+  describe("getCover", () => {
+    it("data-URL (JPEG) — rasm baytlari va to'g'ri MIME", async () => {
+      const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+      mockPrisma.book.findUnique.mockResolvedValue({ coverUrl: `data:image/jpeg;base64,${bytes.toString("base64")}` });
+      const r = await service.getCover("b1");
+      expect(r).toEqual({ kind: "image", mime: "image/jpeg", data: bytes });
+    });
+
+    it("tashqi https URL — redirect", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue({ coverUrl: "https://covers.openlibrary.org/b/id/1-M.jpg" });
+      await expect(service.getCover("b1")).resolves.toEqual({ kind: "redirect", url: "https://covers.openlibrary.org/b/id/1-M.jpg" });
+    });
+
+    it("SVG data-URL (skript bo'lishi mumkin) berilmaydi — 404", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue({ coverUrl: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" });
+      await expect(service.getCover("b1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("muqova yo'q — 404", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue({ coverUrl: null });
+      await expect(service.getCover("b1")).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe("update", () => {
     it("kitob ma'lumotlarini yangilaydi", async () => {
       mockPrisma.book.findUnique.mockResolvedValue(mockBook);

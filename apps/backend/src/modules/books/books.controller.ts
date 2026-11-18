@@ -114,6 +114,27 @@ export class BooksController {
     res.end(buf);
   }
 
+  // Muqova rasmi alohida, keshlanadigan URL orqali. coverUrl bazada data-URL
+  // (~80KB) bo'lib saqlanadi — ro'yxatlar/bosh sahifa HTML'iga ichma-ich
+  // qo'yilsa sahifa og'irlashadi. Bu yerdan brauzer rasmni bir marta yuklab
+  // keshlaydi (?v=<updatedAt> bilan versiyalanadi).
+  @Public()
+  @Get(":id/cover")
+  async cover(@Param("id") id: string, @Res() res: Response) {
+    const result = await this.booksService.getCover(id);
+    if (result.kind === "redirect") {
+      res.set("Cache-Control", "public, max-age=86400");
+      return res.redirect(302, result.url);
+    }
+    res.set({
+      "Content-Type": result.mime,
+      "Content-Length": String(result.data.length),
+      "Cache-Control": "public, max-age=604800",
+      "X-Content-Type-Options": "nosniff",
+    });
+    res.end(result.data);
+  }
+
   @Public()
   @Get(":id")
   findOne(@Param("id") id: string) {

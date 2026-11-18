@@ -383,6 +383,14 @@
     "findNearby": "Yaqin kutubxonalardan topish"
   },
   "landing": {
+    "newBooks": {
+      "eyebrow": "Fonddan",
+      "title": "Kutubxonalardagi kitoblar",
+      "subtitle": "Kutubxonalarga yangi qo'shilgan kitoblar. Ro'yxatdan o'ting, bron qiling va kutubxonadan oling.",
+      "all": "Barcha kitoblar",
+      "available": "Mavjud: {count} ta",
+      "unavailable": "Hozir band"
+    },
     "meta": {
       "title": "SIFAT LIBRARY — Milliy Kitobxonlik Indeksi",
       "description": "O'zbekiston Respublikasining milliy kitobxonlik monitoring va reyting platformasi. PQ-9 qarori asosida ishlab chiqilgan."

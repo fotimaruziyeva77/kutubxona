@@ -20,6 +20,7 @@ import {
   YouTubeIcon,
 } from "@/components/landing/SocialIcons";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
+import { BookCover } from "@/components/books/BookCover";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import { apiBase } from "@/lib/api/base";
 import { SITE_URL } from "@/lib/site";
@@ -114,6 +115,53 @@ async function fetchTopForLanding() {
     return res.json();
   } catch {
     return null;
+  }
+}
+
+type LandingBook = {
+  id: string;
+  title: string;
+  author: string;
+  genre?: string | null;
+  hasCover: boolean;
+  updatedAt?: string;
+  availableCount: number;
+  library?: { name: string; code?: string | null } | null;
+};
+
+/**
+ * Fondga yangi qo'shilgan kitoblar — faqat FAOL kutubxonalardan (bron qilib
+ * bo'ladigan). Muqova data-URL'i HTML'ga qo'yilmaydi: faqat bor-yo'qligi
+ * olinadi, rasm /api/books/:id/cover orqali alohida keshlanib yuklanadi.
+ */
+async function fetchNewBooks(): Promise<LandingBook[]> {
+  try {
+    const res = await fetch(`${API_BASE}/books?limit=24&activeLibraries=true`, {
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const list: Array<Record<string, unknown>> = Array.isArray(json) ? json : (json?.data ?? []);
+    // Bir xil kitob bir necha kutubxonada bo'lsa — bir marta ko'rsatamiz.
+    const seen = new Set<string>();
+    const unique = list.filter((b) => {
+      const key = `${String(b.title ?? "").trim()}|${String(b.author ?? "").trim()}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return unique.slice(0, 6).map((b) => ({
+      id: String(b.id),
+      title: String(b.title ?? ""),
+      author: String(b.author ?? ""),
+      genre: (b.genre as string) ?? null,
+      hasCover: typeof b.coverUrl === "string" && b.coverUrl.length > 0,
+      updatedAt: (b.updatedAt as string) ?? undefined,
+      availableCount: Number(b.availableCount ?? 0),
+      library: (b.library as LandingBook["library"]) ?? null,
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -246,11 +294,12 @@ export default async function HomePage({
   const format = await getFormatter({ locale });
   const fmt = (n: number) => format.number(Math.round(n));
 
-  const [stats, regions, topData, donateStats] = await Promise.all([
+  const [stats, regions, topData, donateStats, newBooks] = await Promise.all([
     fetchLandingStats(),
     fetchLandingRegions(),
     fetchTopForLanding(),
     fetchDonateStats(),
+    fetchNewBooks(),
   ]);
 
   const isLive = stats !== null;
@@ -384,6 +433,72 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+      {/* FONDDAGI KITOBLAR — haqiqiy kitoblar (faqat faol kutubxonalardan).  */}
+      {/* Bo'sh bo'lsa bo'lim ko'rsatilmaydi — hech narsa o'ylab topilmaydi. */}
+      {newBooks.length > 0 && (
+        <section id="kitoblar" className="scroll-mt-20 pt-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <SectionHeading
+                align="left"
+                eyebrow={t("newBooks.eyebrow")}
+                title={t("newBooks.title")}
+                subtitle={t("newBooks.subtitle")}
+              />
+              <Link
+                href={`/${locale}/search`}
+                className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-line bg-white px-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+              >
+                {t("newBooks.all")}
+                <Icon.next aria-hidden="true" size={ICON_SIZE.sm} />
+              </Link>
+            </div>
+            <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
+              {newBooks.map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/${locale}/search?q=${encodeURIComponent(b.title)}`}
+                  className="group flex w-[42%] shrink-0 snap-start flex-col rounded-2xl border border-line bg-white p-3 transition-shadow hover:shadow-md sm:w-auto"
+                >
+                  <div className="mx-auto w-full max-w-[9rem]">
+                    <BookCover
+                      size="md"
+                      title={b.title}
+                      author={b.author}
+                      genre={b.genre}
+                      coverUrl={
+                        b.hasCover
+                          ? `/api/books/${b.id}/cover${b.updatedAt ? `?v=${encodeURIComponent(b.updatedAt)}` : ""}`
+                          : null
+                      }
+                    />
+                  </div>
+                  <p className="mt-3 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-brand-700">
+                    {b.title}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">{b.author}</p>
+                  {b.library?.name && (
+                    <p className="mt-2 flex items-center gap-1 truncate text-xs text-slate-500">
+                      <Icon.library aria-hidden="true" size={ICON_SIZE.xs} className="shrink-0" />
+                      <span className="truncate">{b.library.name}</span>
+                    </p>
+                  )}
+                  <span
+                    className={`mt-2 inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      b.availableCount > 0 ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {b.availableCount > 0
+                      ? t("newBooks.available", { count: b.availableCount })
+                      : t("newBooks.unavailable")}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ================================================================== */}
       {/* 3. XARITA + REYTING — referens maketdagi ikki ustunli blok         */}
