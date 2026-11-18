@@ -178,10 +178,11 @@ export default function BooksPage() {
 
   // RBAC FIX: caller-scoped libraries (not the @Public GET /libraries which
   // returns every library). A KUTUBXONACHI now sees only their own library.
-  const { data: libraries = [] } = useQuery({
+  const librariesQuery = useQuery({
     queryKey: ["libraries-mine"],
     queryFn: getMyLibraries
   });
+  const libraries = useMemo<Library[]>(() => librariesQuery.data ?? [], [librariesQuery.data]);
 
   // When the caller manages exactly ONE library, auto-select it and scope the
   // book list to it — a librarian must NOT be able to pick "Barcha
@@ -215,9 +216,16 @@ export default function BooksPage() {
         page,
         limit
       }),
+    // Kutubxonalar ro'yxati kelmaguncha so'rov YUBORILMAYDI: aks holda
+    // effectiveLib='' bo'lib, birinchi /books so'rovi libraryId'siz ketardi.
+    enabled: librariesQuery.isSuccess && (!singleLibrary || !!effectiveLib),
     // Sahifa/filtr almashganda eski ro'yxat turadi (skelet miltillamaydi).
     placeholderData: keepPreviousData
   });
+  // Kutubxonalar yuklanayotganda ham skelet ko'rinadi (bo'sh holat emas).
+  const listLoading = list.isLoading || (librariesQuery.isPending && !list.data);
+  // Kutubxonalar ro'yxati xato bersa — ro'yxat ham xato holatida (bo'sh emas).
+  const listError = list.isError || librariesQuery.isError;
   const listData = list.data;
   const books = useMemo<Book[]>(() => listData?.data ?? [], [listData]);
   const total = listData?.total ?? 0;
@@ -372,7 +380,7 @@ export default function BooksPage() {
     </div>
   );
 
-  const listIsEmpty = !list.isLoading && !list.isError && books.length === 0;
+  const listIsEmpty = !listLoading && !listError && books.length === 0;
   const inv = inventory.data;
 
   return (
@@ -653,14 +661,14 @@ export default function BooksPage() {
       )}
 
       {/* Kitoblar ro'yxati */}
-      {list.isLoading ? (
+      {listLoading ? (
         <SkeletonTable rows={6} columns={5} />
-      ) : list.isError ? (
+      ) : listError ? (
         <ErrorState
           title={t("loadError.title")}
           message={t("loadError.message")}
-          onRetry={() => list.refetch()}
-          isRetrying={list.isRefetching}
+          onRetry={() => (librariesQuery.isError ? librariesQuery.refetch() : list.refetch())}
+          isRetrying={list.isRefetching || librariesQuery.isRefetching}
         />
       ) : listIsEmpty ? (
         hasFilters ? (
@@ -774,7 +782,7 @@ export default function BooksPage() {
       )}
 
       {/* Pagination + sahifa hajmi (20/50/100) — jami son backend'dan */}
-      {!list.isLoading && !list.isError && total > 0 && (
+      {!listLoading && !listError && total > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <label htmlFor="books-page-size">{t("pageSize")}</label>
@@ -989,7 +997,10 @@ function BookFormModal({
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState("");
   // ISBN'siz kitob (eski/mahalliy nashr) — backend ichki shtrix-kod beradi.
-  const [noIsbn, setNoIsbn] = useState(false);
+  // Tahrirlashda: backend ISBN'siz kitobga "2..." bilan boshlanuvchi ichki
+  // EAN-13 kod beradi (GS1 ichki diapazoni) — bu ISBN emas, maydonda ko'rsatilmaydi.
+  const isInternalCode = !!book && /^2\d{12}$/.test(book.isbn ?? "");
+  const [noIsbn, setNoIsbn] = useState(isInternalCode);
   const [scanning, setScanning] = useState(false);
   // "Saqlash va yana qo'shish" bilan shu oynada qo'shilgan kitoblar soni.
   const [addedCount, setAddedCount] = useState(0);
@@ -1095,7 +1106,9 @@ function BookFormModal({
   const save = useMutation({
     mutationFn: (_opts: { again: boolean }) => {
       const payload: CreateBookInput = {
-        isbn: noIsbn ? "" : form.isbn.trim(),
+        // Tahrirlashda ISBN o'zgarmaydi (backend update uni e'tiborsiz qoldiradi),
+        // ichki kod saqlanib qoladi.
+        isbn: book ? book.isbn : noIsbn ? "" : form.isbn.trim(),
         title: form.title.trim(),
         author: form.author.trim(),
         genre: form.genre.trim(),
@@ -1342,12 +1355,19 @@ function BookFormModal({
           {scanning && !noIsbn && (
             <IsbnBarcodeScanner onDetected={handleScanned} onClose={closeScanner} />
           )}
-          {!book && (
-            <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+          {(!book || isInternalCode) && (
+            <label
+              className={cn(
+                "flex items-start gap-2 text-sm text-slate-700",
+                book ? "cursor-default" : "cursor-pointer"
+              )}
+            >
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 rounded border-line-strong"
                 checked={noIsbn}
+                // Tahrirlashda kitob kodi o'zgarmaydi — belgi faqat holatni ko'rsatadi.
+                disabled={!!book}
                 onChange={(e) => {
                   setNoIsbn(e.target.checked);
                   setScanning(false);

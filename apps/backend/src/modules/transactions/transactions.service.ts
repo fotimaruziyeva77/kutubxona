@@ -11,7 +11,19 @@ import { SmsService } from "../../infra/sms/sms.service";
 import { RedisLockService } from "../../infra/cache/redis-lock.service";
 import { BadgeService } from "../badge/badge.service";
 import { XpService } from "../xp/xp.service";
-import { Prisma, TransactionStatus, TransactionType, UserStatus } from "@prisma/client";
+import { Prisma, TransactionStatus, TransactionType, UserRole, UserStatus } from "@prisma/client";
+import { resolveCallerLibraryId } from "../../common/utils/library-scope.util";
+
+/**
+ * I1 — kutubxona doirasi: kutubxonachi tomonidan bajariladigan amalni kim
+ * bajarayotgani (JWT payload). SUPER_ADMIN har qanday kutubxona bilan ishlay
+ * oladi; KUTUBXONACHI / MUASSASA_ADMIN faqat o'z kutubxonasi bilan
+ * (User → Institution.libraryId — /libraries/mine bilan bir xil manba).
+ */
+export interface LibraryActor {
+  sub: string;
+  role: UserRole | string;
+}
 
 const BORROW_DAYS = 14;
 const EXTEND_DAYS = 7;
@@ -105,6 +117,26 @@ export class TransactionsService {
     private readonly redisLock: RedisLockService
   ) {}
 
+  // ── I1: kutubxona doirasi tekshiruvi ─────────────────────────────────────
+  // Fail-closed: kutubxonaga bog'lanmagan xodim yoki boshqa rol → 403.
+  async assertLibraryAccess(actor: LibraryActor, libraryId: string): Promise<void> {
+    if (actor.role === UserRole.SUPER_ADMIN) return;
+    if (actor.role === UserRole.KUTUBXONACHI || actor.role === UserRole.MUASSASA_ADMIN) {
+      const own = await resolveCallerLibraryId(this.prisma, actor.sub);
+      if (own && own === libraryId) return;
+    }
+    throw new ForbiddenException("Bu kutubxona sizga tegishli emas");
+  }
+
+  // ── I2: nusxani fondga qaytarish (totalCount dan oshmaydi) ───────────────
+  // Bitta atomik UPDATE: parallel qaytarish/bekor qilishda ham
+  // availableCount hech qachon totalCount dan oshmaydi. Book modelida @@map
+  // yo'q — jadval "Book", ustunlar camelCase. updatedAt @updatedAt bo'lgani
+  // uchun raw so'rovda qo'lda yangilanadi.
+  private restoreOneCopy(p: Prisma.TransactionClient, bookId: string) {
+    return p.$executeRaw`UPDATE "Book" SET "availableCount" = LEAST("availableCount" + 1, "totalCount"), "updatedAt" = NOW() WHERE "id" = ${bookId}`;
+  }
+
   // ── Yordamchi: foydalanuvchi turi bo'yicha limit ─────────────────────────
   private getBorrowLimit(type: string, trustScore: number): number {
     const base: Record<string, number> = {
@@ -144,13 +176,15 @@ export class TransactionsService {
     if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
     if (user.status !== UserStatus.ACTIVE) throw new ForbiddenException("Foydalanuvchi faol emas");
     if (!book) throw new NotFoundException("Kitob topilmadi");
-    if (book.availableCount <= 0) throw new BadRequestException("Kitob mavjud emas");
 
-    // Mavjud bron bormi?
+    // I14 — mavjud bron tekshiruvi availableCount dan OLDIN: oxirgi nusxani
+    // o'zi bron qilgan kitobxon "Kitob mavjud emas" emas, aniq sababni olsin.
     const existing = await this.prisma.bookTransaction.findFirst({
       where: { userId, bookId, status: { in: [TransactionStatus.PENDING, TransactionStatus.RESERVED] } }
     });
     if (existing) throw new BadRequestException("Bu kitob allaqachon bron qilingan");
+
+    if (book.availableCount <= 0) throw new BadRequestException("Kitob mavjud emas");
 
     // Muddati o'tgan kitob bormi?
     if (await this.hasOverdueBooks(userId)) {
@@ -219,12 +253,13 @@ export class TransactionsService {
   }
 
   // Kutubxonachi bronni tasdiqlaydi: PENDING → RESERVED
-  async confirmReservation(transactionId: string) {
+  async confirmReservation(transactionId: string, actor: LibraryActor) {
     const tx = await this.prisma.bookTransaction.findUnique({
       where: { id: transactionId },
       include: { user: true, book: true }
     });
     if (!tx) throw new NotFoundException("Bron topilmadi");
+    await this.assertLibraryAccess(actor, tx.book.libraryId);
     if (tx.status !== TransactionStatus.PENDING) {
       throw new BadRequestException("Bron kutilayotgan holatda emas");
     }
@@ -244,14 +279,28 @@ export class TransactionsService {
   }
 
   // Bron bekor qilish
-  async cancelReservation(transactionId: string, requesterId: string, isLibrarian = false) {
+  // I1 — kutubxonachi sifatida bekor qilish faqat o'z kutubxonasi bronlari
+  // uchun. requesterRole faqat SUPER_ADMIN istisnosi uchun kerak; berilmasa
+  // tekshiruv requesterId ning o'z kutubxonasiga qarab (fail-closed) ishlaydi.
+  // O'z broni bo'lsa (kitobxon yoki xodimning shaxsiy broni) doira kerak emas.
+  async cancelReservation(
+    transactionId: string,
+    requesterId: string,
+    isLibrarian = false,
+    requesterRole?: UserRole | string
+  ) {
     const tx = await this.prisma.bookTransaction.findUnique({
       where: { id: transactionId },
       include: { user: true, book: true }
     });
     if (!tx) throw new NotFoundException("Bron topilmadi");
-    if (!isLibrarian && tx.userId !== requesterId) {
-      throw new ForbiddenException("Bu bron sizga tegishli emas");
+    const isOwn = tx.userId === requesterId;
+    if (!isOwn) {
+      if (!isLibrarian) throw new ForbiddenException("Bu bron sizga tegishli emas");
+      await this.assertLibraryAccess(
+        { sub: requesterId, role: requesterRole ?? UserRole.KUTUBXONACHI },
+        tx.book.libraryId
+      );
     }
     if (tx.status !== TransactionStatus.PENDING && tx.status !== TransactionStatus.RESERVED) {
       throw new BadRequestException("Bekor qilib bo'lmaydigan holat");
@@ -263,10 +312,7 @@ export class TransactionsService {
           where: { id: transactionId },
           data: { status: TransactionStatus.CANCELLED }
         });
-        await p.book.update({
-          where: { id: tx.bookId },
-          data: { availableCount: { increment: 1 } }
-        });
+        await this.restoreOneCopy(p, tx.bookId);
       });
     } catch (e) {
       rethrowRace(e);
@@ -308,7 +354,15 @@ export class TransactionsService {
     return d;
   }
 
-  async borrow(userId: string, bookId: string, reservationId?: string, dueDateIso?: string) {
+  // I1 — kitob har doim BERUVCHI kutubxonaniki bo'lishi shart (roaming
+  // buzilmaydi: kitobxon istalgan hududdan bo'lishi mumkin).
+  async borrow(
+    userId: string,
+    bookId: string,
+    reservationId: string | undefined,
+    dueDateIso: string | undefined,
+    actor: LibraryActor
+  ) {
     const [user, book] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
       this.prisma.book.findUnique({ where: { id: bookId } })
@@ -316,6 +370,7 @@ export class TransactionsService {
 
     if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
     if (!book) throw new NotFoundException("Kitob topilmadi");
+    await this.assertLibraryAccess(actor, book.libraryId);
     if (user.status !== UserStatus.ACTIVE) throw new ForbiddenException("Foydalanuvchi faol emas");
 
     // Muddati o'tgan kitob bloki
@@ -424,12 +479,18 @@ export class TransactionsService {
   // 3. KITOB QAYTARISH (intizom balli hisoblash)
   // ─────────────────────────────────────────────────────────────────────────
 
-  async returnBook(transactionId: string, returnLibraryId?: string) {
+  // I1 — faqat o'z kutubxonasi kitobini qaytarish. Boshqa kutubxona kitobi
+  // faqat returnRoaming orqali qaytariladi.
+  async returnBook(transactionId: string, returnLibraryId: string | undefined, actor: LibraryActor) {
     const tx = await this.prisma.bookTransaction.findUnique({
       where: { id: transactionId },
       include: { user: true, book: true }
     });
     if (!tx) throw new NotFoundException("Tranzaksiya topilmadi");
+    await this.assertLibraryAccess(actor, tx.book.libraryId);
+    if (returnLibraryId && returnLibraryId !== tx.book.libraryId) {
+      await this.assertLibraryAccess(actor, returnLibraryId);
+    }
     if (tx.status !== TransactionStatus.BORROWED) {
       throw new BadRequestException("Bu kitob qaytarilishi kerak emas");
     }
@@ -450,10 +511,7 @@ export class TransactionsService {
           returnLibraryId: returnLibraryId ?? null
         }
       });
-      await p.book.update({
-        where: { id: tx.bookId },
-        data: { availableCount: { increment: 1 } }
-      });
+      await this.restoreOneCopy(p, tx.bookId);
       // Kechiksa trust score pasayadi
       if (penaltyDays > 0) {
         await p.user.update({
@@ -497,12 +555,15 @@ export class TransactionsService {
   // What we do NOT touch:
   //   - Book.availableCount on EITHER library. The source library's count is
   //     only bumped when the BookTransfer is CONFIRMED (Plan 02-05).
-  async returnRoaming(transactionId: string, returnLibraryId: string) {
+  // I1 — qabul qiluvchi (returnLibraryId) kutubxona actor'niki bo'lishi shart.
+  async returnRoaming(transactionId: string, returnLibraryId: string, actor: LibraryActor) {
+    if (!returnLibraryId) throw new BadRequestException("returnLibraryId majburiy");
     const tx = await this.prisma.bookTransaction.findUnique({
       where: { id: transactionId },
       include: { book: { include: { library: true } }, user: true }
     });
     if (!tx) throw new NotFoundException("Tranzaksiya topilmadi");
+    await this.assertLibraryAccess(actor, returnLibraryId);
     if (tx.status !== TransactionStatus.BORROWED) {
       throw new BadRequestException("Bu kitob qaytarilishi kerak emas");
     }
@@ -540,6 +601,12 @@ export class TransactionsService {
             data: { trustScore: { increment: 1 } }
           });
         }
+      }
+      // I2 — "roaming" so'rovi aslida o'z kutubxonasiga bo'lsa, transfer
+      // yaratilmaydi; nusxa darhol fondga qaytadi (aks holda abadiy band
+      // bo'lib qolardi).
+      if (tx.book.libraryId === returnLibraryId) {
+        await this.restoreOneCopy(p, tx.bookId);
       }
       // BookTransfer ledger entry — source librarian must confirm.
       if (tx.book.libraryId !== returnLibraryId) {
@@ -972,7 +1039,8 @@ export class TransactionsService {
   }
 
   // Kutubxonadagi aktiv bronlar (kutubxonachi uchun)
-  async getLibraryBrons(libraryId: string) {
+  async getLibraryBrons(libraryId: string, actor: LibraryActor) {
+    await this.assertLibraryAccess(actor, libraryId);
     return this.prisma.bookTransaction.findMany({
       where: {
         book: { libraryId },
@@ -991,7 +1059,8 @@ export class TransactionsService {
   }
 
   // Kutubxonadagi faol berilgan kitoblar
-  async getLibraryBorrowed(libraryId: string) {
+  async getLibraryBorrowed(libraryId: string, actor: LibraryActor) {
+    await this.assertLibraryAccess(actor, libraryId);
     return this.prisma.bookTransaction.findMany({
       where: {
         book: { libraryId },
@@ -1006,7 +1075,8 @@ export class TransactionsService {
   }
 
   // Kutubxonadagi muddati o'tgan kitoblar
-  async getOverdueByLibrary(libraryId: string) {
+  async getOverdueByLibrary(libraryId: string, actor: LibraryActor) {
+    await this.assertLibraryAccess(actor, libraryId);
     const now = new Date();
     return this.prisma.bookTransaction.findMany({
       where: {
@@ -1078,10 +1148,7 @@ export class TransactionsService {
             where: { id: tx.id },
             data: { status: TransactionStatus.CANCELLED }
           });
-          await p.book.update({
-            where: { id: tx.bookId },
-            data: { availableCount: { increment: 1 } }
-          });
+          await this.restoreOneCopy(p, tx.bookId);
         });
       } catch (e) {
         // Auto-expire is a best-effort cron; a race on availableCount means

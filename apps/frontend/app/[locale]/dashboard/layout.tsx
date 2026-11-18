@@ -64,7 +64,7 @@ const NAV_ITEMS: {
   { href: "buxgalter",    label: "Buxgalter",         icon: Icon.payment,      roles: ["SUPER_ADMIN", "BUXGALTER"] },
   // Plan 04-03 audit-fix FIX F — new billing-related entries.
   { href: "subscriptions",label: "Obunalar",          icon: Icon.document,     roles: ["SUPER_ADMIN", "BUXGALTER"] },
-  { href: "library/billing", label: "Hisob",          icon: Icon.payment,      roles: ["MUASSASA_ADMIN", "KUTUBXONACHI"] },
+  { href: "library/billing", label: "Hisob",          icon: Icon.payment,      roles: ["MUASSASA_ADMIN"] },
 ];
 
 // Faqat shu (xodim/admin) rollar admin dashboardida ishlaydi. KITOBXON

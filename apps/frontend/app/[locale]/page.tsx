@@ -13,12 +13,7 @@ import {
 import { LandingTopTabs } from "@/components/landing/LandingTopTabs";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { HeroVisual } from "@/components/landing/HeroVisual";
-import {
-  TelegramIcon,
-  FacebookIcon,
-  InstagramIcon,
-  YouTubeIcon,
-} from "@/components/landing/SocialIcons";
+import { TelegramIcon } from "@/components/landing/SocialIcons";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { BookCover } from "@/components/books/BookCover";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
@@ -1039,11 +1034,12 @@ export default async function HomePage({
                 {t("footer.about")}
               </p>
               <div className="mt-5 flex gap-2">
+                {/* Faqat haqiqiy manzili bor tarmoq ko'rsatiladi. Facebook /
+                    Instagram / YouTube sahifalari hali yo'q — href="#" havola
+                    hech qayerga olib bormasdi. Rasmiy manzil kelganda shu
+                    ro'yxatga qo'shiladi. */}
                 {[
                   { href: "https://t.me/sifat_uz", label: "Telegram", Ic: TelegramIcon },
-                  { href: "#", label: "Facebook", Ic: FacebookIcon },
-                  { href: "#", label: "Instagram", Ic: InstagramIcon },
-                  { href: "#", label: "YouTube", Ic: YouTubeIcon },
                 ].map(({ href, label, Ic }) => (
                   <a
                     key={label}
@@ -1107,11 +1103,9 @@ export default async function HomePage({
                     @SifatLibraryBot
                   </a>
                 </li>
-                <li>
-                  <Link href={`/${locale}/privacy`} className="text-slate-500 transition-colors hover:text-brand-600">
-                    {t("footer.privacy")}
-                  </Link>
-                </li>
+                {/* "Ma'lumotlar himoyasi" havolasi vaqtincha olib tashlandi:
+                    /privacy sahifasi yo'q (404). Maxfiylik siyosati — buyurtmachi
+                    beradigan huquqiy hujjat, matnini o'ylab topib bo'lmaydi. */}
               </ul>
             </div>
 

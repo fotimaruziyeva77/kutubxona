@@ -14,7 +14,8 @@ import {
 } from "@/lib/api/libraries";
 import SearchLoading from "./loading";
 import { searchStoreProducts, type StoreProductSearchResult } from "@/lib/api/store";
-import { ReaderShell } from "@/components/reader/ReaderShell";
+import { AdaptiveShell } from "@/components/reader/AdaptiveShell";
+import { BookCover } from "@/components/books/BookCover";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
 
 // A library book result carries a libraryId on every search path (Elasticsearch
@@ -28,7 +29,26 @@ function libraryHref(locale: string, book: Book): string | null {
   // type, then fall back to the always-present libraryId.
   const code = (book.library as { code?: string } | undefined)?.code;
   const codeOrId = code ?? book.libraryId;
-  return codeOrId ? `/${locale}/library/${encodeURIComponent(codeOrId)}` : null;
+  // `?book=` — kutubxona sahifasi aynan shu kitobni tepada "Tanlangan kitob"
+  // kartasi sifatida ko'rsatadi. Usiz kitobxon bosgan kitobini kutubxonaning
+  // 50 talik katalogidan qaytadan qidirishi kerak edi (u yerda bo'lmasligi ham
+  // mumkin edi).
+  return codeOrId
+    ? `/${locale}/library/${encodeURIComponent(codeOrId)}?book=${encodeURIComponent(book.id)}`
+    : null;
+}
+
+/**
+ * Muqova manbai — bosh sahifadagi kitob kartasi bilan BIR XIL qoida:
+ * yuklangan muqova bo'lsa `/api/books/:id/cover` (updatedAt bilan kesh
+ * buziladi), bo'lmasa BookCover'ning generatsiya qilingan muqovasi.
+ * Avval qidiruv o'z gradient + ikon placeholder'ini chizardi va bitta kitob
+ * bosh sahifada va qidiruvda butunlay boshqacha ko'rinardi.
+ */
+function bookCoverSrc(book: Book): string | null {
+  if (!book.coverUrl) return null;
+  const v = (book as { updatedAt?: string }).updatedAt;
+  return `/api/books/${encodeURIComponent(book.id)}/cover${v ? `?v=${encodeURIComponent(v)}` : ""}`;
 }
 
 /**
@@ -84,7 +104,6 @@ export default function SearchPage() {
 }
 
 function SearchPageInner() {
-  const locale = useLocale();
   const t = useTranslations("ReaderSearch");
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -262,12 +281,12 @@ function SearchPageInner() {
   const libraryCount = searchResult?.total ?? 0;
   const storeCount = storeResult?.total ?? 0;
 
-  // Qidiruv — kitobxon qobig'ining bir qismi: pastki tab-panel va
-  // "Asosiy"ga qaytish yo'li shu yerda ham bo'ladi. Avval sahifa o'z
-  // qobig'ini chizardi va bu yerga kirgan foydalanuvchi orqaga qaytish
-  // yo'lini topolmasdi.
+  // Qobiq — AdaptiveShell: kirgan kitobxonga ilova qobig'i (pastki
+  // tab-panel, "Orqaga" → profil), mehmonga esa bosh sahifa bilan bir xil
+  // ommaviy qobiq. Avval ReaderShell SHARTSIZ chizilardi va mehmon
+  // "Orqaga"/"Asosiy"ni bossa login sahifasiga tushardi.
   return (
-    <ReaderShell title={t("title")} backHref={`/${locale}/profile`}>
+    <AdaptiveShell title={t("title")}>
       <div>
         <p className="text-slate-500 mb-6">
           {t("subtitle")}
@@ -420,7 +439,7 @@ function SearchPageInner() {
 
         {/* ── Tabs (non-nearby) ── */}
         {!nearbyMode && (
-          <div className="flex gap-1 card-surface rounded-xl p-1 mb-4">
+          <div className="flex min-w-0 gap-1 card-surface rounded-xl p-1 mb-4">
             {([
               { key: "all", label: t("tabAll"), count: libraryCount + storeCount },
               { key: "libraries", label: t("tabLibraries"), count: libraryCount, icon: Icon.library },
@@ -429,17 +448,19 @@ function SearchPageInner() {
               <button
                 key={tabItem.key}
                 onClick={() => setViewTab(tabItem.key)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   viewTab === tabItem.key
                     ? "bg-brand-600 text-white shadow-sm"
                     : "text-slate-600 hover:bg-surface-muted"
                 }`}
               >
-                {"icon" in tabItem && <tabItem.icon aria-hidden="true" size={ICON_SIZE.sm} />}
-                {tabItem.label}
+                {"icon" in tabItem && (
+                  <tabItem.icon aria-hidden="true" size={ICON_SIZE.sm} className="hidden shrink-0 sm:block" />
+                )}
+                <span className="truncate">{tabItem.label}</span>
                 {debouncedQuery && (
                   <span
-                    className={`ml-1.5 text-xs ${
+                    className={`shrink-0 text-[11px] sm:ml-0.5 sm:text-xs ${
                       viewTab === tabItem.key ? "text-white" : "text-slate-400"
                     }`}
                   >
@@ -490,7 +511,7 @@ function SearchPageInner() {
           />
         )}
       </div>
-    </ReaderShell>
+    </AdaptiveShell>
   );
 }
 
@@ -924,21 +945,15 @@ function BookCard({
         compact ? "p-3" : "p-4"
       } flex gap-3 hover:shadow-sm transition-shadow`}
     >
-      {book.coverUrl ? (
-        <img
-          src={book.coverUrl}
-          alt={book.title}
-          className={`object-cover rounded ${compact ? "w-8 h-12" : "w-14 h-20"}`}
+      <div className="shrink-0">
+        <BookCover
+          size={compact ? "xs" : "sm"}
+          title={book.title}
+          author={book.author}
+          genre={book.genre}
+          coverUrl={bookCoverSrc(book)}
         />
-      ) : (
-        <div
-          className={`bg-gradient-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center text-brand-600 ${
-            compact ? "w-8 h-12" : "w-14 h-20"
-          }`}
-        >
-          <Icon.book aria-hidden="true" size={compact ? ICON_SIZE.xs : ICON_SIZE.md} />
-        </div>
-      )}
+      </div>
       <div className="flex-1 min-w-0">
         <h3
           className={`font-semibold text-slate-900 truncate ${

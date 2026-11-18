@@ -62,7 +62,10 @@ export function PageHeader({
           )}
         </div>
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {/* Telefonda action to'liq qatorni egallaydi — ichidagi bir nechta tugma
+          (flex-wrap) keyingi qatorga o'tadi; avval `shrink-0` uni kesib qo'yardi.
+          sm+ da avvalgidek o'ngda, qisqarmaydi. */}
+      {action && <div className="w-full min-w-0 sm:w-auto sm:shrink-0">{action}</div>}
     </div>
   );
 }

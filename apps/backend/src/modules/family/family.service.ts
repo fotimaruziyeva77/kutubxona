@@ -110,6 +110,13 @@ export class FamilyService {
               select: { score: true, calculatedAt: true }
             }
           }
+        },
+        // I7 — a'zoning oilaga qo'shilgan sanasi FamilyMembership.joinedAt da
+        // (30 kunlik kutish qoidasi ham shundan hisoblanadi).
+        memberships: {
+          where: { leftAt: null },
+          orderBy: { joinedAt: "desc" },
+          select: { userId: true, joinedAt: true }
         }
       }
     });
@@ -121,17 +128,27 @@ export class FamilyService {
       throw new ForbiddenException("Siz bu oila a'zosi emassiz");
     }
 
+    // I7 — har a'zo uchun eng so'nggi faol a'zolik sanasi (ISO). Eski
+    // yozuvlarda FamilyMembership bo'lmasa — null (frontend sanani yashiradi).
+    const joinedAtByUser = new Map<string, Date>();
+    for (const ms of family.memberships ?? []) {
+      if (!joinedAtByUser.has(ms.userId)) joinedAtByUser.set(ms.userId, ms.joinedAt);
+    }
+    const { memberships: _memberships, ...familyRest } = family;
+    void _memberships;
+
     const members = family.members.map(({ dob, ...m }) => ({
       ...m,
       name: maskNameIfMinor(m.name, dob),
-      latestRi: m.readingIndex[0] ?? null
+      latestRi: m.readingIndex[0] ?? null,
+      joinedFamilyAt: joinedAtByUser.get(m.id)?.toISOString() ?? null
     }));
 
     const avgRi = members.length > 0
       ? members.reduce((s, m) => s + (m.latestRi?.score ?? 0), 0) / members.length
       : 0;
 
-    return { ...family, members, avgRi: Math.round(avgRi * 10) / 10 };
+    return { ...familyRest, members, avgRi: Math.round(avgRi * 10) / 10 };
   }
 
   // ── Tizim tomonidan bir xonadon taklifi ───────────────────────────────────

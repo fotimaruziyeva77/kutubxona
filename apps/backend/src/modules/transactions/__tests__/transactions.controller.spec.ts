@@ -107,20 +107,20 @@ describe("TransactionsController (IDOR-C3)", () => {
   describe("cancelReservation — requester + librarian flag from the JWT", () => {
     it("KITOBXON: requesterId = JWT sub, isLibrarian = false (body cannot claim it)", async () => {
       await controller.cancelReservation("tx-1", READER);
-      expect(mockSvc.cancelReservation).toHaveBeenCalledWith("tx-1", "reader-jwt", false);
+      expect(mockSvc.cancelReservation).toHaveBeenCalledWith("tx-1", "reader-jwt", false, UserRole.KITOBXON);
     });
 
     it("KUTUBXONACHI: isLibrarian = true derived from the ROLE", async () => {
       await controller.cancelReservation("tx-1", LIBRARIAN);
-      expect(mockSvc.cancelReservation).toHaveBeenCalledWith("tx-1", "librarian-jwt", true);
+      expect(mockSvc.cancelReservation).toHaveBeenCalledWith("tx-1", "librarian-jwt", true, UserRole.KUTUBXONACHI);
     });
 
     it("MUASSASA_ADMIN and SUPER_ADMIN also count as librarian tier", async () => {
       await controller.cancelReservation("tx-1", payload("ma-1", UserRole.MUASSASA_ADMIN));
-      expect(mockSvc.cancelReservation).toHaveBeenLastCalledWith("tx-1", "ma-1", true);
+      expect(mockSvc.cancelReservation).toHaveBeenLastCalledWith("tx-1", "ma-1", true, UserRole.MUASSASA_ADMIN);
 
       await controller.cancelReservation("tx-1", payload("sa-1", UserRole.SUPER_ADMIN));
-      expect(mockSvc.cancelReservation).toHaveBeenLastCalledWith("tx-1", "sa-1", true);
+      expect(mockSvc.cancelReservation).toHaveBeenLastCalledWith("tx-1", "sa-1", true, UserRole.SUPER_ADMIN);
     });
   });
 
@@ -156,7 +156,7 @@ describe("TransactionsController (IDOR-C3)", () => {
 
   describe("librarian flows keep an explicit userId (by design)", () => {
     it("borrow: the librarian passes the SCANNED reader's id in the body", async () => {
-      await controller.borrow({ userId: "scanned-reader", bookId: "b1" });
+      await controller.borrow({ userId: "scanned-reader", bookId: "b1" }, LIBRARIAN);
       // 4-argument — ixtiyoriy dueDate (kutubxonachi standart 14 kundan
       // boshqa muddat belgilashi mumkin); body'da berilmasa undefined.
       expect(mockSvc.borrow).toHaveBeenCalledWith(
@@ -164,7 +164,30 @@ describe("TransactionsController (IDOR-C3)", () => {
         "b1",
         undefined,
         undefined,
+        LIBRARIAN,
       );
+    });
+  });
+
+  // I1 — kutubxonachi endpoint'lari actor'ni (JWT payload) service'ga
+  // uzatadi; kutubxona doirasi service'dagi assertLibraryAccess'da tekshiriladi.
+  describe("librarian endpoints forward the JWT actor for library scoping (I1)", () => {
+    it("confirm-reservation / return / return-roaming / library lists get the actor", async () => {
+      await controller.confirmReservation("tx-1", LIBRARIAN);
+      expect(mockSvc.confirmReservation).toHaveBeenCalledWith("tx-1", LIBRARIAN);
+
+      await controller.returnBook("tx-2", { returnLibraryId: "lib-1" }, LIBRARIAN);
+      expect(mockSvc.returnBook).toHaveBeenCalledWith("tx-2", "lib-1", LIBRARIAN);
+
+      await controller.returnRoaming("tx-3", { returnLibraryId: "lib-1" }, LIBRARIAN);
+      expect(mockSvc.returnRoaming).toHaveBeenCalledWith("tx-3", "lib-1", LIBRARIAN);
+
+      await controller.getLibraryBrons("lib-1", LIBRARIAN);
+      await controller.getLibraryBorrowed("lib-1", LIBRARIAN);
+      await controller.getOverdueByLibrary("lib-1", LIBRARIAN);
+      expect(mockSvc.getLibraryBrons).toHaveBeenCalledWith("lib-1", LIBRARIAN);
+      expect(mockSvc.getLibraryBorrowed).toHaveBeenCalledWith("lib-1", LIBRARIAN);
+      expect(mockSvc.getOverdueByLibrary).toHaveBeenCalledWith("lib-1", LIBRARIAN);
     });
   });
 });

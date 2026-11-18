@@ -1363,6 +1363,28 @@ async function seedDemoData() {
     });
   }
 
+  // ── Inventar izchilligi (I2) ──────────────────────────────────────────
+  // Yuqoridagi kitob upsert'lari availableCount = totalCount qiladi, lekin
+  // faol (PENDING/RESERVED/BORROWED) demo tranzaksiyalar nusxani band qiladi
+  // — haqiqiy oqimda reserve()/borrow() ham shunday kamaytiradi. Aks holda
+  // qaytarishda availableCount totalCount dan oshib, dashboard "Kitobxonlarda
+  // -1" ko'rsatardi. Qoida: availableCount = totalCount - faol tranzaksiyalar.
+  // Faqat seed yaratgan kitoblar (demo-book-*, dcat-*) — boshqa qatorlarga
+  // tegilmaydi. Qayta seed qilinganda ham to'g'ri (tranzaksiya holatlari
+  // upsert update:{} bilan saqlanadi, son esa ularning haqiqiy holatidan).
+  const reconciled = await prisma.$executeRaw`
+    UPDATE "Book" b
+    SET "availableCount" = GREATEST(
+      b."totalCount" - (
+        SELECT COUNT(*)::int FROM "BookTransaction" t
+        WHERE t."bookId" = b."id"
+          AND t."status" IN ('PENDING', 'RESERVED', 'BORROWED')
+      ),
+      0
+    )
+    WHERE b."id" LIKE 'demo-book-%' OR b."id" LIKE 'dcat-%'`;
+  console.log(`✅ Inventar moslashtirildi: ${reconciled} ta kitob (availableCount = totalCount - faol tranzaksiyalar)`);
+
   // ── Reading Index for multiple users ──────────────────────────────────
   const riData = [
     { id: "demo-ri-001", userId: kitobxon.id, score: 78 },

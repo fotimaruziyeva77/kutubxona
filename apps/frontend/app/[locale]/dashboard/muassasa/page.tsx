@@ -316,11 +316,17 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
   }
 
   const subscription = lib.subscriptions?.[0];
-  const availableBooks = books.filter((b) => b.availableCount > 0).length;
+  // NUSXALAR soni (nomlar emas) — "Jami kitoblar" va inventarizatsiya bloki
+  // bilan bir xil birlikda. Asosiy manba — inventarizatsiya hisoboti (u
+  // /books limit=200 bilan cheklanmagan); u kelmaguncha ro'yxatdan hisoblanadi.
+  const availableBooks =
+    inventory?.availableCount ??
+    books.reduce((s, b) => s + Math.max(0, b.availableCount), 0);
   // Manfiy bo'lib qolmasligi uchun clamp (ombor sonlari mos kelmasa).
   const borrowedBooks = Math.max(
     0,
-    books.reduce((s, b) => s + (b.totalCount - b.availableCount), 0)
+    inventory?.borrowedCount ??
+      books.reduce((s, b) => s + (b.totalCount - b.availableCount), 0)
   );
 
   return (

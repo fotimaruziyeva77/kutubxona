@@ -168,7 +168,27 @@ export class LibrariesService {
       }
     });
     if (!lib) throw new NotFoundException("Kutubxona topilmadi");
-    return lib;
+
+    // I9 — `books` ro'yxati 50 ta bilan cheklangan, shuning uchun uning
+    // uzunligi "mavjud" soni sifatida ishlatilmasin. Haqiqiy raqamlar butun
+    // fond bo'yicha DB'dan hisoblanadi:
+    //   availableCopies — mavjud nusxalar yig'indisi (_sum.availableCount)
+    //   availableTitles — kamida 1 nusxasi mavjud kitob nomlari soni
+    const [copiesAgg, availableTitles] = await Promise.all([
+      this.prisma.book.aggregate({
+        where: { libraryId: lib.id },
+        _sum: { availableCount: true }
+      }),
+      this.prisma.book.count({
+        where: { libraryId: lib.id, availableCount: { gt: 0 } }
+      })
+    ]);
+
+    return {
+      ...lib,
+      availableCopies: copiesAgg._sum.availableCount ?? 0,
+      availableTitles
+    };
   }
 
   // ── Kutubxona yaratish ────────────────────────────────────────────────────
@@ -482,10 +502,9 @@ export class LibrariesService {
           }
         });
 
-        await p.book.update({
-          where: { id: t.transaction.bookId },
-          data: { availableCount: { increment: 1 } }
-        });
+        // I2 — nusxa fondga qaytadi, lekin totalCount dan oshmaydi (atomik).
+        // Book modelida @@map yo'q — jadval "Book", ustunlar camelCase.
+        await p.$executeRaw`UPDATE "Book" SET "availableCount" = LEAST("availableCount" + 1, "totalCount"), "updatedAt" = NOW() WHERE "id" = ${t.transaction.bookId}`;
 
         return { confirmed: true, transferId };
       });

@@ -118,8 +118,10 @@ export function ReservationNextSteps({
         </>
       }
     >
-      <div className="flex items-start gap-3 rounded-xl bg-green-50 p-3 text-sm text-green-800">
-        <Icon.check aria-hidden="true" size={ICON_SIZE.sm} strokeWidth={2.5} className="mt-0.5 shrink-0" />
+      {/* Holat — PENDING (kutubxonachi hali tasdiqlamagan): yashil "tayyor"
+          belgisi emas, kutish belgisi. Profildagi "Kutilmoqda" bilan mos. */}
+      <div className="flex items-start gap-3 rounded-xl bg-info-50 p-3 text-sm text-info-700">
+        <Icon.pending aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
         <p>{t("lead", { title: info?.bookTitle ?? "" })}</p>
       </div>
 

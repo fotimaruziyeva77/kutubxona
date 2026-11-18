@@ -241,7 +241,9 @@
     "yourFamily": "Sizdiń shańaraǵıńız",
     "memberBooks": "{members} aǵza • {books} kitap",
     "ball": "ball",
-    "privacyNote": "14 jasqa shekemgi aǵzalardıń maǵlıwmatları ashıq reytingte jasırın kórsetiledi"
+    "privacyNote": "14 jasqa shekemgi aǵzalardıń maǵlıwmatları ashıq reytingte jasırın kórsetiledi",
+    "loadError": "Shańaraq maǵlıwmatların júklew múmkin bolmadı. Internetti tekserip, qayta urınıp kóriń.",
+    "retry": "Qayta urınıw"
   },
   "ReaderShell": {
     "tabHome": "Bas bet",
@@ -354,7 +356,7 @@
   },
   "ReservationSteps": {
     "title": "Bron jiberildi",
-    "lead": "«{title}» siz ushın ajıratıldı. Keyingi qádemler:",
+    "lead": "«{title}» ushın bron sorawı jiberildi — kitapxanashınıń tastıyıqlawı kútilmekte. Keyingi qádemler:",
     "step1Title": "Kitapxanashı tastıyıqlaydı",
     "step1Desc": "Tastıyıqlaw SMS arqalı keledi. Bron {date} ge shekem kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
     "step1DescNoDate": "Tastıyıqlaw SMS arqalı keledi. Bron 24 saat kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
@@ -390,7 +392,11 @@
     "frozen": "Kitapxana waqtınsha jabıq",
     "booksHeading": "Kitap fondınan ({count} kórsetilip atır)",
     "fullCatalog": "Tolıq katalog →",
-    "emptyFund": "Fond maǵlıwmatları joq"
+    "emptyFund": "Fond maǵlıwmatları joq",
+    "selectedBook": "Siz tańlaǵan kitap",
+    "loginToReserve": "Bron qılıw ushın kiriń yamasa dizimnen ótiń",
+    "reserveError": "Bron qılıp bolmadı",
+    "booksHeadingOf": "Kitap fondınan ({shown} / {total} kórsetilip atır)"
   },
   "BookCard": {
     "band": "Bánt",
@@ -400,5 +406,16 @@
     "reserve": "Bron qılıw",
     "unavailable": "Házirshe joq",
     "details": "Tolıǵıraq"
+  },
+  "PublicShell": {
+    "home": "Bas bet"
+  },
+  "OverdueNotice": {
+    "title": "Múddeti ótken kitap bar",
+    "body": "«{title}» ({library}) qaytarılmaǵan. Onı qaytarmaǵanıńızsha jańa bron qılıp bolmaydı.",
+    "bodyNoLib": "«{title}» qaytarılmaǵan. Onı qaytarmaǵanıńızsha jańa bron qılıp bolmaydı.",
+    "more": "Jáne {count} kitaptıń múddeti ótken.",
+    "link": "Kitaplarımdı kóriw",
+    "blockedError": "Múddeti ótken «{title}» kitabın qaytarmaǵanıńızsha jańa bron qılıp bolmaydı."
   }
 }

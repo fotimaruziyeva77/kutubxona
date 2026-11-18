@@ -24,7 +24,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { apiClient } from "@/lib/api/client";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { DashboardPage, PageHeader, Panel } from "@/components/dashboard/ui";
-import { ErrorState } from "@/components/ui/error-state";
+import { ErrorState, ForbiddenState } from "@/components/ui/error-state";
 import { PageSpinner } from "@/components/ui/spinner";
 import {
   PLAN_LABELS,
@@ -284,6 +284,8 @@ export default function LibraryBillingPage() {
   const t = useTranslations("BillingPanel");
   const { user, isAuthenticated } = useAuthStore();
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  // To'lov/obuna — muassasa admini, buxgalter yoki super admin vakolati (TZ 2.2).
+  // Kutubxonachi (KUTUBXONACHI) va boshqa rollar bu sahifani ko'rmaydi.
   const canManage = ["SUPER_ADMIN", "MUASSASA_ADMIN", "BUXGALTER"].includes(user?.role ?? "");
   const renew = useRenewMutation();
 
@@ -291,7 +293,7 @@ export default function LibraryBillingPage() {
   // /libraries/mine o'z kutubxonasini qaytaradi (obunasiz holatda tarif uchun).
   const [selectedLibraryId, setSelectedLibraryId] = useState("");
   const { data: libraries, isLoading: librariesLoading } =
-    useManageableLibraries(!!isAuthenticated);
+    useManageableLibraries(!!isAuthenticated && canManage);
   const libraryList = useMemo(() => libraries ?? [], [libraries]);
   const currentLibrary = isSuperAdmin
     ? libraryList.find((l) => l.id === selectedLibraryId)
@@ -309,7 +311,7 @@ export default function LibraryBillingPage() {
   // Plan 04-03 audit-fix FIX C — for normal library admins the server resolves
   // the caller's library from the JWT (/me 403s if no affiliation). SUPER_ADMIN
   // has no library, so we read the chosen one by id instead.
-  const meQ = useMyLibrarySubscription(!!isAuthenticated && !isSuperAdmin);
+  const meQ = useMyLibrarySubscription(!!isAuthenticated && canManage && !isSuperAdmin);
   const byIdQ = useLibrarySubscriptionById(selectedLibraryId, !!isAuthenticated && isSuperAdmin);
 
   const subQ = isSuperAdmin ? byIdQ : meQ;
@@ -323,6 +325,15 @@ export default function LibraryBillingPage() {
       <DashboardPage className="max-w-3xl">
         <h1 className="text-2xl font-bold">{t("authRequired.title")}</h1>
         <p className="text-slate-600">{t("authRequired.desc")}</p>
+      </DashboardPage>
+    );
+  }
+
+  if (!canManage) {
+    return (
+      <DashboardPage className="max-w-3xl">
+        {/* Komponent sarlavha va "administratorga murojaat" izohini o'zi beradi. */}
+        <ForbiddenState />
       </DashboardPage>
     );
   }

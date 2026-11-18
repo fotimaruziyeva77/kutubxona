@@ -44,6 +44,7 @@ import { ReaderDiscovery } from "@/components/reader/ReaderDiscovery";
 import { BadgeShelf, type CatalogBadge, type EarnedBadge } from "@/components/reader/BadgeShelf";
 import { ReaderSettings } from "@/components/reader/ReaderSettings";
 import { BookRow } from "@/components/books/BookCard";
+import { OverdueNotice, findOverdue } from "@/components/reader/OverdueNotice";
 import { fetchMyStore } from "@/lib/api/store";
 import { fetchMyXp } from "@/lib/api/xp";
 import { apiOrigin } from "@/lib/api/base";
@@ -181,11 +182,38 @@ interface ProfileData {
 
 // ── Sahifa ──────────────────────────────────────────────────────────────────
 
+/**
+ * "Siz uchun" tavsiyalari — bir xil kitob (nom + muallif) turli kutubxonalarda
+ * alohida `Book` qatori sifatida saqlanadi va /ai/recommendations uni ikki
+ * marta qaytarishi mumkin ("Hayrat ul-abror" ikki kutubxonadan). Normallashtirilgan
+ * title|author bo'yicha birinchisi qoladi (javob tartibi — odatda eng mos /
+ * eng yaqin kutubxona). Bosh sahifadagi dedup bilan bir xil qoida.
+ */
+function dedupRecommendations(data: unknown): unknown {
+  if (!Array.isArray(data)) return data;
+  const seen = new Set<string>();
+  return data.filter((r: { title?: string; author?: string }) => {
+    const norm = (v?: string) => (v ?? "").trim().replace(/s+/g, " ").toLowerCase();
+    const key = `${norm(r?.title)}|${norm(r?.author)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function ProfilePage() {
   const locale = useLocale();
   const t = useTranslations("ReaderHome");
   const router = useRouter();
   const queryClient = useQueryClient();
+  // Tavsiyalar so'rovi ReaderDiscovery ichida (["reader-recommendations"]).
+  // `select` default'i o'sha so'rov observer'i yaratilishidan OLDIN (birinchi
+  // render'da) o'rnatiladi — natijada kartalar takrorsiz chiziladi, keshdagi
+  // xom javob esa o'zgarmaydi.
+  useState(() => {
+    queryClient.setQueryDefaults(["reader-recommendations"], { select: dedupRecommendations });
+    return null;
+  });
   const { isAuthenticated, accessToken, user: authUser, logout } = useAuthStore();
   const role = authUser?.role ?? "";
   const isKitobxon = role === "KITOBXON";
@@ -378,6 +406,12 @@ export default function ProfilePage() {
     () => hist?.transactions.filter((t) => t.status === "BORROWED") ?? [],
     [hist],
   );
+  // Muddati o'tgan kitob(lar) — server yangi bron bermaydi (403). Kitobxon
+  // buni "Bron qilish"ni bosgandan keyin emas, OLDINDAN bilsin: tepada
+  // banner, tavsiya/fond kartalaridagi Bron tugmalari esa o'chiriladi.
+  const overdue = useMemo(() => findOverdue(hist?.transactions), [hist]);
+  const reserveBlocked = overdue.length > 0;
+
   const activeReservations = useMemo(
     () =>
       hist?.transactions.filter((t) => ["PENDING", "RESERVED"].includes(t.status)) ??
@@ -492,6 +526,10 @@ export default function ProfilePage() {
               {t("logout")}
             </Button>
           </div>
+        )}
+
+        {!isDokon && reserveBlocked && (
+          <OverdueNotice id="overdue-notice" items={overdue} profileHref="#qolimdagi-kitoblar" />
         )}
 
         {/* 1. Men qanday ketyapman? */}
@@ -642,7 +680,7 @@ export default function ProfilePage() {
 
         {/* Qo'limdagi kitoblar — muqova bilan */}
         {activeBorrows.length > 0 && (
-          <section className="card-surface rounded-2xl p-5">
+          <section id="qolimdagi-kitoblar" className="card-surface scroll-mt-20 rounded-2xl p-5">
             <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
               <Icon.book aria-hidden="true" size={ICON_SIZE.sm} className="text-brand-500" />
               {t("myBooks")}
@@ -776,12 +814,22 @@ export default function ProfilePage() {
         {!isDokon && (
           <>
             <ReaderSearchBar locale={locale} />
-            <ReaderDiscovery
-              locale={locale}
-              onToast={showToast}
-              viloyatId={profile.address?.viloyatId ?? undefined}
-              tumanId={profile.address?.tumanId ?? undefined}
-            />
+            {/* fieldset disabled — muddati o'tgan kitob bo'lsa ichidagi BARCHA
+                Bron tugmalari brauzer darajasida o'chadi (ReaderDiscovery'da
+                boshqa tugma yo'q, havolalar ishlayveradi). Sabab — tepadagi
+                OverdueNotice banneri. */}
+            <fieldset
+              disabled={reserveBlocked}
+              aria-describedby={reserveBlocked ? "overdue-notice" : undefined}
+              className="m-0 min-w-0 border-0 p-0"
+            >
+              <ReaderDiscovery
+                locale={locale}
+                onToast={showToast}
+                viloyatId={profile.address?.viloyatId ?? undefined}
+                tumanId={profile.address?.tumanId ?? undefined}
+              />
+            </fieldset>
             {/* Grafik faqat kamida bitta o'qilgan kitob bo'lganda — bo'sh
                 grafik yangi kitobxonga foyda bermaydi, sahifani uzaytiradi. */}
             {finishedBooks.length > 0 && <ReadingCharts finished={finishedBooks} />}

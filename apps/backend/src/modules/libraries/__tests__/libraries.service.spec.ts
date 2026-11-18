@@ -49,8 +49,11 @@ const mockPrisma = {
   },
   book: {
     aggregate: jest.fn(),
+    count: jest.fn(),
     update: jest.fn()
   },
+  // I2 — confirmTransfer nusxani LEAST(available+1, total) bilan qaytaradi.
+  $executeRaw: jest.fn(),
   bookTransfer: {
     findUnique: jest.fn(),
     update: jest.fn()
@@ -119,8 +122,36 @@ describe("LibrariesService", () => {
   describe("findByCode", () => {
     it("kod bo'yicha qaytaradi", async () => {
       mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: 0 } });
+      mockPrisma.book.count.mockResolvedValue(0);
       const result = await service.findByCode("LIB-GOV-08012-001");
       expect(result.id).toBe("lib1");
+    });
+
+    // I9 — "Mavjud" soni 50 ta cheklangan books ro'yxati uzunligi emas,
+    // butun fond bo'yicha DB agregatidan keladi.
+    it("availableCopies (nusxalar yig'indisi) va availableTitles qaytaradi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: 249 } });
+      mockPrisma.book.count.mockResolvedValue(73);
+      const result = await service.findByCode("LIB-GOV-08012-001");
+      expect(result.availableCopies).toBe(249);
+      expect(result.availableTitles).toBe(73);
+      expect(mockPrisma.book.aggregate).toHaveBeenCalledWith({
+        where: { libraryId: "lib1" },
+        _sum: { availableCount: true }
+      });
+      expect(mockPrisma.book.count).toHaveBeenCalledWith({
+        where: { libraryId: "lib1", availableCount: { gt: 0 } }
+      });
+    });
+
+    it("fond bo'sh bo'lsa availableCopies = 0 (null emas)", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: null } });
+      mockPrisma.book.count.mockResolvedValue(0);
+      const result = await service.findByCode("LIB-GOV-08012-001");
+      expect(result.availableCopies).toBe(0);
     });
 
     it("topilmasa NotFoundException", async () => {
@@ -559,13 +590,13 @@ describe("LibrariesService", () => {
       };
       expect(updateArgs.data.confirmedAt).toBeInstanceOf(Date);
 
-      // book.update called with atomic { increment: 1 } — race-safe
-      expect(mockPrisma.book.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: bookId },
-          data: { availableCount: { increment: 1 } }
-        })
+      // I2 — atomik, totalCount bilan chegaralangan qaytarish (race-safe)
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      const [sqlParts, ...sqlValues] = mockPrisma.$executeRaw.mock.calls[0];
+      expect((sqlParts as string[]).join("?")).toContain(
+        'LEAST("availableCount" + 1, "totalCount")'
       );
+      expect(sqlValues).toEqual([bookId]);
 
       expect(result.confirmed).toBe(true);
     });
@@ -582,7 +613,7 @@ describe("LibrariesService", () => {
       });
 
       expect(result.confirmed).toBe(true);
-      expect(mockPrisma.book.update).toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
     });
 
     it("rejects non-owner with ForbiddenException", async () => {
@@ -639,7 +670,7 @@ describe("LibrariesService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("availableCount increment uses atomic { increment: 1 } not read-then-write", async () => {
+    it("availableCount increment is a single atomic UPDATE capped at totalCount (I2)", async () => {
       runInteractiveTransaction();
       mockPrisma.bookTransfer.findUnique.mockResolvedValue(pendingTransfer);
       mockPrisma.bookTransfer.update.mockResolvedValue({ ...pendingTransfer, status: "CONFIRMED" });
@@ -650,12 +681,11 @@ describe("LibrariesService", () => {
         role: "KUTUBXONACHI"
       });
 
-      // Cross-check: book.update was the atomic-increment variant, no
-      // findUnique → arithmetic → update sequence.
-      const bookUpdateCall = mockPrisma.book.update.mock.calls[0][0] as {
-        data: { availableCount: unknown };
-      };
-      expect(bookUpdateCall.data.availableCount).toEqual({ increment: 1 });
+      // Cross-check: bitta atomik SQL UPDATE (read-then-write yo'q) va
+      // availableCount totalCount dan oshmaydi.
+      expect(mockPrisma.book.update).not.toHaveBeenCalled();
+      const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join("?");
+      expect(sql).toContain('LEAST("availableCount" + 1, "totalCount")');
     });
   });
 

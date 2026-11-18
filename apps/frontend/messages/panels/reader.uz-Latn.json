@@ -241,7 +241,9 @@
     "yourFamily": "Sizning oilangiz",
     "memberBooks": "{members} a'zo • {books} kitob",
     "ball": "ball",
-    "privacyNote": "14 yoshgacha a'zolar ma'lumotlari ochiq reytingda yashirin ko'rsatiladi"
+    "privacyNote": "14 yoshgacha a'zolar ma'lumotlari ochiq reytingda yashirin ko'rsatiladi",
+    "loadError": "Oila ma'lumotlarini yuklab bo'lmadi. Internetni tekshirib, qayta urinib ko'ring.",
+    "retry": "Qayta urinish"
   },
   "ReaderShell": {
     "tabHome": "Asosiy",
@@ -354,7 +356,7 @@
   },
   "ReservationSteps": {
     "title": "Bron yuborildi",
-    "lead": "«{title}» siz uchun ajratildi. Keyingi qadamlar:",
+    "lead": "«{title}» uchun bron so'rovi yuborildi — kutubxonachi tasdiqlashi kutilmoqda. Keyingi qadamlar:",
     "step1Title": "Kutubxonachi tasdiqlaydi",
     "step1Desc": "Tasdiq SMS orqali keladi. Bron {date} gacha kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
     "step1DescNoDate": "Tasdiq SMS orqali keladi. Bron 24 soat kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
@@ -390,7 +392,11 @@
     "frozen": "Kutubxona vaqtincha yopiq",
     "booksHeading": "Kitob fondidan ({count} ta ko'rsatilmoqda)",
     "fullCatalog": "To'liq katalog →",
-    "emptyFund": "Fond ma'lumotlari mavjud emas"
+    "emptyFund": "Fond ma'lumotlari mavjud emas",
+    "selectedBook": "Siz tanlagan kitob",
+    "loginToReserve": "Bron qilish uchun kiring yoki ro'yxatdan o'ting",
+    "reserveError": "Bron qilib bo'lmadi",
+    "booksHeadingOf": "Kitob fondidan ({shown} / {total} ta ko'rsatilmoqda)"
   },
   "BookCard": {
     "band": "Band",
@@ -400,5 +406,16 @@
     "reserve": "Bron qilish",
     "unavailable": "Hozircha yo'q",
     "details": "Batafsil"
+  },
+  "PublicShell": {
+    "home": "Bosh sahifa"
+  },
+  "OverdueNotice": {
+    "title": "Muddati o'tgan kitob bor",
+    "body": "«{title}» ({library}) qaytarilmagan. Uni qaytarmaguningizcha yangi bron qilib bo'lmaydi.",
+    "bodyNoLib": "«{title}» qaytarilmagan. Uni qaytarmaguningizcha yangi bron qilib bo'lmaydi.",
+    "more": "Yana {count} ta kitobning muddati o'tgan.",
+    "link": "Kitoblarimni ko'rish",
+    "blockedError": "Muddati o'tgan «{title}» kitobini qaytarmaguningizcha yangi bron qilib bo'lmaydi."
   }
 }
