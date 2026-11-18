@@ -983,7 +983,7 @@ export class TransactionsService {
         // is the source of those ids for the "Kitob berish" action, so include
         // book.id and user.id — without them the UI sent sifatId/isbn and
         // borrow() threw NotFound (404).
-        book: { select: { id: true, title: true, author: true, isbn: true } },
+        book: { select: { id: true, title: true, author: true, isbn: true, genre: true, coverUrl: true } },
         user: { select: { id: true, name: true, phone: true, sifatId: true } }
       },
       orderBy: { createdAt: "asc" }
@@ -998,7 +998,7 @@ export class TransactionsService {
         status: TransactionStatus.BORROWED
       },
       include: {
-        book: { select: { title: true, author: true, isbn: true } },
+        book: { select: { title: true, author: true, isbn: true, genre: true, coverUrl: true } },
         user: { select: { name: true, phone: true, sifatId: true } }
       },
       orderBy: { dueDate: "asc" }
@@ -1015,7 +1015,7 @@ export class TransactionsService {
         dueDate: { lt: now }
       },
       include: {
-        book: { select: { title: true, author: true } },
+        book: { select: { title: true, author: true, genre: true, coverUrl: true } },
         user: { select: { name: true, phone: true, sifatId: true } }
       },
       orderBy: { dueDate: "asc" }

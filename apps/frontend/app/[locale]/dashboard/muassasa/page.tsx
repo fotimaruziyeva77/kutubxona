@@ -100,6 +100,7 @@ interface Book {
   title: string;
   author: string;
   genre: string;
+  coverUrl?: string | null;
   totalCount: number;
   availableCount: number;
 }
@@ -504,7 +505,7 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
             <div className="divide-y divide-line">
               {books.slice(0, 30).map((book) => (
                 <div key={book.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-muted">
-                  <BookCover size="sm" title={book.title} author={book.author} genre={book.genre} />
+                  <BookCover size="sm" title={book.title} author={book.author} genre={book.genre} coverUrl={book.coverUrl} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{book.title}</p>
                     <p className="truncate text-sm text-slate-500">{book.author} · {book.genre}</p>
