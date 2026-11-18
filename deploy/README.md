@@ -49,6 +49,21 @@ sudo bash /srv/kutubxona/deploy/create-admin.sh
 
 Keyin `https://sifatlibrary.uz/uz-Latn/login` sahifasidan kiring.
 
+## 5. Kutubxonachi va muassasa admini
+
+Avval admin panelda kutubxonani qo'shing va kodini oling, masalan `LIB-SCH-07002-001`. Keyin:
+
+```bash
+sudo bash /srv/kutubxona/deploy/create-staff.sh
+```
+
+- **Kutubxona kodi:** bo'sh qoldirilsa, mavjud kutubxonalar ro'yxati chiqadi.
+- **Parol:** bo'sh qoldirilsa, avtomatik yaratiladi va **bir marta** ekranda ko'rsatiladi.
+- **Bog'lanish:** skript kutubxonaga muassasa yozuvini o'zi bog'laydi. Kutubxonachi faqat shu kutubxona fondini boshqaradi.
+- **Mavjud raqam:** shu telefon raqami bilan qayta ishga tushirilsa, rol, parol va bog'lanish yangilanadi.
+
+Kitobxonlar bron qila olishi uchun kutubxona panelda tasdiqlangan bo'lishi kerak: avval «Tuman darajasida tasdiqlash», keyin «Super admin tasdiqi».
+
 ## Kundalik buyruqlar (`/srv/kutubxona/deploy` ichida)
 
 | Vazifa | Buyruq |
