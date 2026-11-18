@@ -282,9 +282,13 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
     queryFn: () => getLibraryBooks(libraryId)
   });
 
+  // Tasdiqlash ro'yxati faqat MUASSASA_ADMIN / TUMAN_ADMIN / SUPER_ADMIN uchun
+  // (backend @Roles). Kutubxonachi uchun so'ralsa 403 qaytib, konsolni to'ldirardi.
+  const canApproveUsers = ["SUPER_ADMIN", "MUASSASA_ADMIN", "TUMAN_ADMIN"].includes(user?.role ?? "");
   const { data: pendingUsers = [], isError: pendingError } = useQuery({
     queryKey: ["pending-users"],
-    queryFn: getPendingUsers
+    queryFn: getPendingUsers,
+    enabled: canApproveUsers
   });
 
   const approve = useMutation({
@@ -542,7 +546,8 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
 
       {/* PENDING foydalanuvchilar. Panel DOIM ko'rinadi: ilgari bo'sh bo'lsa
           butunlay yashirinardi va admin "ariza yo'q"mi yoki "yuklanmadi"mi —
-          farqlay olmasdi. */}
+          farqlay olmasdi. Faqat tasdiqlash huquqi borlarga (kutubxonachiga emas). */}
+      {canApproveUsers && (
       <div className="card-surface rounded-2xl overflow-hidden">
         <div className="p-6 border-b border-line flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-900">{t("pending.title")}</h3>
@@ -602,6 +607,7 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

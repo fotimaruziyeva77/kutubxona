@@ -46,3 +46,20 @@ export const AUTH_OTP_VERIFY_TTL_MS = envInt("THROTTLE_OTP_VERIFY_TTL_MS", 900_0
 
 /** OTP tasdiqlash urinishlari. Default 10. */
 export const AUTH_OTP_VERIFY_LIMIT = envInt("THROTTLE_OTP_VERIFY_LIMIT", 10);
+
+/**
+ * Nomli throttler faqat uni @Throttle({ <name>: ... }) bilan ANIQ e'lon qilgan
+ * route/controller'larda ishlashi uchun `skipIf`.
+ *
+ * NEGA: @nestjs/throttler v6 da ThrottlerModule.forRoot([...]) dagi HAR BIR
+ * nomli throttler global guard orqali BARCHA route'larga qo'llanadi. "strict"
+ * (soatiga 10 ta — login/OTP uchun mo'ljallangan) shu sababli GET /books,
+ * /libraries/:id/inventory va boshqa oddiy so'rovlarni ham 10/soat bilan
+ * cheklab, kutubxonachi panelini 429 bilan qulatardi (2026-11-18, prod).
+ */
+export function onlyWhenDeclared(name: string) {
+  const key = `THROTTLER:LIMIT${name}`; // @nestjs/throttler THROTTLER_LIMIT + name
+  return (context: { getHandler(): unknown; getClass(): unknown }): boolean =>
+    Reflect.getMetadata(key, context.getHandler() as object) === undefined &&
+    Reflect.getMetadata(key, context.getClass() as object) === undefined;
+}

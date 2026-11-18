@@ -4,6 +4,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { APP_GUARD } from "@nestjs/core";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
+import { onlyWhenDeclared } from "./common/config/throttle.const";
 import { AppInfraModule } from "./infra/app-infra.module";
 import { MetricsModule } from "./infra/monitoring/metrics.module";
 import { QueueModule } from "./infra/queue/queue.module";
@@ -51,7 +52,10 @@ import { AppController } from "./app.controller";
       {
         name: "strict",
         ttl: Number(process.env.THROTTLE_STRICT_TTL_MS ?? 3_600_000), // 1 soat (ms)
-        limit: Number(process.env.THROTTLE_STRICT_LIMIT ?? 10)        // Auth: 10/soat
+        limit: Number(process.env.THROTTLE_STRICT_LIMIT ?? 10),       // Auth: 10/soat
+        // Faqat @Throttle({ strict }) e'lon qilingan route'larda (login, OTP) —
+        // aks holda v6 uni barcha route'larga qo'llaydi (onlyWhenDeclared izohi).
+        skipIf: onlyWhenDeclared("strict")
       }
     ]),
 
