@@ -21,6 +21,7 @@
  * yagona "profil" shu) — ularga kitobxon bloklari ko'rsatilmaydi.
  */
 
+import { logoutToHome, isLoggingOut } from "@/lib/logout";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -30,7 +31,6 @@ import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { usersApi } from "@/lib/api/users";
-import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/store/auth.store";
 import { apiClient } from "@/lib/api-client";
 import { refreshAccessToken } from "@/lib/api/client";
@@ -214,7 +214,7 @@ export default function ProfilePage() {
     queryClient.setQueryDefaults(["reader-recommendations"], { select: dedupRecommendations });
     return null;
   });
-  const { isAuthenticated, accessToken, user: authUser, logout } = useAuthStore();
+  const { isAuthenticated, accessToken, user: authUser } = useAuthStore();
   const role = authUser?.role ?? "";
   const isKitobxon = role === "KITOBXON";
   const isDokon = role === "DOKON_OPERATOR";
@@ -279,7 +279,7 @@ export default function ProfilePage() {
     }
 
     if (!isAuthenticated) {
-      router.replace(`/${locale}/login`);
+      if (!isLoggingOut()) router.replace(`/${locale}/login`);
       return;
     }
 
@@ -389,9 +389,7 @@ export default function ProfilePage() {
   });
 
   const handleLogout = async () => {
-    await authApi.logout().catch(() => {});
-    logout();
-    router.push(`/${locale}/login`);
+    await logoutToHome(locale);
   };
 
   const formatDate = (iso?: string) =>

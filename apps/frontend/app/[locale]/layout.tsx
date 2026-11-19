@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { locales, type Locale } from "@/i18n";
 import { Providers } from "@/components/providers";
 import { SkipNavLink } from "@/components/accessibility/SkipNavLink";
+import { TopLoader } from "@/components/ui/TopLoader";
 import { LocaleThemeControl } from "@/components/LocaleThemeControl";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import {
@@ -165,6 +166,7 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages} timeZone="Asia/Tashkent">
           <SkipNavLink />
+          <TopLoader />
           <LocaleThemeControl />
           <LiteModeProvider>
             <LiteModeBanner />

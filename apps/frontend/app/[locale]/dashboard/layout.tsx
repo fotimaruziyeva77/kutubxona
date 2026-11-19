@@ -1,12 +1,12 @@
 "use client";
 
+import { logoutToHome, isLoggingOut } from "@/lib/logout";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
-import { authApi } from "@/lib/api/auth";
 import { refreshAccessToken } from "@/lib/api/client";
 import { hasAuthHintCookie } from "@/lib/auth-cookie";
 // Plan 05-04 Task 4 (NOTIF-02 frontend) — silently register the caller's FCM
@@ -86,13 +86,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, accessToken, logout } = useAuthStore();
+  const { user, isAuthenticated, accessToken } = useAuthStore();
   const role = user?.role ?? "";
 
   const handleLogout = async () => {
-    await authApi.logout().catch(() => {});
-    logout();
-    router.replace(`/${locale}/login`);
+    await logoutToHome(locale);
   };
 
   // C11: zustand/persist localStorage'dan SINXRON qayta tiklanadi, lekin SSR
@@ -132,6 +130,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
 
     if (!isAuthenticated) {
+      if (isLoggingOut()) return;
       // Middleware `sl_auth` cookie orqali allaqachon gate qiladi, lekin bu
       // faqat UX to'sig'i — cookie qo'lda yasalishi mumkin. Bu yerda store
       // holatiga tayangan ikkinchi qatlam: kirilmagan bo'lsa login'ga.

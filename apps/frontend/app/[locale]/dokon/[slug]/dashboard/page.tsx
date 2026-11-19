@@ -1,12 +1,11 @@
 "use client";
 
+import { logoutToHome } from "@/lib/logout";
 import { useQuery } from "@tanstack/react-query";
 import { fmtNumber } from "@/lib/format";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/store/auth.store";
-import { authApi } from "@/lib/api/auth";
 import {
   fetchStoreProfile,
   fetchStoreCrm,
@@ -27,8 +26,7 @@ export default function StoreDashboardPage({
 }) {
   const { locale, slug } = params;
   const t = useTranslations("DokonDash");
-  const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   // Yorliqlar lokalga bog'liq ("so'm"/"soat" va h.k.) — tarjimadan olinadi.
   const formatPrice = (price: number | null): string =>
@@ -43,9 +41,7 @@ export default function StoreDashboardPage({
   };
 
   const handleLogout = async () => {
-    await authApi.logout().catch(() => {});
-    logout();
-    router.replace(`/${locale}/login`);
+    await logoutToHome(locale);
   };
 
   // Fetch store profile first to get storeId

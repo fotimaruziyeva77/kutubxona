@@ -13,6 +13,7 @@ import {
 import { LandingTopTabs } from "@/components/landing/LandingTopTabs";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { HeroVisual } from "@/components/landing/HeroVisual";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { TelegramIcon } from "@/components/landing/SocialIcons";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { BookCover } from "@/components/books/BookCover";
@@ -325,10 +326,13 @@ export default async function HomePage({
       {/* 1. HERO — ikki ustun: matn + qidiruv | kutubxona vizuali           */}
       {/* ================================================================== */}
       <section className="hero-canvas relative overflow-hidden">
+        <ScrollReveal />
+        <div aria-hidden="true" className="hero-orb hero-orb-a" />
+        <div aria-hidden="true" className="hero-orb hero-orb-b" />
         <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pt-16 lg:px-8 lg:pb-28">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             {/* Chap: matn + qidiruv */}
-            <div>
+            <div className="hero-enter">
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden="true" />
                 {t("hero.badge")}
@@ -337,7 +341,7 @@ export default async function HomePage({
               <h1 className="mt-6 text-4xl font-bold leading-[1.1] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
                 {t("hero.titleTop")}
                 <br />
-                <span className="text-brand-800">{t("hero.titleAccent")}</span>
+                <span className="text-shimmer">{t("hero.titleAccent")}</span>
               </h1>
 
               <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-600">
@@ -391,7 +395,7 @@ export default async function HomePage({
             </div>
 
             {/* O'ng: kutubxona vizuali */}
-            <div className="mx-auto w-full max-w-lg lg:max-w-none">
+            <div className="hero-enter mx-auto w-full max-w-lg lg:max-w-none">
               <HeroVisual
                 liveLabel={t("live.titleLive")}
                 liveValue={stat(stats?.books)}
@@ -406,9 +410,9 @@ export default async function HomePage({
       {/* ================================================================== */}
       <section className="relative z-10 -mt-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div data-reveal-stagger="" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {heroStats.map(({ value, label, icon: StatIcon }) => (
-              <div key={label} className="card-surface rounded-2xl p-5">
+              <div key={label} className="lift card-surface rounded-2xl p-5">
                 <div className="flex items-center justify-between">
                   <p className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-slate-400">
                     {label}
@@ -432,7 +436,7 @@ export default async function HomePage({
       {/* FONDDAGI KITOBLAR — haqiqiy kitoblar (faqat faol kutubxonalardan).  */}
       {/* Bo'sh bo'lsa bo'lim ko'rsatilmaydi — hech narsa o'ylab topilmaydi. */}
       {newBooks.length > 0 && (
-        <section id="kitoblar" className="scroll-mt-20 pt-16">
+        <section data-reveal="" id="kitoblar" className="scroll-mt-20 pt-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <SectionHeading
@@ -449,45 +453,54 @@ export default async function HomePage({
                 <Icon.next aria-hidden="true" size={ICON_SIZE.sm} />
               </Link>
             </div>
-            <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-6">
+            <div
+              data-reveal-stagger=""
+              className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 lg:grid-cols-6"
+            >
               {newBooks.map((b) => (
                 <Link
                   key={b.id}
-                  href={`/${locale}/search?q=${encodeURIComponent(b.title)}`}
-                  className="group flex w-[42%] shrink-0 snap-start flex-col rounded-2xl border border-line bg-white p-3 transition-shadow hover:shadow-md sm:w-auto"
+                  href={`/${locale}/book/${encodeURIComponent(b.id)}`}
+                  className="book-card group flex w-[44%] shrink-0 snap-start flex-col rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto"
                 >
-                  <div className="mx-auto w-full max-w-[9rem]">
-                    <BookCover
-                      size="md"
-                      title={b.title}
-                      author={b.author}
-                      genre={b.genre}
-                      coverUrl={
-                        b.hasCover
-                          ? `/api/books/${b.id}/cover${b.updatedAt ? `?v=${encodeURIComponent(b.updatedAt)}` : ""}`
-                          : null
-                      }
-                    />
+                  <div className="book-card-stage relative rounded-2xl px-5 pb-5 pt-7">
+                    <span
+                      className={`absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${
+                        b.availableCount > 0 ? "bg-white text-green-700" : "bg-white/80 text-slate-500"
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`h-1.5 w-1.5 rounded-full ${b.availableCount > 0 ? "live-dot bg-green-500" : "bg-slate-400"}`}
+                      />
+                      {b.availableCount > 0
+                        ? t("newBooks.available", { count: b.availableCount })
+                        : t("newBooks.unavailable")}
+                    </span>
+                    <div className="book-card-cover mx-auto w-full max-w-[8.5rem]">
+                      <BookCover
+                        size="md"
+                        title={b.title}
+                        author={b.author}
+                        genre={b.genre}
+                        coverUrl={
+                          b.hasCover
+                            ? `/api/books/${b.id}/cover${b.updatedAt ? `?v=${encodeURIComponent(b.updatedAt)}` : ""}`
+                            : null
+                        }
+                      />
+                    </div>
                   </div>
-                  <p className="mt-3 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-brand-700">
+                  <p className="mt-3 line-clamp-2 px-1 text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-700">
                     {b.title}
                   </p>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">{b.author}</p>
+                  <p className="mt-0.5 truncate px-1 text-xs text-slate-500">{b.author}</p>
                   {b.library?.name && (
-                    <p className="mt-2 flex items-center gap-1 truncate text-xs text-slate-500">
-                      <Icon.library aria-hidden="true" size={ICON_SIZE.xs} className="shrink-0" />
+                    <p className="mt-1.5 flex items-center gap-1 truncate px-1 text-xs text-slate-400">
+                      <Icon.library aria-hidden="true" size={ICON_SIZE.xs} className="shrink-0 text-brand-400" />
                       <span className="truncate">{b.library.name}</span>
                     </p>
                   )}
-                  <span
-                    className={`mt-2 inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      b.availableCount > 0 ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {b.availableCount > 0
-                      ? t("newBooks.available", { count: b.availableCount })
-                      : t("newBooks.unavailable")}
-                  </span>
                 </Link>
               ))}
             </div>
@@ -498,7 +511,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 3. XARITA + REYTING — referens maketdagi ikki ustunli blok         */}
       {/* ================================================================== */}
-      <section id="xarita" className="scroll-mt-20">
+      <section data-reveal="" id="xarita" className="scroll-mt-20">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="card-surface rounded-3xl p-6 sm:p-8">
             <RegionsMap locale={locale} regions={regions} />
@@ -509,7 +522,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 4. JONLI KO'RSATKICHLAR                                            */}
       {/* ================================================================== */}
-      <section className="border-y border-line bg-white">
+      <section data-reveal="" className="border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center gap-3">
             {isLive && <span className="live-dot" aria-hidden="true" />}
@@ -551,7 +564,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 5. REYTINGLAR                                                      */}
       {/* ================================================================== */}
-      <section id="reytinglar" className="scroll-mt-20">
+      <section data-reveal="" id="reytinglar" className="scroll-mt-20">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow={t("top.tabReaders")}
@@ -581,7 +594,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 6. ROLLAR — referensdagi "Siz uchun maxsus imkoniyatlar"           */}
       {/* ================================================================== */}
-      <section className="border-y border-line bg-white">
+      <section data-reveal="" className="border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading title={t("roles.title")} subtitle={t("roles.subtitle")} />
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -620,7 +633,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 7. QANDAY ISHLAYDI                                                 */}
       {/* ================================================================== */}
-      <section>
+      <section data-reveal="">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading title={t("how.title")} subtitle={t("how.subtitle")} />
           <ol className="mt-12 grid gap-6 md:grid-cols-3">
@@ -656,7 +669,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 8. MUASSASALAR UCHUN (B2B) — asosiy sotuv bloki                    */}
       {/* ================================================================== */}
-      <section id="muassasalar" className="scroll-mt-20 border-y border-line bg-white">
+      <section data-reveal="" id="muassasalar" className="scroll-mt-20 border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow={t("b2b.eyebrow")}
@@ -737,7 +750,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 9. NAMUNAVIY SSENARIYLAR                                           */}
       {/* ================================================================== */}
-      <section>
+      <section data-reveal="">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading title={t("stories.title")} subtitle={t("stories.subtitle")} />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -771,7 +784,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 10. BADGELAR                                                       */}
       {/* ================================================================== */}
-      <section className="border-y border-line bg-white">
+      <section data-reveal="" className="border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading title={t("badges.title")} subtitle={t("badges.subtitle")} />
           <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -798,7 +811,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 11. HAMKOR DO'KONLAR                                               */}
       {/* ================================================================== */}
-      <section>
+      <section data-reveal="">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <SectionHeading title={t("stores.title")} subtitle={t("stores.subtitle")} />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -836,7 +849,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 12. TELEGRAM BOT                                                   */}
       {/* ================================================================== */}
-      <section className="border-y border-line bg-white">
+      <section data-reveal="" className="border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
@@ -891,7 +904,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 13. DONAT                                                          */}
       {/* ================================================================== */}
-      <section id="donat" className="scroll-mt-20">
+      <section data-reveal="" id="donat" className="scroll-mt-20">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="ink-surface overflow-hidden rounded-3xl px-6 py-14 sm:px-12">
             <div className="mx-auto max-w-3xl text-center">
@@ -945,7 +958,7 @@ export default async function HomePage({
       {/* ================================================================== */}
       {/* 14. MOBIL ILOVA                                                    */}
       {/* ================================================================== */}
-      <section className="border-y border-line bg-white">
+      <section data-reveal="" className="border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
