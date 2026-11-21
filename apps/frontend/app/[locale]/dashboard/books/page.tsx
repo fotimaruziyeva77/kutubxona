@@ -268,6 +268,11 @@ export default function BooksPage() {
     onSuccess: (data) => {
       setImportJobId(data.jobId);
       setImportStatus({ status: "queued", processed: 0, total: 0, errors: [], progress: 0 });
+    },
+    // Yuklash xatosi (400 fayl turi, 403 rol, 413/429...) avval jim yutilardi.
+    onError: (err) => {
+      const { status, message } = apiError(err);
+      setActionNotice(`${t("import.failed")}${status ? ` (${status})` : ""}${message ? `: ${message}` : ""}`);
     }
   });
 
