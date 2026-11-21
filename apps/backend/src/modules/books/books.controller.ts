@@ -25,7 +25,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { Public } from "../../common/decorators/public.decorator";
-import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { CurrentUser, JwtPayload } from "../../common/decorators/current-user.decorator";
 import { UserRole } from "@prisma/client";
 
 @Controller("books")
@@ -99,8 +99,8 @@ export class BooksController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.KUTUBXONACHI, UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
-  create(@Body() dto: CreateBookDto) {
-    return this.booksService.create(dto);
+  create(@Body() dto: CreateBookDto, @CurrentUser() user: JwtPayload) {
+    return this.booksService.create(dto, { id: user.sub, role: user.role });
   }
 
   // BOOK-01 (Plan 02-04): Excel import is now async via BOOK_IMPORT_QUEUE.
@@ -121,10 +121,14 @@ export class BooksController {
       })
     )
     file: Express.Multer.File & { buffer: Buffer },
-    @Query("libraryId") libraryId: string,
-    @CurrentUser("id") userId: string
+    @Query("libraryId") libraryId: string | undefined,
+    @CurrentUser() user: JwtPayload
   ) {
-    return this.booksService.enqueueImport(file.buffer, libraryId, userId);
+    // Egalik tekshiruvi service'da (400: libraryId yo'q, 403: begona kutubxona).
+    return this.booksService.enqueueImport(file.buffer, libraryId, {
+      id: user.sub,
+      role: user.role
+    });
   }
 
   @Get("import/:jobId/status")
@@ -137,14 +141,18 @@ export class BooksController {
   @Put(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.KUTUBXONACHI, UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
-  update(@Param("id") id: string, @Body() dto: UpdateBookDto) {
-    return this.booksService.update(id, dto);
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateBookDto,
+    @CurrentUser() user: JwtPayload
+  ) {
+    return this.booksService.update(id, dto, { id: user.sub, role: user.role });
   }
 
   @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
-  remove(@Param("id") id: string) {
-    return this.booksService.remove(id);
+  remove(@Param("id") id: string, @CurrentUser() user: JwtPayload) {
+    return this.booksService.remove(id, { id: user.sub, role: user.role });
   }
 }

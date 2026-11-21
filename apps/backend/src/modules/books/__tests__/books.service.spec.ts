@@ -74,6 +74,8 @@ const mockStoreService = {
   searchStoreProducts: jest.fn().mockResolvedValue({ total: 0, page: 1, limit: 5, data: [] }),
 };
 
+const SA = { id: "sa", role: "SUPER_ADMIN" };
+
 describe("BooksService", () => {
   let service: BooksService;
 
@@ -203,7 +205,7 @@ describe("BooksService", () => {
         author: "Xalq dostoni",
         genre: "Epik",
         libraryId: "lib1"
-      });
+      }, SA);
 
       expect(result.title).toBe("Alpomish");
       expect(result.duplicate).toBe(false);
@@ -222,7 +224,7 @@ describe("BooksService", () => {
         author: "Muallif",
         genre: "Umumiy",
         libraryId: "lib1"
-      });
+      }, SA);
 
       expect(result.duplicate).toBe(false);
       expect(mockPrisma.book.create).toHaveBeenCalled();
@@ -240,7 +242,7 @@ describe("BooksService", () => {
         author: "Y",
         genre: "Z",
         libraryId: "lib1"
-      });
+      }, SA);
 
       expect(mockPrisma.book.create.mock.calls[0][0].data.isbn).toBe("9789943000014");
     });
@@ -265,7 +267,7 @@ describe("BooksService", () => {
         genre: "Epik",
         totalCount: 2,
         libraryId: "lib1"
-      });
+      }, SA);
 
       expect(result.duplicate).toBe(true);
       expect(result.message).toContain("allaqachon fondda");
@@ -289,7 +291,7 @@ describe("BooksService", () => {
         author: "Xalq dostoni",
         genre: "Epik",
         libraryId: "lib2"
-      });
+      }, SA);
 
       expect(result.duplicate).toBe(false);
       expect(mockPrisma.book.findFirst).toHaveBeenCalledWith(
@@ -300,7 +302,7 @@ describe("BooksService", () => {
 
     it("buzilgan ISBN (raqam emas / noto'g'ri uzunlik) bilan BadRequestException", async () => {
       await expect(
-        service.create({ isbn: "1111111111111", title: "X", author: "Y", genre: "Z", libraryId: "lib1" })
+        service.create({ isbn: "1111111111111", title: "X", author: "Y", genre: "Z", libraryId: "lib1" }, SA)
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -311,7 +313,7 @@ describe("BooksService", () => {
       mockPrisma.book.findUnique.mockResolvedValue(mockBook);
       mockPrisma.book.update.mockResolvedValue({ ...mockBook, title: "Yangi nom" });
 
-      const result = await service.update("b1", { title: "Yangi nom" });
+      const result = await service.update("b1", { title: "Yangi nom" }, SA);
       expect(result.title).toBe("Yangi nom");
       expect(mockEs.index).toHaveBeenCalled();
     });
@@ -323,7 +325,7 @@ describe("BooksService", () => {
       mockPrisma.book.findUnique.mockResolvedValue(mockBook);
       mockPrisma.book.delete.mockResolvedValue({});
 
-      const result = await service.remove("b1");
+      const result = await service.remove("b1", SA);
       expect(result.message).toContain("o'chirildi");
       expect(mockEs.delete).toHaveBeenCalledWith(expect.objectContaining({ id: "b1" }));
     });
@@ -390,7 +392,7 @@ describe("BooksService", () => {
       (mockImportQueue.add as jest.Mock).mockResolvedValue({ id: "queued-job-42" });
 
       const buf = Buffer.from("fake-xlsx-bytes");
-      const result = await service.enqueueImport(buf, "lib1", "uploader-1");
+      const result = await service.enqueueImport(buf, "lib1", { id: "uploader-1", role: "SUPER_ADMIN" });
 
       expect(result).toEqual({ jobId: "queued-job-42", status: "queued" });
       expect(mockImportQueue.add).toHaveBeenCalledTimes(1);
