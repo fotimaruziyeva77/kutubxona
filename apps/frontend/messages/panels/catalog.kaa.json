@@ -1,0 +1,14 @@
+{
+  "Catalog": {
+    "filters": "Filtrler",
+    "clear": "Tazalaw",
+    "search": "Izlew",
+    "genre": "Janr",
+    "resultsPanel": "Nátiyjeler paneli",
+    "found": "{count} kitap tabıldı",
+    "view": "Kórinis",
+    "viewGrid": "Kletka kórinis",
+    "viewList": "Dizim kórinis",
+    "free": "Biypul"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo, createContext, useContext } from "react";
+import { Filter, LayoutGrid, List, ShoppingCart, BookmarkPlus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -74,6 +75,10 @@ const LANGS = [
 ] as const;
 
 type ViewTab = "all" | "libraries" | "stores";
+type ViewLayout = "grid" | "list";
+// Natijalar ko'rinishi (katak / ro'yxat) — chuqur ichki komponentlarga props
+// zanjirisiz yetkaziladi.
+const LayoutCtx = createContext<ViewLayout>("grid");
 
 const PRICE_PRESETS = [
   { key: "all", min: undefined, max: undefined },
@@ -105,6 +110,7 @@ export default function SearchPage() {
 
 function SearchPageInner() {
   const t = useTranslations("ReaderSearch");
+  const tc = useTranslations("Catalog");
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -123,6 +129,9 @@ function SearchPageInner() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locError, setLocError] = useState("");
   const [viewTab, setViewTab] = useState<ViewTab>("all");
+  const [layout, setLayout] = useState<ViewLayout>("grid");
+  // Telefonda filtrlar yig'ilgan — natijalar birinchi ekranda ko'rinsin.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Price filter state
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
@@ -285,30 +294,64 @@ function SearchPageInner() {
   // tab-panel, "Orqaga" → profil), mehmonga esa bosh sahifa bilan bir xil
   // ommaviy qobiq. Avval ReaderShell SHARTSIZ chizilardi va mehmon
   // "Orqaga"/"Asosiy"ni bossa login sahifasiga tushardi.
-  return (
-    <AdaptiveShell title={t("title")}>
-      <div>
-        <p className="text-slate-500 mb-6">
-          {t("subtitle")}
-        </p>
+  const resetFilters = () => {
+    setQuery("");
+    setGenre("");
+    setLang("");
+    setOnlyAvailable(false);
+    setNearbyMode(false);
+    handlePricePreset(0);
+    if (libraryIdParam) router.replace(pathname);
+  };
+  const shownCount =
+    viewTab === "libraries" ? libraryCount : viewTab === "stores" ? storeCount : libraryCount + storeCount;
+  const countLoading = searchLoading || storeLoading;
 
-        {/* ── Search bar ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-line p-4 mb-4">
-          <div className="relative mb-4">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Icon.search aria-hidden="true" size={ICON_SIZE.md} />
-            </span>
+  const chip = (active: boolean) =>
+    `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+      active ? "bg-orange-500 text-white shadow-sm" : "bg-surface-sunken text-slate-600 hover:bg-slate-200"
+    }`;
+  const fieldLabel = "mb-2 block text-sm font-medium text-slate-700";
+  const control =
+    "w-full rounded-xl border border-line-strong bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
+
+  return (
+    <AdaptiveShell title={t("title")} wide>
+      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        {/* ── Filtrlar (chap panel) ── */}
+        <aside className="rounded-3xl border border-line bg-white p-5 shadow-sm lg:sticky lg:top-24">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
+              className="flex items-center gap-2 text-lg font-bold text-slate-900 lg:pointer-events-none"
+            >
+              <Filter aria-hidden="true" size={18} className="text-brand-600" />
+              {tc("filters")}
+              <Icon.next aria-hidden="true" size={16} className={`text-slate-400 transition-transform lg:hidden ${filtersOpen ? "rotate-90" : ""}`} />
+            </button>
+            <button type="button" onClick={resetFilters} className="text-xs font-medium text-slate-400 hover:text-orange-600">
+              {tc("clear")}
+            </button>
+          </div>
+          <div id="catalog-filters" className={`${filtersOpen ? "block" : "hidden"} mt-4 lg:block`}>
+
+          <label className={fieldLabel} htmlFor="catalog-q">{tc("search")}</label>
+          <div className="relative mb-5">
+            <Icon.search aria-hidden="true" size={ICON_SIZE.sm} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              id="catalog-q"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("searchPlaceholder")}
-              className="w-full pl-10 pr-4 py-3 border border-line-strong rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className={`${control} pl-9`}
             />
           </div>
 
-          {/* Kutubxona bo'yicha cheklov — kutubxona sahifasidan kelganda */}
           {libraryIdParam && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mb-5 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
                 <Icon.library aria-hidden="true" size={ICON_SIZE.xs} />
                 {t("libraryFilter", { name: scopedLibrary?.name ?? "…" })}
@@ -324,192 +367,176 @@ function SearchPageInner() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 items-center">
-            {/* Genre chips */}
-            <div className="flex gap-1.5 flex-wrap">
-              {GENRES.map((g) => (
-                <button
-                  key={g.key}
-                  onClick={() => setGenre(g.value)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    g.value === genre
-                      ? "bg-brand-600 text-white border-blue-600"
-                      : "border-line-strong text-slate-600 hover:border-blue-400"
-                  }`}
-                >
-                  {t(`genres.${g.key}`)}
-                </button>
-              ))}
-            </div>
-
-            {/* Language — ko'rinadigan label yo'q, shuning uchun aria-label
-                (axe select-name, WCAG 4.1.2) */}
-            <select
-              value={lang}
-              onChange={(e) => setLang(e.target.value)}
-              aria-label={t("langFilter")}
-              className="border border-line-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              {LANGS.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {t(`langs.${l.key}`)}
-                </option>
-              ))}
-            </select>
-
-            {/* Only available */}
-            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={onlyAvailable}
-                onChange={(e) => setOnlyAvailable(e.target.checked)}
-                className="rounded"
-              />
-              {t("onlyAvailable")}
-            </label>
-
-            {/* Nearby toggle */}
-            <button
-              onClick={() => {
-                setNearbyMode(!nearbyMode);
-                if (!nearbyMode && !userLocation) requestLocation();
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                nearbyMode
-                  ? "bg-green-600 text-white border-green-600"
-                  : "border-line-strong text-slate-600 hover:border-green-500"
-              }`}
-            >
-              <Icon.map aria-hidden="true" size={ICON_SIZE.sm} />
-              {nearbyMode ? t("nearbyOn") : t("nearby")}
-            </button>
-          </div>
-          {locError && <p className="text-red-500 text-xs mt-2">{locError}</p>}
-        </div>
-
-        {/* ── Price filter (visible when stores tab or all) ── */}
-        {!nearbyMode && viewTab !== "libraries" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-line p-4 mb-4">
-            <p className="text-sm font-medium text-slate-700 mb-3">{t("priceFilter")}</p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {PRICE_PRESETS.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => handlePricePreset(i)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    pricePreset === i
-                      ? "bg-orange-700 text-white border-orange-700"
-                      : "border-line-strong text-slate-600 hover:border-orange-400"
-                  }`}
-                >
-                  {t(`presets.${p.key}`)}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder={t("minPrice")}
-                value={minPrice ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value ? Number(e.target.value) : undefined;
-                  setMinPrice(v);
-                  setPricePreset(-1);
-                  setStorePage(1);
-                }}
-                className="w-32 border border-line-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <span className="text-slate-400 text-sm">-</span>
-              <input
-                type="number"
-                placeholder={t("maxPrice")}
-                value={maxPrice ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value ? Number(e.target.value) : undefined;
-                  setMaxPrice(v);
-                  setPricePreset(-1);
-                  setStorePage(1);
-                }}
-                className="w-32 border border-line-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <span className="text-slate-400 text-xs">{t("som")}</span>
-            </div>
-          </div>
-        )}
-
-        {/* ── Tabs (non-nearby) ── */}
-        {!nearbyMode && (
-          <div className="flex min-w-0 gap-1 card-surface rounded-xl p-1 mb-4">
-            {([
-              { key: "all", label: t("tabAll"), count: libraryCount + storeCount },
-              { key: "libraries", label: t("tabLibraries"), count: libraryCount, icon: Icon.library },
-              { key: "stores", label: t("tabStores"), count: storeCount, icon: Icon.store },
-            ] as const).map((tabItem) => (
-              <button
-                key={tabItem.key}
-                onClick={() => setViewTab(tabItem.key)}
-                className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  viewTab === tabItem.key
-                    ? "bg-brand-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-surface-muted"
-                }`}
-              >
-                {"icon" in tabItem && (
-                  <tabItem.icon aria-hidden="true" size={ICON_SIZE.sm} className="hidden shrink-0 sm:block" />
-                )}
-                <span className="truncate">{tabItem.label}</span>
-                {debouncedQuery && (
-                  <span
-                    className={`shrink-0 text-[11px] sm:ml-0.5 sm:text-xs ${
-                      viewTab === tabItem.key ? "text-white" : "text-slate-400"
-                    }`}
-                  >
-                    ({tabItem.count})
-                  </span>
-                )}
+          <p className={fieldLabel}>{t("langFilter")}</p>
+          <div className="mb-5 flex flex-wrap gap-2">
+            {LANGS.map((l) => (
+              <button key={l.code} type="button" onClick={() => setLang(l.code)} className={chip(lang === l.code)} aria-pressed={lang === l.code}>
+                {t(`langs.${l.key}`)}
               </button>
             ))}
           </div>
-        )}
 
-        {/* ── Results ── */}
-        {nearbyMode ? (
-          <NearbyMixedResults
-            libs={nearbyLibs}
-            stores={nearbyStores?.data ?? []}
-            libsLoading={nearbyLoading}
-            storesLoading={nearbyStoresLoading}
-            query={debouncedQuery}
-          />
-        ) : viewTab === "libraries" ? (
-          <LibraryResults
-            result={searchResult}
-            loading={searchLoading}
-            page={page}
-            onPage={setPage}
-            isbnMap={isbnMap}
-          />
-        ) : viewTab === "stores" ? (
-          <StoreResults
-            result={storeResult}
-            loading={storeLoading}
-            page={storePage}
-            onPage={setStorePage}
-            isbnMap={isbnMap}
-          />
-        ) : (
-          <AllResults
-            libResult={searchResult}
-            storeResult={storeResult}
-            libLoading={searchLoading}
-            storeLoading={storeLoading}
-            libPage={page}
-            storePage={storePage}
-            onLibPage={setPage}
-            onStorePage={setStorePage}
-            isbnMap={isbnMap}
-          />
-        )}
+          <label className={fieldLabel} htmlFor="catalog-genre">{tc("genre")}</label>
+          <select id="catalog-genre" value={genre} onChange={(e) => setGenre(e.target.value)} className={`${control} mb-5`}>
+            {GENRES.map((g) => (
+              <option key={g.key} value={g.value}>{t(`genres.${g.key}`)}</option>
+            ))}
+          </select>
+
+          <label className="mb-3 flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={onlyAvailable}
+              onChange={(e) => setOnlyAvailable(e.target.checked)}
+              className="h-4 w-4 rounded accent-orange-500"
+            />
+            {t("onlyAvailable")}
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              setNearbyMode(!nearbyMode);
+              if (!nearbyMode && !userLocation) requestLocation();
+            }}
+            className={`mb-1 flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+              nearbyMode ? "border-green-600 bg-green-600 text-white" : "border-line-strong text-slate-600 hover:border-green-500"
+            }`}
+          >
+            <Icon.map aria-hidden="true" size={ICON_SIZE.sm} />
+            {nearbyMode ? t("nearbyOn") : t("nearby")}
+          </button>
+          {locError && <p className="mt-1 text-xs text-red-500">{locError}</p>}
+
+          {!nearbyMode && viewTab !== "libraries" && (
+            <div className="mt-5">
+              <p className={fieldLabel}>{t("priceFilter")}</p>
+              <div className="rounded-2xl border border-line p-3">
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {PRICE_PRESETS.map((pp, i) => (
+                    <button key={pp.key} type="button" onClick={() => handlePricePreset(i)} className={`${chip(pricePreset === i)} !px-2.5 !py-1 !text-xs`}>
+                      {t(`presets.${pp.key}`)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    aria-label={t("minPrice")}
+                    placeholder={t("minPrice")}
+                    value={minPrice ?? ""}
+                    onChange={(e) => {
+                      setMinPrice(e.target.value ? Number(e.target.value) : undefined);
+                      setPricePreset(-1);
+                      setStorePage(1);
+                    }}
+                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <span className="text-slate-400">–</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    aria-label={t("maxPrice")}
+                    placeholder={t("maxPrice")}
+                    value={maxPrice ?? ""}
+                    onChange={(e) => {
+                      setMaxPrice(e.target.value ? Number(e.target.value) : undefined);
+                      setPricePreset(-1);
+                      setStorePage(1);
+                    }}
+                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </div>
+                <p className="mt-2 text-right text-xs text-slate-400">{t("som")}</p>
+              </div>
+            </div>
+          )}
+          </div>
+        </aside>
+
+        {/* ── Natijalar ── */}
+        <section className="min-w-0">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-white px-5 py-4 shadow-sm">
+            <div>
+              <p className="text-xs text-slate-500">{tc("resultsPanel")}</p>
+              <p className="text-xl font-bold text-slate-900">
+                {nearbyMode ? t("nearbyOn") : countLoading ? "…" : tc("found", { count: shownCount })}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {!nearbyMode && (
+                <div className="flex gap-1 rounded-full bg-surface-sunken p-1">
+                  {([
+                    { key: "all", label: t("tabAll") },
+                    { key: "libraries", label: t("tabLibraries") },
+                    { key: "stores", label: t("tabStores") },
+                  ] as const).map((tabItem) => (
+                    <button
+                      key={tabItem.key}
+                      type="button"
+                      onClick={() => setViewTab(tabItem.key)}
+                      aria-pressed={viewTab === tabItem.key}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
+                        viewTab === tabItem.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      {tabItem.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-1 rounded-full bg-slate-900 p-1" role="group" aria-label={tc("view")}>
+                {([
+                  { key: "grid", icon: LayoutGrid, label: tc("viewGrid") },
+                  { key: "list", icon: List, label: tc("viewList") },
+                ] as const).map(({ key, icon: VIcon, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setLayout(key)}
+                    aria-pressed={layout === key}
+                    aria-label={label}
+                    title={label}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+                      layout === key ? "bg-white text-orange-500" : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    <VIcon aria-hidden="true" size={16} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <LayoutCtx.Provider value={layout}>
+            {nearbyMode ? (
+              <NearbyMixedResults
+                libs={nearbyLibs}
+                stores={nearbyStores?.data ?? []}
+                libsLoading={nearbyLoading}
+                storesLoading={nearbyStoresLoading}
+                query={debouncedQuery}
+              />
+            ) : viewTab === "libraries" ? (
+              <LibraryResults result={searchResult} loading={searchLoading} page={page} onPage={setPage} isbnMap={isbnMap} />
+            ) : viewTab === "stores" ? (
+              <StoreResults result={storeResult} loading={storeLoading} page={storePage} onPage={setStorePage} isbnMap={isbnMap} />
+            ) : (
+              <AllResults
+                libResult={searchResult}
+                storeResult={storeResult}
+                libLoading={searchLoading}
+                storeLoading={storeLoading}
+                libPage={page}
+                storePage={storePage}
+                onLibPage={setPage}
+                onStorePage={setStorePage}
+                isbnMap={isbnMap}
+              />
+            )}
+          </LayoutCtx.Provider>
+        </section>
       </div>
     </AdaptiveShell>
   );
@@ -660,6 +687,7 @@ function LibraryResults({
 }) {
   const locale = useLocale();
   const t = useTranslations("ReaderSearch");
+  const layout = useContext(LayoutCtx);
   if (loading) return <Skeleton label={t("searchingLibraries")} />;
   if (!result || result.data.length === 0) {
     if (embedded)
@@ -678,13 +706,17 @@ function LibraryResults({
           {t("resultsFound", { count: result.total })}
         </p>
       )}
-      <div className="grid gap-3">
-        {result.data.map((book) => (
-          <div key={book.id}>
-            <BookCard book={book} href={libraryHref(locale, book)} />
-            <IsbnComparisonBanner isbn={book.isbn} isbnMap={isbnMap} />
-          </div>
-        ))}
+      <div className={layout === "grid" ? "grid grid-cols-2 gap-x-4 gap-y-6 pt-12 sm:grid-cols-3 xl:grid-cols-4" : "grid gap-3"}>
+        {result.data.map((book) =>
+          layout === "grid" ? (
+            <BookTile key={book.id} book={book} href={libraryHref(locale, book)} />
+          ) : (
+            <div key={book.id}>
+              <BookCard book={book} href={libraryHref(locale, book)} />
+              <IsbnComparisonBanner isbn={book.isbn} isbnMap={isbnMap} />
+            </div>
+          )
+        )}
       </div>
       {totalPages > 1 && <Pagination page={page} totalPages={totalPages} onPage={onPage} />}
     </>
@@ -712,6 +744,7 @@ function StoreResults({
 }) {
   const locale = useLocale();
   const t = useTranslations("ReaderSearch");
+  const layout = useContext(LayoutCtx);
   if (loading) return <Skeleton label={t("searchingStores")} />;
   if (!result || result.data.length === 0) {
     if (embedded)
@@ -728,16 +761,24 @@ function StoreResults({
           {t("productsFound", { count: result.total })}
         </p>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {result.data.map((product) => (
-          <div key={product.id}>
-            <StoreProductCard
+      <div className={layout === "grid" ? "grid grid-cols-2 gap-x-4 gap-y-6 pt-12 sm:grid-cols-3 xl:grid-cols-4" : "grid gap-3 sm:grid-cols-2"}>
+        {result.data.map((product) =>
+          layout === "grid" ? (
+            <StoreTile
+              key={product.id}
               product={product}
               href={product.slug ? `/${locale}/dokon/${product.slug}` : null}
             />
-            <IsbnComparisonBanner isbn={product.isbn} isbnMap={isbnMap} />
-          </div>
-        ))}
+          ) : (
+            <div key={product.id}>
+              <StoreProductCard
+                product={product}
+                href={product.slug ? `/${locale}/dokon/${product.slug}` : null}
+              />
+              <IsbnComparisonBanner isbn={product.isbn} isbnMap={isbnMap} />
+            </div>
+          )
+        )}
       </div>
       {totalPages > 1 && <Pagination page={page} totalPages={totalPages} onPage={onPage} />}
     </>
@@ -922,6 +963,114 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
     >
       {inner}
     </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Katak ko'rinishidagi kartalar — muqova karta ustidan chiqib turadi.
+// Reyting/ko'rishlar soni ko'rsatilmaydi: bunday ma'lumot tizimda yo'q.
+// ---------------------------------------------------------------------------
+
+function TileShell({
+  href,
+  cover,
+  children,
+}: {
+  href?: string | null;
+  cover: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const body = (
+    <div className="group relative flex h-full flex-col rounded-2xl border border-line bg-white px-4 pb-4 pt-0 shadow-sm transition-shadow hover:shadow-md">
+      <div className="-mt-12 mb-4 flex h-44 items-end justify-center sm:h-48">
+        <div className="w-28 transition-transform duration-300 group-hover:-translate-y-1.5 sm:w-32">{cover}</div>
+      </div>
+      {children}
+    </div>
+  );
+  if (!href) return body;
+  return (
+    <Link href={href} className="block h-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-400">
+      {body}
+    </Link>
+  );
+}
+
+function BookTile({ book, href }: { book: Book; href?: string | null }) {
+  const t = useTranslations("ReaderSearch");
+  const tc = useTranslations("Catalog");
+  const free = book.availableCount > 0;
+  return (
+    <TileShell
+      href={href}
+      cover={
+        <BookCover size="md" title={book.title} author={book.author} genre={book.genre} coverUrl={bookCoverSrc(book)} />
+      }
+    >
+      <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">{book.title}</h3>
+      <p className="mt-1 truncate text-sm text-slate-500">{book.author}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+        {book.genre && <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-slate-600">{book.genre}</span>}
+        {book.library && (
+          <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">
+            <Icon.library aria-hidden="true" size={11} className="shrink-0" />
+            <span className="truncate">{book.library.name}</span>
+          </span>
+        )}
+      </div>
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-dashed border-line pt-3">
+        {free ? (
+          <span className="text-sm font-bold text-green-700">
+            {tc("free")} <span className="font-normal text-slate-500">· {t("freeAvailable", { count: book.availableCount })}</span>
+          </span>
+        ) : (
+          <span className="text-sm font-medium text-red-500">{t("notAvailable")}</span>
+        )}
+        <span
+          aria-hidden="true"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${free ? "bg-orange-500" : "bg-slate-300"}`}
+        >
+          <BookmarkPlus size={16} />
+        </span>
+      </div>
+    </TileShell>
+  );
+}
+
+function StoreTile({ product, href }: { product: StoreProductSearchResult; href?: string | null }) {
+  const t = useTranslations("ReaderSearch");
+  return (
+    <TileShell
+      href={href}
+      cover={
+        product.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.coverUrl} alt="" className="mx-auto max-h-48 w-full object-contain drop-shadow-lg" />
+        ) : (
+          <BookCover size="md" title={product.title} author={product.author} genre={product.genre ?? ""} coverUrl={null} />
+        )
+      }
+    >
+      <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">{product.title}</h3>
+      <p className="mt-1 truncate text-sm text-slate-500">{product.author}</p>
+      <p className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-slate-500">
+        <Icon.store aria-hidden="true" size={11} className="shrink-0" />
+        <span className="truncate">{product.storeName}</span>
+      </p>
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-dashed border-line pt-3">
+        {product.stockCount > 0 ? (
+          <span className="text-lg font-bold text-orange-500">
+            {new Intl.NumberFormat("uz-UZ").format(product.price)}{" "}
+            <span className="text-sm font-normal text-slate-500">{t("som")}</span>
+          </span>
+        ) : (
+          <span className="text-sm font-medium text-red-500">{t("outOfStock")}</span>
+        )}
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
+          <ShoppingCart size={16} />
+        </span>
+      </div>
+    </TileShell>
   );
 }
 

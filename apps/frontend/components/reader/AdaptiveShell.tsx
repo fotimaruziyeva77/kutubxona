@@ -34,10 +34,13 @@ export function useIsReader(): boolean {
 export function AdaptiveShell({
   title,
   subtitle,
+  wide,
   children,
 }: {
   title?: string;
   subtitle?: string;
+  /** Keng sahifa (katalog: chapda filtr, o'ngda natijalar). */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const locale = useLocale();
@@ -45,13 +48,13 @@ export function AdaptiveShell({
 
   if (isReader) {
     return (
-      <ReaderShell title={title} subtitle={subtitle} backHref={`/${locale}/profile`}>
+      <ReaderShell title={title} subtitle={subtitle} backHref={`/${locale}/profile`} wide={wide}>
         {children}
       </ReaderShell>
     );
   }
   return (
-    <PublicShell title={title} subtitle={subtitle}>
+    <PublicShell title={title} subtitle={subtitle} wide={wide}>
       {children}
     </PublicShell>
   );

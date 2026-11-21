@@ -1,0 +1,14 @@
+{
+  "Catalog": {
+    "filters": "Filtrlar",
+    "clear": "Tozalash",
+    "search": "Qidiruv",
+    "genre": "Janr",
+    "resultsPanel": "Natijalar paneli",
+    "found": "{count} ta kitob topildi",
+    "view": "Ko'rinish",
+    "viewGrid": "Katak ko'rinish",
+    "viewList": "Ro'yxat ko'rinish",
+    "free": "Bepul"
+  }
+}

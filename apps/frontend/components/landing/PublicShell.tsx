@@ -27,10 +27,12 @@ import "./public-shell.css";
 export function PublicShell({
   title,
   subtitle,
+  wide,
   children,
 }: {
   title?: string;
   subtitle?: string;
+  wide?: boolean;
   children: ReactNode;
 }) {
   const locale = useLocale();
@@ -39,7 +41,7 @@ export function PublicShell({
   return (
     <div className="min-h-screen bg-surface-muted" data-public-shell="">
       <LandingHeader locale={locale} solid />
-      <main className="mx-auto max-w-4xl px-4 pb-16 pt-4 sm:px-6">
+      <main className={`mx-auto ${wide ? "max-w-7xl" : "max-w-4xl"} px-4 pb-16 pt-4 sm:px-6`}>
         <nav
           aria-label="Breadcrumb"
           className="flex min-w-0 items-center gap-2 text-sm"

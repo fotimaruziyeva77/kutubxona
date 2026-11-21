@@ -1,0 +1,14 @@
+{
+  "Catalog": {
+    "filters": "Фильтры",
+    "clear": "Сбросить",
+    "search": "Поиск",
+    "genre": "Жанр",
+    "resultsPanel": "Панель результатов",
+    "found": "Найдено книг: {count}",
+    "view": "Вид",
+    "viewGrid": "Плиткой",
+    "viewList": "Списком",
+    "free": "Бесплатно"
+  }
+}

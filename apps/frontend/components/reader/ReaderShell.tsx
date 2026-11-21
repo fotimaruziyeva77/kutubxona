@@ -50,8 +50,10 @@ export function ReaderShell({
   subtitle,
   backHref,
   action,
+  wide,
   children,
 }: {
+  wide?: boolean;
   /** Sahifa sarlavhasi. Berilmasa yuqori qator faqat orqaga/amal ko'rsatadi. */
   title?: string;
   subtitle?: string;
@@ -173,7 +175,7 @@ export function ReaderShell({
       {/* ── Kontent ──────────────────────────────────────────────────── */}
       {/* Pastdagi bo'shliq mobil tab-panel balandligi uchun — oxirgi karta
           panel ostida qolib ketmasin. */}
-      <main className="mx-auto max-w-3xl px-4 pb-28 pt-5 md:pb-10">{children}</main>
+      <main className={`mx-auto ${wide ? "max-w-7xl" : "max-w-3xl"} px-4 pb-28 pt-5 md:pb-10`}>{children}</main>
 
       {/* ── Pastki tab-panel (faqat mobil) ───────────────────────────── */}
       <nav
