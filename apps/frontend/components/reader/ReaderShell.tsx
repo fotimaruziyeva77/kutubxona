@@ -27,6 +27,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { Heart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { getMyInstitutionLibrary } from "@/lib/api/libraries";
@@ -165,6 +166,17 @@ export function ReaderShell({
             })}
           </nav>
 
+          <Link
+            href={`/${locale}/favorites`}
+            aria-label={t("favorites")}
+            title={t("favorites")}
+            aria-current={isActive("/favorites") ? "page" : undefined}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-surface-muted ${
+              isActive("/favorites") ? "text-rose-500" : "text-slate-600"
+            }`}
+          >
+            <Heart aria-hidden="true" size={ICON_SIZE.md} className={isActive("/favorites") ? "fill-rose-500" : ""} />
+          </Link>
           <div className="shrink-0">
             <LocaleThemeControl inline />
           </div>

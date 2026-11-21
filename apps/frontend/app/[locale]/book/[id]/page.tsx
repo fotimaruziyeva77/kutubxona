@@ -7,7 +7,9 @@ import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { BookCover } from "@/components/books/BookCover";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { apiBase } from "@/lib/api/base";
+import { SITE_URL } from "@/lib/site";
 import { BookReserveBox } from "@/components/books/BookReserveBox";
+import { BookReviews } from "@/components/books/BookReviews";
 import "@/components/landing/public-shell.css";
 
 /**
@@ -96,9 +98,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const book = await fetchBook(params.id);
   if (!book) return {};
+  const url = `${SITE_URL}/${params.locale}/book/${encodeURIComponent(book.id)}`;
+  const where = book.library?.name ? ` ${book.library.name}da mavjud.` : "";
+  const description =
+    book.description?.replace(/\s+/g, " ").slice(0, 155) ||
+    `«${book.title}» — ${book.author}.${where} SIFAT LIBRARY orqali bepul bron qiling.`;
+  const image = book.coverUrl
+    ? `${SITE_URL}/api/books/${encodeURIComponent(book.id)}/cover`
+    : `${SITE_URL}/og-image.png`;
   return {
     title: `${book.title} — ${book.author}`,
-    description: book.description?.slice(0, 160) || `${book.title} — ${book.author}`,
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "book", title: `${book.title} — ${book.author}`, description, url, siteName: "SIFAT LIBRARY", images: [image] },
+    twitter: { card: "summary_large_image", title: book.title, description, images: [image] },
   };
 }
 
@@ -146,8 +159,29 @@ export default async function BookPage({
   const places = [book, ...copies];
   const placesWithCopies = places.filter((b) => (b.availableCount ?? 0) > 0).length;
 
+  // schema.org/Book — Google kitob natijalarida (muallif, ISBN) ko'rsatishi uchun.
+  const realIsbnLd = book.isbn && !book.isbn.startsWith("2") ? book.isbn : undefined;
+  const bookLd = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: book.title,
+    author: { "@type": "Person", name: book.author },
+    ...(realIsbnLd ? { isbn: realIsbnLd } : {}),
+    ...(book.genre ? { genre: book.genre } : {}),
+    ...(book.lang ? { inLanguage: book.lang } : {}),
+    ...(book.pages ? { numberOfPages: book.pages } : {}),
+    ...(book.year ? { datePublished: String(book.year) } : {}),
+    ...(book.description ? { description: book.description.slice(0, 500) } : {}),
+    url: `${SITE_URL}/${locale}/book/${encodeURIComponent(book.id)}`,
+    ...(book.coverUrl ? { image: `${SITE_URL}/api/books/${encodeURIComponent(book.id)}/cover` } : {}),
+  };
+
   return (
     <div className="min-h-screen bg-surface-muted" data-public-shell="">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(bookLd).replace(/</g, "\\u003c") }}
+      />
       <ScrollReveal />
       <LandingHeader locale={locale} solid />
 
@@ -250,6 +284,8 @@ export default async function BookPage({
             <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-600">{book.description}</p>
           </section>
         )}
+
+        <BookReviews locale={locale} bookId={book.id} />
 
         {/* ── O'XSHASH KITOBLAR ─────────────────────────────────────────── */}
         {similar.length > 0 && (

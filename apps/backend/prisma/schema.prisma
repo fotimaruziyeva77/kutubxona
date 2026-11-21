@@ -212,6 +212,8 @@ model User {
   addressChangeRequests  AddressChangeRequest[] @relation("AddressChangeRequestUser")
   // Phase 8 Plan 08-01 — store operator back-relation
   storeOperator          Store[]                @relation("storeOperator")
+  bookReviews            BookReview[]
+  favoriteBooks          FavoriteBook[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -362,15 +364,17 @@ model Book {
   libraryId      String
   library        Library           @relation(fields: [libraryId], references: [id])
   transactions   BookTransaction[]
+  reviews        BookReview[]
+  favoritedBy    FavoriteBook[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  @@index([isbn])
-  @@index([libraryId])
-  @@index([title, author])
   // FR2: Book = kutubxonadagi NUSXA yozuvi — bir kutubxonada bir ISBN bitta qator.
   // Takror import/qo'shish ikkinchi bookId yaratib, scoringda ikki karra kredit berardi.
   @@unique([libraryId, isbn])
+  @@index([isbn])
+  @@index([libraryId])
+  @@index([title, author])
 }
 
 model BookTransaction {
@@ -732,23 +736,23 @@ model Store {
 
 // StoreProduct — individual product in a store catalog (SHOP-01).
 model StoreProduct {
-  id         String   @id @default(cuid())
-  storeId    String
-  store      Store    @relation(fields: [storeId], references: [id])
-  isbn       String
-  title      String
-  author     String
-  genre      String?
-  price      Int
-  stockCount Int      @default(0)
-  coverUrl   String?
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  isbn        String
+  title       String
+  author      String
+  genre       String?
+  price       Int
+  stockCount  Int      @default(0)
+  coverUrl    String?
   description String?
-  lang       String   @default("uz")
-  pages      Int      @default(0)
-  year       Int      @default(0)
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  lang        String   @default("uz")
+  pages       Int      @default(0)
+  year        Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([storeId, isbn])
   @@index([storeId])
@@ -1089,4 +1093,33 @@ model BookCornerVerification {
   createdAt    DateTime   @default(now())
 
   @@index([bookCornerId, createdAt])
+}
+
+// 2026-11-21 — kitob izohlari (1–5 baho + matn). Asar bo'yicha yig'iladi
+// (book-social.service workWhere), bir foydalanuvchi — bir nusxaga bitta izoh.
+model BookReview {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  text      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, bookId])
+  @@index([bookId, createdAt])
+}
+
+// 2026-11-21 — «Saralanganlar»: kitobxon saqlab qo'ygan kitoblar.
+model FavoriteBook {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, bookId])
+  @@index([userId, createdAt])
 }

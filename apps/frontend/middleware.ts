@@ -58,7 +58,7 @@ const AUTH_HINT_COOKIE = "sl_auth";
 //
 // Protected pattern (operator-only store subpages):
 //   /dokon/[slug]/(dashboard|sell|settings|products)
-const PROTECTED_SUBTREES = ["/dashboard", "/profile", "/scan"];
+const PROTECTED_SUBTREES = ["/dashboard", "/profile", "/scan", "/favorites"];
 const PROTECTED_EXACT = ["/family"];
 const STORE_CRM_RE = /^\/dokon\/[^/]+\/(dashboard|sell|settings|products)(\/|$)/;
 

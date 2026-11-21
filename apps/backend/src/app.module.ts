@@ -11,6 +11,7 @@ import { QueueModule } from "./infra/queue/queue.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
 import { LibrariesModule } from "./modules/libraries/libraries.module";
+import { BookSocialModule } from "./modules/book-social/book-social.module";
 import { BooksModule } from "./modules/books/books.module";
 import { TransactionsModule } from "./modules/transactions/transactions.module";
 import { ReadingModule } from "./modules/reading/reading.module";
@@ -66,6 +67,7 @@ import { AppController } from "./app.controller";
     UsersModule,
     LibrariesModule,
     BooksModule,
+    BookSocialModule,
     TransactionsModule,
     ReadingModule,
     AdminModule,

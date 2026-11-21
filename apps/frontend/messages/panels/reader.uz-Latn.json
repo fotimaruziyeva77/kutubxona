@@ -45,24 +45,78 @@
     "levelUpNamed": "Tabriklaymiz — {level}-darajaga ko'tarildingiz!",
     "levelUp": "Tabriklaymiz — yangi darajaga ko'tarildingiz!",
     "badges": {
-      "FIRST_BOOK": { "name": "Birinchi kitob", "desc": "Birinchi kitobni qaytardingiz" },
-      "FIVE_BOOKS": { "name": "5 kitob", "desc": "5 ta kitob o'qib qaytardingiz" },
-      "TEN_BOOKS": { "name": "10 kitob", "desc": "10 ta kitob o'qib qaytardingiz" },
-      "TWENTY_BOOKS": { "name": "20 kitob", "desc": "20 ta kitob o'qib qaytardingiz" },
-      "FIFTY_BOOKS": { "name": "50 kitob", "desc": "50 ta kitob o'qib qaytardingiz" },
-      "HUNDRED_BOOKS": { "name": "100 kitob", "desc": "100 ta kitob — milliy rekord!" },
-      "TOP_100": { "name": "Top-100", "desc": "Oylik Top-100 ga kirgansiz" },
-      "TOP_10": { "name": "Top-10", "desc": "Oylik Top-10 ga kirgansiz" },
-      "STREAK_7": { "name": "7 kunlik streak", "desc": "7 kun ketma-ket faol bo'ldingiz" },
-      "STREAK_30": { "name": "30 kunlik streak", "desc": "Bir oy davomida har kuni faol" },
-      "DISCIPLINE": { "name": "Intizomli kitobxon", "desc": "10 ta kitobni o'z vaqtida qaytardingiz" },
-      "DIVERSE_READER": { "name": "Xilma-xil kitobxon", "desc": "5 ta turli janrda kitob o'qidingiz" },
-      "FAST_READER": { "name": "Tez o'quvchi", "desc": "Kitobni 7 kunda qaytardingiz" },
-      "COMPREHENSION_ACE": { "name": "Test ustasi", "desc": "5 ta comprehension testni o'tdingiz" },
-      "ISBN_SCANNER": { "name": "ISBN skanerchi", "desc": "10 ta sotib olingan kitob skanerlandi" },
-      "DONOR": { "name": "Donat qiluvchi", "desc": "Kutubxonalarga donat qildingiz" },
-      "TRUST_MASTER": { "name": "Ishonch ustasi", "desc": "Trust Score 90 ga yetdi" },
-      "ACTIVE_MONTH": { "name": "Faol oy", "desc": "Bir oy davomida eng faol bo'ldingiz" }
+      "FIRST_BOOK": {
+        "name": "Birinchi kitob",
+        "desc": "Birinchi kitobni qaytardingiz"
+      },
+      "FIVE_BOOKS": {
+        "name": "5 kitob",
+        "desc": "5 ta kitob o'qib qaytardingiz"
+      },
+      "TEN_BOOKS": {
+        "name": "10 kitob",
+        "desc": "10 ta kitob o'qib qaytardingiz"
+      },
+      "TWENTY_BOOKS": {
+        "name": "20 kitob",
+        "desc": "20 ta kitob o'qib qaytardingiz"
+      },
+      "FIFTY_BOOKS": {
+        "name": "50 kitob",
+        "desc": "50 ta kitob o'qib qaytardingiz"
+      },
+      "HUNDRED_BOOKS": {
+        "name": "100 kitob",
+        "desc": "100 ta kitob — milliy rekord!"
+      },
+      "TOP_100": {
+        "name": "Top-100",
+        "desc": "Oylik Top-100 ga kirgansiz"
+      },
+      "TOP_10": {
+        "name": "Top-10",
+        "desc": "Oylik Top-10 ga kirgansiz"
+      },
+      "STREAK_7": {
+        "name": "7 kunlik streak",
+        "desc": "7 kun ketma-ket faol bo'ldingiz"
+      },
+      "STREAK_30": {
+        "name": "30 kunlik streak",
+        "desc": "Bir oy davomida har kuni faol"
+      },
+      "DISCIPLINE": {
+        "name": "Intizomli kitobxon",
+        "desc": "10 ta kitobni o'z vaqtida qaytardingiz"
+      },
+      "DIVERSE_READER": {
+        "name": "Xilma-xil kitobxon",
+        "desc": "5 ta turli janrda kitob o'qidingiz"
+      },
+      "FAST_READER": {
+        "name": "Tez o'quvchi",
+        "desc": "Kitobni 7 kunda qaytardingiz"
+      },
+      "COMPREHENSION_ACE": {
+        "name": "Test ustasi",
+        "desc": "5 ta comprehension testni o'tdingiz"
+      },
+      "ISBN_SCANNER": {
+        "name": "ISBN skanerchi",
+        "desc": "10 ta sotib olingan kitob skanerlandi"
+      },
+      "DONOR": {
+        "name": "Donat qiluvchi",
+        "desc": "Kutubxonalarga donat qildingiz"
+      },
+      "TRUST_MASTER": {
+        "name": "Ishonch ustasi",
+        "desc": "Trust Score 90 ga yetdi"
+      },
+      "ACTIVE_MONTH": {
+        "name": "Faol oy",
+        "desc": "Bir oy davomida eng faol bo'ldingiz"
+      }
     }
   },
   "ReaderSearch": {
@@ -81,14 +135,24 @@
       "sheriyat": "She'riyat"
     },
     "langFilter": "Kitob tili",
-    "langs": { "all": "Barcha tillar", "uz": "O'zbek", "ru": "Rus", "en": "Ingliz" },
+    "langs": {
+      "all": "Barcha tillar",
+      "uz": "O'zbek",
+      "ru": "Rus",
+      "en": "Ingliz"
+    },
     "onlyAvailable": "Faqat mavjud",
     "nearbyOn": "Joylashuvga asosli",
     "nearby": "Yaqinida",
     "gpsUnsupported": "Brauzer GPS ni qo'llab-quvvatlamaydi",
     "gpsDenied": "Joylashuv aniqlanmadi. Ruxsat bering.",
     "priceFilter": "Narx filtri (do'konlar uchun)",
-    "presets": { "all": "Barchasi", "under30": "30,000 gacha", "mid": "30–60,000", "over60": "60,000+" },
+    "presets": {
+      "all": "Barchasi",
+      "under30": "30,000 gacha",
+      "mid": "30–60,000",
+      "over60": "60,000+"
+    },
     "minPrice": "Min narx",
     "maxPrice": "Max narx",
     "som": "so'm",
@@ -253,7 +317,8 @@
     "tabFamily": "Oila",
     "back": "Orqaga",
     "sections": "Bo'limlar",
-    "mainSections": "Asosiy bo'limlar"
+    "mainSections": "Asosiy bo'limlar",
+    "favorites": "Saralanganlar"
   },
   "ReaderBits": {
     "hero": {

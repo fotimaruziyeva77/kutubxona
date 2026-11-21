@@ -103,12 +103,10 @@ export async function generateMetadata({
       description,
       images: [`${BASE_URL}/og-image.png`],
     },
-    alternates: {
-      canonical: `${BASE_URL}/${locale}`,
-      languages: Object.fromEntries(
-        locales.map((l) => [l, `${BASE_URL}/${l}`])
-      ),
-    },
+    // canonical bu yerda BERILMAYDI: layout metadata barcha ichki sahifalarga
+    // meros bo'ladi va har bir kitob/kutubxona sahifasi "bosh sahifaning
+    // nusxasi" deb belgilanib, Google indeksidan chiqib qolardi. Har sahifa
+    // o'z canonical'ini o'zi beradi.
     robots: {
       index: true,
       follow: true,

@@ -1,0 +1,15 @@
+{
+  "Favorites": {
+    "title": "Saylanǵanlar",
+    "subtitle": "Saqlap qoyǵan kitaplarıńız",
+    "count": "{count} kitap",
+    "error": "Dizimdi júklep bolmadı.",
+    "retry": "Qayta urınıw",
+    "emptyTitle": "Ele saqlanǵan kitap joq",
+    "emptyText": "Kitap betinde «Saylanǵanlarǵa» túymesin basıń — ol usı jerde payda boladı.",
+    "browse": "Kitaplardı kóriw",
+    "remove": "Saylanǵanlardan alıp taslaw",
+    "available": "{count} nusqa bos",
+    "unavailable": "Házir bos nusqa joq"
+  }
+}

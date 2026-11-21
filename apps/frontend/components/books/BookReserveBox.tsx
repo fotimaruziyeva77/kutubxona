@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Heart } from "lucide-react";
+import { getFavoriteStatus, setFavorite } from "@/lib/api/social";
 import { useTranslations } from "next-intl";
 import { reserveBook } from "@/lib/api/libraries";
 import { hasAuthHintCookie } from "@/lib/auth-cookie";
@@ -38,6 +40,32 @@ export function BookReserveBox({
   const next = encodeURIComponent(back);
 
   const reserve = useMutation({ mutationFn: () => reserveBook(bookId) });
+
+  // Saralanganlar — holat faqat kirgan foydalanuvchi uchun so'raladi.
+  const qc = useQueryClient();
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => setAuthed(hasAuthHintCookie()), []);
+  const fav = useQuery({
+    queryKey: ["book-favorite", bookId],
+    queryFn: () => getFavoriteStatus(bookId),
+    enabled: authed,
+    retry: false,
+  });
+  const isFav = !!fav.data?.favorite;
+  const toggleFav = useMutation({
+    mutationFn: () => setFavorite(bookId, !isFav),
+    onSuccess: (d) => {
+      qc.setQueryData(["book-favorite", bookId], d);
+      qc.invalidateQueries({ queryKey: ["favorites"] });
+    },
+  });
+  const onFav = () => {
+    if (!hasAuthHintCookie()) {
+      setAuthOpen(true);
+      return;
+    }
+    toggleFav.mutate();
+  };
   const errMsg = (() => {
     const res = (reserve.error as { response?: { data?: { message?: string | string[] } } } | null)?.response;
     const m = res?.data?.message;
@@ -108,13 +136,29 @@ export function BookReserveBox({
         </p>
       )}
 
-      <Link
-        href={authorHref}
-        className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700"
-      >
-        <Icon.search aria-hidden="true" size={ICON_SIZE.sm} />
-        {t("moreByAuthor")}
-      </Link>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={onFav}
+          disabled={toggleFav.isPending}
+          aria-pressed={isFav}
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition disabled:opacity-60 ${
+            isFav
+              ? "border-rose-200 bg-rose-50 text-rose-600"
+              : "border-line bg-white text-slate-700 hover:border-brand-300 hover:text-brand-700"
+          }`}
+        >
+          <Heart aria-hidden="true" size={ICON_SIZE.sm} className={isFav ? "fill-rose-500 text-rose-500" : ""} />
+          {isFav ? t("favoriteSaved") : t("favoriteAdd")}
+        </button>
+        <Link
+          href={authorHref}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700"
+        >
+          <Icon.search aria-hidden="true" size={ICON_SIZE.sm} />
+          {t("moreByAuthor")}
+        </Link>
+      </div>
 
       {authOpen && (
         <AuthDialog

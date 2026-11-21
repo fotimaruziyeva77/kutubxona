@@ -19,6 +19,7 @@ export const defaultLocale: Locale = "uz-Latn";
  * (chuqur merge kerak emas).
  */
 const PANEL_MODULES = [
+  "favorites",
   "school",
   "club",
   "debate",

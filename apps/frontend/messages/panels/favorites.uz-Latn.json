@@ -1,0 +1,15 @@
+{
+  "Favorites": {
+    "title": "Saralanganlar",
+    "subtitle": "Saqlab qo'ygan kitoblaringiz",
+    "count": "{count} ta kitob",
+    "error": "Ro'yxatni yuklab bo'lmadi.",
+    "retry": "Qayta urinish",
+    "emptyTitle": "Hali saqlangan kitob yo'q",
+    "emptyText": "Kitob sahifasida «Saralanganlarga» tugmasini bosing — u shu yerda paydo bo'ladi.",
+    "browse": "Kitoblarni ko'rish",
+    "remove": "Saralanganlardan olib tashlash",
+    "available": "{count} ta nusxa bo'sh",
+    "unavailable": "Hozir bo'sh nusxa yo'q"
+  }
+}

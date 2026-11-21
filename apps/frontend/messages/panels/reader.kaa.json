@@ -45,24 +45,78 @@
     "levelUpNamed": "Qutlıqlaymız — {level}-dárejege kóterildińiz!",
     "levelUp": "Qutlıqlaymız — jańa dárejege kóterildińiz!",
     "badges": {
-      "FIRST_BOOK": { "name": "Birinshi kitap", "desc": "Birinshi kitaptı qaytardıńız" },
-      "FIVE_BOOKS": { "name": "5 kitap", "desc": "5 kitaptı oqıp qaytardıńız" },
-      "TEN_BOOKS": { "name": "10 kitap", "desc": "10 kitaptı oqıp qaytardıńız" },
-      "TWENTY_BOOKS": { "name": "20 kitap", "desc": "20 kitaptı oqıp qaytardıńız" },
-      "FIFTY_BOOKS": { "name": "50 kitap", "desc": "50 kitaptı oqıp qaytardıńız" },
-      "HUNDRED_BOOKS": { "name": "100 kitap", "desc": "100 kitap — milliy rekord!" },
-      "TOP_100": { "name": "Top-100", "desc": "Aylıq Top-100 ge kirdińiz" },
-      "TOP_10": { "name": "Top-10", "desc": "Aylıq Top-10 ǵa kirdińiz" },
-      "STREAK_7": { "name": "7 kúnlik seriya", "desc": "7 kún qatarınan aktiv boldıńız" },
-      "STREAK_30": { "name": "30 kúnlik seriya", "desc": "Bir ay dawamında hár kúni aktiv" },
-      "DISCIPLINE": { "name": "Tártipli oqıwshı", "desc": "10 kitaptı óz waqtında qaytardıńız" },
-      "DIVERSE_READER": { "name": "Hár qıylı oqıwshı", "desc": "5 túrli janrda kitap oqıdıńız" },
-      "FAST_READER": { "name": "Tez oqıwshı", "desc": "Kitaptı 7 kúnde qaytardıńız" },
-      "COMPREHENSION_ACE": { "name": "Test ustası", "desc": "5 túsiniw testinen óttińiz" },
-      "ISBN_SCANNER": { "name": "ISBN skanershi", "desc": "10 satıp alınǵan kitap skanerlendi" },
-      "DONOR": { "name": "Donat beriwshi", "desc": "Kitapxanalarǵa donat berdińiz" },
-      "TRUST_MASTER": { "name": "Isenim ustası", "desc": "Trust Score 90 ǵa jetti" },
-      "ACTIVE_MONTH": { "name": "Aktiv ay", "desc": "Bir ay dawamında eń aktiv boldıńız" }
+      "FIRST_BOOK": {
+        "name": "Birinshi kitap",
+        "desc": "Birinshi kitaptı qaytardıńız"
+      },
+      "FIVE_BOOKS": {
+        "name": "5 kitap",
+        "desc": "5 kitaptı oqıp qaytardıńız"
+      },
+      "TEN_BOOKS": {
+        "name": "10 kitap",
+        "desc": "10 kitaptı oqıp qaytardıńız"
+      },
+      "TWENTY_BOOKS": {
+        "name": "20 kitap",
+        "desc": "20 kitaptı oqıp qaytardıńız"
+      },
+      "FIFTY_BOOKS": {
+        "name": "50 kitap",
+        "desc": "50 kitaptı oqıp qaytardıńız"
+      },
+      "HUNDRED_BOOKS": {
+        "name": "100 kitap",
+        "desc": "100 kitap — milliy rekord!"
+      },
+      "TOP_100": {
+        "name": "Top-100",
+        "desc": "Aylıq Top-100 ge kirdińiz"
+      },
+      "TOP_10": {
+        "name": "Top-10",
+        "desc": "Aylıq Top-10 ǵa kirdińiz"
+      },
+      "STREAK_7": {
+        "name": "7 kúnlik seriya",
+        "desc": "7 kún qatarınan aktiv boldıńız"
+      },
+      "STREAK_30": {
+        "name": "30 kúnlik seriya",
+        "desc": "Bir ay dawamında hár kúni aktiv"
+      },
+      "DISCIPLINE": {
+        "name": "Tártipli oqıwshı",
+        "desc": "10 kitaptı óz waqtında qaytardıńız"
+      },
+      "DIVERSE_READER": {
+        "name": "Hár qıylı oqıwshı",
+        "desc": "5 túrli janrda kitap oqıdıńız"
+      },
+      "FAST_READER": {
+        "name": "Tez oqıwshı",
+        "desc": "Kitaptı 7 kúnde qaytardıńız"
+      },
+      "COMPREHENSION_ACE": {
+        "name": "Test ustası",
+        "desc": "5 túsiniw testinen óttińiz"
+      },
+      "ISBN_SCANNER": {
+        "name": "ISBN skanershi",
+        "desc": "10 satıp alınǵan kitap skanerlendi"
+      },
+      "DONOR": {
+        "name": "Donat beriwshi",
+        "desc": "Kitapxanalarǵa donat berdińiz"
+      },
+      "TRUST_MASTER": {
+        "name": "Isenim ustası",
+        "desc": "Trust Score 90 ǵa jetti"
+      },
+      "ACTIVE_MONTH": {
+        "name": "Aktiv ay",
+        "desc": "Bir ay dawamında eń aktiv boldıńız"
+      }
     }
   },
   "ReaderSearch": {
@@ -81,14 +135,24 @@
       "sheriyat": "Poeziya"
     },
     "langFilter": "Kitap tili",
-    "langs": { "all": "Barlıq tiller", "uz": "Ózbek", "ru": "Rus", "en": "Inglis" },
+    "langs": {
+      "all": "Barlıq tiller",
+      "uz": "Ózbek",
+      "ru": "Rus",
+      "en": "Inglis"
+    },
     "onlyAvailable": "Tek bar bolǵanları",
     "nearbyOn": "Jaylasıwǵa tiykarlanǵan",
     "nearby": "Jaqın jerde",
     "gpsUnsupported": "Brauzer GPS ti qollap-quwatlamaydı",
     "gpsDenied": "Jaylasıw anıqlanbadı. Ruxsat beriń.",
     "priceFilter": "Baha filtri (dúkanlar ushın)",
-    "presets": { "all": "Barlıǵı", "under30": "30,000 ǵa shekem", "mid": "30–60,000", "over60": "60,000+" },
+    "presets": {
+      "all": "Barlıǵı",
+      "under30": "30,000 ǵa shekem",
+      "mid": "30–60,000",
+      "over60": "60,000+"
+    },
     "minPrice": "Min baha",
     "maxPrice": "Max baha",
     "som": "som",
@@ -253,7 +317,8 @@
     "tabFamily": "Shańaraq",
     "back": "Artqa",
     "sections": "Bólimler",
-    "mainSections": "Tiykarǵı bólimler"
+    "mainSections": "Tiykarǵı bólimler",
+    "favorites": "Saylanǵanlar"
   },
   "ReaderBits": {
     "hero": {
