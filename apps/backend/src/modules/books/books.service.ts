@@ -1,8 +1,10 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  ForbiddenException
 } from "@nestjs/common";
+import { UserRole } from "@prisma/client";
 import { ElasticsearchService } from "@nestjs/elasticsearch";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
@@ -10,6 +12,7 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import { StoreService } from "../store/store.service";
 import * as ExcelJS from "exceljs";
+import { resolveCallerLibraryId } from "../../common/utils/library-scope.util";
 
 export interface CreateBookDto {
   isbn: string;
@@ -198,7 +201,12 @@ export class BooksService {
   // ko'plab haqiqiy nashrlar noto'g'ri/eski check-digit bilan keladi, lekin
   // ular baribir yaroqli 13 xonali ISBN. Format-only tolerantligi demo va
   // real dunyo kitoblarining ikkalasi ham saqlanishini ta'minlaydi.
-  async create(dto: CreateBookDto): Promise<CreateBookResult> {
+  async create(
+    dto: CreateBookDto,
+    actor: { id: string; role: string }
+  ): Promise<CreateBookResult> {
+    // Egalik: faqat o'z kutubxonasiga (SUPER_ADMIN — istalganiga).
+    await this.assertCanManageLibrary(dto.libraryId, actor);
     if (!this.isIsbnFormat(dto.isbn))
       throw new BadRequestException(
         "ISBN noto'g'ri — 13 xonali raqam bo'lishi kerak (978/979 bilan)"
@@ -270,8 +278,9 @@ export class BooksService {
   }
 
   // ── Kitob tahrirlash ──────────────────────────────────────────────────────
-  async update(id: string, dto: UpdateBookDto) {
+  async update(id: string, dto: UpdateBookDto, actor: { id: string; role: string }) {
     const book = await this.findOne(id);
+    await this.assertCanManageLibrary(book.libraryId, actor);
     const updated = await this.prisma.book.update({
       where: { id },
       data: {
@@ -294,8 +303,9 @@ export class BooksService {
   }
 
   // ── Kitob o'chirish ───────────────────────────────────────────────────────
-  async remove(id: string) {
+  async remove(id: string, actor: { id: string; role: string }) {
     const book = await this.findOne(id);
+    await this.assertCanManageLibrary(book.libraryId, actor);
     await this.prisma.book.delete({ where: { id } });
     await this.removeBookFromIndex(id);
     await this.updateLibraryFundCount(book.libraryId);
@@ -391,6 +401,30 @@ export class BooksService {
   // ── Excel import (BOOK-01, Plan 02-04) ────────────────────────────────────
   // Synchronous parsing replaced by a BullMQ job (BOOK_IMPORT_QUEUE). The
   // HTTP request returns 202 + { jobId } immediately; the UI polls
+  // Kutubxona egaligi tekshiruvi (create/update/remove/import). SUPER_ADMIN istalgan
+  // kutubxonaga yoza oladi; KUTUBXONACHI / MUASSASA_ADMIN faqat o'z
+  // kutubxonasiga — resolveCallerLibraryId (User → Institution.libraryId)
+  // orqali, libraries/payment modullari bilan bir xil yo'l. Boshqa rollar —
+  // fail-closed 403. libraryId yo'q bo'lsa — 400.
+  async assertCanManageLibrary(
+    libraryId: string | undefined,
+    user: { id: string; role: string }
+  ): Promise<string> {
+    if (!libraryId || !libraryId.trim()) {
+      throw new BadRequestException("libraryId majburiy");
+    }
+    const role = user.role as UserRole;
+    if (role === UserRole.SUPER_ADMIN) return libraryId;
+    if (role === UserRole.KUTUBXONACHI || role === UserRole.MUASSASA_ADMIN) {
+      const ownLibraryId = await resolveCallerLibraryId(this.prisma, user.id);
+      if (ownLibraryId && ownLibraryId === libraryId) return libraryId;
+      throw new ForbiddenException(
+        "Scope mismatch: faqat o'z kutubxonangiz fondini boshqara olasiz"
+      );
+    }
+    throw new ForbiddenException("Bu kutubxonaga ruxsat yo'q");
+  }
+
   // GET /books/import/:jobId/status for progress + final errors.
   //
   // V1 file payload: base64 inline in the job payload (FileInterceptor enforces
@@ -400,13 +434,15 @@ export class BooksService {
   // swap fileBase64 for an objectKey and have the processor stream from MinIO.
   async enqueueImport(
     buffer: Buffer,
-    libraryId: string,
-    uploaderUserId: string
+    libraryId: string | undefined,
+    uploader: { id: string; role: string }
   ): Promise<{ jobId: string; status: "queued" }> {
+    const targetLibraryId = await this.assertCanManageLibrary(libraryId, uploader);
+    const uploaderUserId = uploader.id;
     const job = await this.importQueue.add(
       "book-import",
       {
-        libraryId,
+        libraryId: targetLibraryId,
         uploaderUserId,
         fileBase64: buffer.toString("base64")
       },
