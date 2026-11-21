@@ -312,8 +312,12 @@ export class UsersService {
 
     const qrDataUrl = await this.generateQr(sifatId);
 
+    // Xavfsizlik: parol xeshi va PINFL hech qachon javobga chiqmaydi
+    // (getProfile dagi qoida bilan bir xil).
+    const { passwordHash: _ph, pinfl: _pinfl, ...safeUser } = updated;
+
     return {
-      user: updated,
+      user: safeUser,
       sifatId,
       qrCode: qrDataUrl,
       status: updated.status,

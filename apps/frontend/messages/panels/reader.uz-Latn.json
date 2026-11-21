@@ -23,10 +23,24 @@
     "myBrons": "Bronlarim",
     "bronReady": "Tayyor",
     "bronPending": "Kutilmoqda",
+    "bronUntil": "{date} gacha tasdiq kutiladi",
+    "bronConfirmedHint": "Kutubxonaga borib QR ko'rsating",
+    "showQr": "QR kodim",
     "cancel": "Bekor qilish",
     "bronCancelled": "Bron bekor qilindi",
     "passport": "Kutubxona pasporti",
     "qrHint": "Kutubxonada shu QR kodni ko'rsating. Kod har 5 daqiqada yangilanadi — skrinshot emas, jonli kodni ko'rsating.",
+    "hideQr": "Yopish",
+    "start": {
+      "title": "Birinchi kitobingizni qanday olasiz",
+      "subtitle": "Uch oddiy qadam — kutubxonaga bir marta borish kifoya.",
+      "s1": "Kitob toping",
+      "s1d": "Qidiruvdan yoki pastdagi ro'yxatdan o'zingizga yoqqan kitobni tanlang.",
+      "s2": "Bron qiling",
+      "s2d": "«Bron qilish» ni bosing. Kutubxonachi tasdiqlagach, kitob siz uchun ajratib qo'yiladi.",
+      "s3": "QR kodni ko'rsating",
+      "s3d": "Kutubxonaga borib QR kodingizni ko'rsating — kitob sizga beriladi."
+    },
     "newBadge": "Yangi nishon qo'lga kiritildi!",
     "levelUpNamed": "Tabriklaymiz — {level}-darajaga ko'tarildingiz!",
     "levelUp": "Tabriklaymiz — yangi darajaga ko'tarildingiz!",
@@ -66,6 +80,7 @@
       "epik": "Epik",
       "sheriyat": "She'riyat"
     },
+    "langFilter": "Kitob tili",
     "langs": { "all": "Barcha tillar", "uz": "O'zbek", "ru": "Rus", "en": "Ingliz" },
     "onlyAvailable": "Faqat mavjud",
     "nearbyOn": "Joylashuvga asosli",
@@ -108,7 +123,9 @@
     "prev": "← Oldingi",
     "next": "Keyingi →",
     "notFoundTitle": "Kitob topilmadi",
-    "notFoundHint": "Yaqin kutubxonalardan qidiring yoki do'konlardan sotib oling"
+    "notFoundHint": "Yaqin kutubxonalardan qidiring yoki do'konlardan sotib oling",
+    "libraryFilter": "Faqat: {name}",
+    "clearLibraryFilter": "Barcha kutubxonalar"
   },
   "TopPage": {
     "title": "Reyting",
@@ -224,7 +241,9 @@
     "yourFamily": "Sizning oilangiz",
     "memberBooks": "{members} a'zo • {books} kitob",
     "ball": "ball",
-    "privacyNote": "14 yoshgacha a'zolar ma'lumotlari ochiq reytingda yashirin ko'rsatiladi"
+    "privacyNote": "14 yoshgacha a'zolar ma'lumotlari ochiq reytingda yashirin ko'rsatiladi",
+    "loadError": "Oila ma'lumotlarini yuklab bo'lmadi. Internetni tekshirib, qayta urinib ko'ring.",
+    "retry": "Qayta urinish"
   },
   "ReaderShell": {
     "tabHome": "Asosiy",
@@ -293,7 +312,10 @@
       "fromFund": "Kutubxona fondidan",
       "all": "Barchasi",
       "emptyFund": "Kutubxona fondi hali to'ldirilmoqda.",
-      "goSearch": "Qidiruvga o'tish"
+      "goSearch": "Qidiruvga o'tish",
+      "nearby": "Yaqin kutubxonalarda",
+      "nearbyTuman": "Tumaningizdagi kutubxonalar fondidan",
+      "nearbyViloyat": "Viloyatingizdagi kutubxonalar fondidan"
     },
     "searchBar": {
       "label": "Qaysi kitobni izlayapsiz?",
@@ -332,6 +354,50 @@
       }
     }
   },
+  "ReservationSteps": {
+    "title": "Bron yuborildi",
+    "lead": "«{title}» uchun bron so'rovi yuborildi — kutubxonachi tasdiqlashi kutilmoqda. Keyingi qadamlar:",
+    "step1Title": "Kutubxonachi tasdiqlaydi",
+    "step1Desc": "Tasdiq SMS orqali keladi. Bron {date} gacha kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
+    "step1DescNoDate": "Tasdiq SMS orqali keladi. Bron 24 soat kuchda — tasdiqlanmasa, avtomatik bekor bo'ladi.",
+    "step2Title": "Kutubxonaga boring",
+    "step2Unknown": "Kitob turgan kutubxona",
+    "step3Title": "QR kodingizni ko'rsating",
+    "step3Desc": "Kutubxonachi QR kodni skanerlab kitobni sizga biriktiradi. O'qish muddati — 14 kun.",
+    "myBrons": "Bronlarim",
+    "showQr": "QR kodim",
+    "close": "Yopish"
+  },
+  "LibraryPage": {
+    "loading": "Yuklanmoqda…",
+    "notFound": "Kutubxona topilmadi",
+    "code": "Kod: {code}",
+    "home": "Bosh sahifaga qaytish",
+    "types": {
+      "GOV": "Davlat kutubxonasi",
+      "SCH": "Maktab kutubxonasi",
+      "UNI": "OTM kutubxonasi",
+      "ORG": "Idora kutubxonasi",
+      "MAH": "Mahalla kutubxonasi"
+    },
+    "address": "Manzil",
+    "workHours": "Ish vaqti",
+    "phone": "Telefon",
+    "directions": "Xaritada ochish",
+    "fund": "Jami fond",
+    "fundUnit": "kitob",
+    "available": "Mavjud",
+    "availableUnit": "nusxa",
+    "codeLabel": "Kodi",
+    "frozen": "Kutubxona vaqtincha yopiq",
+    "booksHeading": "Kitob fondidan ({count} ta ko'rsatilmoqda)",
+    "fullCatalog": "To'liq katalog →",
+    "emptyFund": "Fond ma'lumotlari mavjud emas",
+    "selectedBook": "Siz tanlagan kitob",
+    "loginToReserve": "Bron qilish uchun kiring yoki ro'yxatdan o'ting",
+    "reserveError": "Bron qilib bo'lmadi",
+    "booksHeadingOf": "Kitob fondidan ({shown} / {total} ta ko'rsatilmoqda)"
+  },
   "BookCard": {
     "band": "Band",
     "lastCount": "Oxirgi {count} ta",
@@ -340,5 +406,16 @@
     "reserve": "Bron qilish",
     "unavailable": "Hozircha yo'q",
     "details": "Batafsil"
+  },
+  "PublicShell": {
+    "home": "Bosh sahifa"
+  },
+  "OverdueNotice": {
+    "title": "Muddati o'tgan kitob bor",
+    "body": "«{title}» ({library}) qaytarilmagan. Uni qaytarmaguningizcha yangi bron qilib bo'lmaydi.",
+    "bodyNoLib": "«{title}» qaytarilmagan. Uni qaytarmaguningizcha yangi bron qilib bo'lmaydi.",
+    "more": "Yana {count} ta kitobning muddati o'tgan.",
+    "link": "Kitoblarimni ko'rish",
+    "blockedError": "Muddati o'tgan «{title}» kitobini qaytarmaguningizcha yangi bron qilib bo'lmaydi."
   }
 }

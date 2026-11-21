@@ -23,10 +23,24 @@
     "myBrons": "Bronlarım",
     "bronReady": "Tayar",
     "bronPending": "Kútilmekte",
+    "bronUntil": "{date} ge shekem tastıyıqlaw kútiledi",
+    "bronConfirmedHint": "Kitapxanaǵa barıp QR kórsetiń",
+    "showQr": "QR kodım",
     "cancel": "Biykar etiw",
     "bronCancelled": "Bron biykar etildi",
     "passport": "Kitapxana pasportı",
     "qrHint": "Kitapxanada usı QR kodtı kórsetiń. Kod hár 5 minutta jańalanadı — skrinshot emes, janlı kodtı kórsetiń.",
+    "hideQr": "Jabıw",
+    "start": {
+      "title": "Birinshi kitabıńızdı qalay alasız",
+      "subtitle": "Úsh ápiwayı qádem — kitapxanaǵa bir ret barıw jeterli.",
+      "s1": "Kitap tabıń",
+      "s1d": "Izlewden yamasa tómendegi dizimnen ózińizge unaǵan kitaptı tańlań.",
+      "s2": "Bron qılıń",
+      "s2d": "«Bron qılıw» dı basıń. Kitapxanashı tastıyıqlaǵannan keyin kitap siz ushın ajıratıp qoyıladı.",
+      "s3": "QR kodtı kórsetiń",
+      "s3d": "Kitapxanaǵa barıp QR kodıńızdı kórsetiń — kitap sizge beriledi."
+    },
     "newBadge": "Jańa belgi qolǵa kirgizildi!",
     "levelUpNamed": "Qutlıqlaymız — {level}-dárejege kóterildińiz!",
     "levelUp": "Qutlıqlaymız — jańa dárejege kóterildińiz!",
@@ -66,6 +80,7 @@
       "epik": "Epik",
       "sheriyat": "Poeziya"
     },
+    "langFilter": "Kitap tili",
     "langs": { "all": "Barlıq tiller", "uz": "Ózbek", "ru": "Rus", "en": "Inglis" },
     "onlyAvailable": "Tek bar bolǵanları",
     "nearbyOn": "Jaylasıwǵa tiykarlanǵan",
@@ -108,7 +123,9 @@
     "prev": "← Aldınǵı",
     "next": "Keyingi →",
     "notFoundTitle": "Kitap tabılmadı",
-    "notFoundHint": "Jaqın kitapxanalardan izleń yamasa dúkanlardan satıp alıń"
+    "notFoundHint": "Jaqın kitapxanalardan izleń yamasa dúkanlardan satıp alıń",
+    "libraryFilter": "Tek: {name}",
+    "clearLibraryFilter": "Barlıq kitapxanalar"
   },
   "TopPage": {
     "title": "Reyting",
@@ -224,7 +241,9 @@
     "yourFamily": "Sizdiń shańaraǵıńız",
     "memberBooks": "{members} aǵza • {books} kitap",
     "ball": "ball",
-    "privacyNote": "14 jasqa shekemgi aǵzalardıń maǵlıwmatları ashıq reytingte jasırın kórsetiledi"
+    "privacyNote": "14 jasqa shekemgi aǵzalardıń maǵlıwmatları ashıq reytingte jasırın kórsetiledi",
+    "loadError": "Shańaraq maǵlıwmatların júklew múmkin bolmadı. Internetti tekserip, qayta urınıp kóriń.",
+    "retry": "Qayta urınıw"
   },
   "ReaderShell": {
     "tabHome": "Bas bet",
@@ -293,7 +312,10 @@
       "fromFund": "Kitapxana fondınan",
       "all": "Barlıǵı",
       "emptyFund": "Kitapxana fondı ele toltırılmaqta.",
-      "goSearch": "Izlewge ótiw"
+      "goSearch": "Izlewge ótiw",
+      "nearby": "Jaqın kitapxanalarda",
+      "nearbyTuman": "Rayonıńızdaǵı kitapxanalar fondınan",
+      "nearbyViloyat": "Wálayatıńızdaǵı kitapxanalar fondınan"
     },
     "searchBar": {
       "label": "Qaysı kitaptı izlep atırsız?",
@@ -332,6 +354,50 @@
       }
     }
   },
+  "ReservationSteps": {
+    "title": "Bron jiberildi",
+    "lead": "«{title}» ushın bron sorawı jiberildi — kitapxanashınıń tastıyıqlawı kútilmekte. Keyingi qádemler:",
+    "step1Title": "Kitapxanashı tastıyıqlaydı",
+    "step1Desc": "Tastıyıqlaw SMS arqalı keledi. Bron {date} ge shekem kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
+    "step1DescNoDate": "Tastıyıqlaw SMS arqalı keledi. Bron 24 saat kúshte — tastıyıqlanmasa, avtomat biykar boladı.",
+    "step2Title": "Kitapxanaǵa barıń",
+    "step2Unknown": "Kitap turǵan kitapxana",
+    "step3Title": "QR kodıńızdı kórsetiń",
+    "step3Desc": "Kitapxanashı QR kodtı skanerlep kitaptı sizge biriktiredi. Oqıw múddeti — 14 kún.",
+    "myBrons": "Bronlarım",
+    "showQr": "QR kodım",
+    "close": "Jabıw"
+  },
+  "LibraryPage": {
+    "loading": "Júklenbekte…",
+    "notFound": "Kitapxana tabılmadı",
+    "code": "Kod: {code}",
+    "home": "Bas betke qaytıw",
+    "types": {
+      "GOV": "Mámleketlik kitapxana",
+      "SCH": "Mektep kitapxanası",
+      "UNI": "JOO kitapxanası",
+      "ORG": "Mákeme kitapxanası",
+      "MAH": "Máhelle kitapxanası"
+    },
+    "address": "Mánzil",
+    "workHours": "Is waqtı",
+    "phone": "Telefon",
+    "directions": "Kartada ashıw",
+    "fund": "Jámi fond",
+    "fundUnit": "kitap",
+    "available": "Bar",
+    "availableUnit": "nusqa",
+    "codeLabel": "Kodı",
+    "frozen": "Kitapxana waqtınsha jabıq",
+    "booksHeading": "Kitap fondınan ({count} kórsetilip atır)",
+    "fullCatalog": "Tolıq katalog →",
+    "emptyFund": "Fond maǵlıwmatları joq",
+    "selectedBook": "Siz tańlaǵan kitap",
+    "loginToReserve": "Bron qılıw ushın kiriń yamasa dizimnen ótiń",
+    "reserveError": "Bron qılıp bolmadı",
+    "booksHeadingOf": "Kitap fondınan ({shown} / {total} kórsetilip atır)"
+  },
   "BookCard": {
     "band": "Bánt",
     "lastCount": "Sońǵı {count}",
@@ -340,5 +406,16 @@
     "reserve": "Bron qılıw",
     "unavailable": "Házirshe joq",
     "details": "Tolıǵıraq"
+  },
+  "PublicShell": {
+    "home": "Bas bet"
+  },
+  "OverdueNotice": {
+    "title": "Múddeti ótken kitap bar",
+    "body": "«{title}» ({library}) qaytarılmaǵan. Onı qaytarmaǵanıńızsha jańa bron qılıp bolmaydı.",
+    "bodyNoLib": "«{title}» qaytarılmaǵan. Onı qaytarmaǵanıńızsha jańa bron qılıp bolmaydı.",
+    "more": "Jáne {count} kitaptıń múddeti ótken.",
+    "link": "Kitaplarımdı kóriw",
+    "blockedError": "Múddeti ótken «{title}» kitabın qaytarmaǵanıńızsha jańa bron qılıp bolmaydı."
   }
 }

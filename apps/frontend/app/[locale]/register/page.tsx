@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneField } from "@/components/ui/PhoneField";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { TelegramOtpHint } from "@/components/auth/TelegramOtpHint";
 import { authApi } from "@/lib/api/auth";
 import { usersApi } from "@/lib/api/users";
 import { geoApi, type GeoItem } from "@/lib/api/geo";
@@ -401,6 +402,7 @@ export default function RegisterPage() {
                             <span className="text-sm font-medium mb-1 block">{tp("step1.phoneLabel")}</span>
                             <PhoneField value={phone} onChange={setPhone} />
                           </label>
+                          <TelegramOtpHint />
                           <Button type="submit" className="w-full" disabled={loading}>
                             {loading ? tp("step1.sending") : tp("step1.sendSms")}
                           </Button>
@@ -416,6 +418,7 @@ export default function RegisterPage() {
                               strong: (chunks) => <strong>{chunks}</strong>
                             })}
                           </div>
+                          <TelegramOtpHint />
                           <div>
                             <label htmlFor="reg-otp" className="text-sm font-medium mb-1 block">{tp("step1.otpLabel")}</label>
                             <Input
@@ -731,7 +734,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-slate-500 mt-4">
           {tp("haveAccount")}{" "}
-          <a href={`/${locale}/login`} className="text-brand-600 hover:underline">{tp("login")}</a>
+          <a href={`/${locale}/login`} className="text-brand-600 underline underline-offset-2">{tp("login")}</a>
         </p>
       </div>
     </main>

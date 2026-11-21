@@ -1,0 +1,21 @@
+{
+  "BookPage": {
+    "home": "Bosh sahifa",
+    "books": "Kitoblar",
+    "genre": "Janr",
+    "year": "Nashr yili",
+    "pages": "Sahifalar",
+    "lang": "Til",
+    "available": "Mavjud: {count} / {total} nusxa",
+    "unavailable": "Hozircha band",
+    "reserve": "Bron qilish",
+    "openLibrary": "Kutubxonani ko'rish",
+    "moreByAuthor": "Muallifning boshqa kitoblari",
+    "about": "Kitob haqida",
+    "whereTitle": "Qayerdan olish mumkin",
+    "whereSubtitle": "Kutubxonani tanlang — u yerda bron qilasiz va kitobni olasiz.",
+    "copies": "{count} ta bo'sh",
+    "unavailableShort": "Band",
+    "similarTitle": "O'xshash kitoblar"
+  }
+}

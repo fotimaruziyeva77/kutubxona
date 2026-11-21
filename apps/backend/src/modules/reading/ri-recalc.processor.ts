@@ -95,7 +95,7 @@ interface ChunkTransaction {
   borrowedAt: Date | null;
   returnedAt: Date | null;
   penaltyDays: number;
-  book?: { genre: string | null; pages: number } | null;
+  book?: { genre: string | null; pages: number; isbn?: string | null } | null;
 }
 
 interface ChunkScan {
@@ -158,11 +158,12 @@ export class RiRecalcProcessor extends WorkerHost {
           },
           select: {
             userId: true,
-            bookId: true, // C5: dedup kaliti
+            bookId: true, // C5: dedup kaliti (fallback)
             borrowedAt: true,
             returnedAt: true,
             penaltyDays: true,
-            book: { select: { genre: true, pages: true } }
+            // isbn — FR1: asar-darajasida dedup (roaming teshigi), genre — diversity
+            book: { select: { genre: true, pages: true, isbn: true } }
           }
         }) as Promise<ChunkTransaction[]>,
         this.replica.isbnScan.findMany({

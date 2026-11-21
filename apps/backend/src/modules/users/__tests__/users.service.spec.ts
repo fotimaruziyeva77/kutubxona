@@ -107,6 +107,21 @@ describe("UsersService", () => {
       expect(result.qrCode).toContain("data:image/png");
     });
 
+    it("javobda parol xeshi va PINFL bo'lmaydi", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.mahalla.findUnique.mockResolvedValue(mockMahalla);
+      mockPrisma.mahalla.update.mockResolvedValue({ ...mockMahalla, lastSeq: 1 });
+      mockPrisma.address.create.mockResolvedValue(mockAddress);
+      mockPrisma.user.update.mockResolvedValue({
+        ...mockUser, passwordHash: "$2b$12$secret", pinfl: "12345678901234",
+        sifatId: "SL-UZ-14-001-0001-00001", status: "ACTIVE", address: mockAddress
+      });
+
+      const result = await service.completeProfile(validDto);
+      expect(result.user).not.toHaveProperty("passwordHash");
+      expect(result.user).not.toHaveProperty("pinfl");
+    });
+
     it("STUDENT_SCHOOL turida status PENDING qoladi", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.mahalla.findUnique.mockResolvedValue(mockMahalla);

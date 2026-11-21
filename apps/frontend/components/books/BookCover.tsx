@@ -27,9 +27,11 @@
  * `prefers-reduced-motion` da harakat butunlay o'chadi.
  */
 
-export type BookCoverSize = "sm" | "md" | "lg";
+export type BookCoverSize = "xs" | "sm" | "md" | "lg";
 
 const SIZE: Record<BookCoverSize, { wrap: string; depth: number }> = {
+  // xs — zich jadval qatorlari (fond boshqaruvi): 40 px, 3D'siz.
+  xs: { wrap: "w-10", depth: 0 },
   sm: { wrap: "w-14", depth: 0 },
   md: { wrap: "w-full", depth: 14 },
   lg: { wrap: "w-full", depth: 20 },

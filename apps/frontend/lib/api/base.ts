@@ -29,22 +29,11 @@
 // the client bundle at build time.
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-if (
-  !RAW_API_URL &&
-  typeof window !== "undefined" &&
-  process.env.NODE_ENV === "production"
-) {
-  // Prod browser bundle with no origin AND no same-origin proxy would silently
-  // hit nothing. Surface it loudly. (Relative "" is allowed when a proxy fronts
-  // the app — that is a deliberate deploy choice, so we only trip in the
-  // browser where we cannot know the server topology.)
-  // eslint-disable-next-line no-console
-  console.error(
-    "[lib/api/base] NEXT_PUBLIC_API_URL is empty in a production browser " +
-      "bundle. API calls will be relative — ensure a reverse proxy forwards " +
-      "/api to the backend, or set the bare backend origin."
-  );
-}
+// Bo'sh NEXT_PUBLIC_API_URL prod'da ATAYLAB tanlanadi (deploy/: bitta image bir
+// nechta domenda — sifatlibrary.uz, kutubxona.sifatdev.uz — har biri o'z
+// origin'iga /api so'raydi, nginx uni backendga uzatadi). Shu sabab avvalgi
+// "empty in production" console.error olib tashlandi: u har sahifada yolg'on
+// xato chiqarardi.
 
 /** Strip trailing slashes ("http://x:4000/" → "http://x:4000"). */
 function clean(s: string | undefined | null): string {

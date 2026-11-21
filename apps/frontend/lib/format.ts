@@ -22,3 +22,26 @@ export function fmtNumber(n: number): string {
 export function fmtSum(n: number): string {
   return fmtNumber(n) + " so'm";
 }
+
+/**
+ * "KK.OO, SS:DD" — Toshkent vaqti bo'yicha kun.oy va soat:daqiqa.
+ *
+ * Nega `Intl` oy nomlari emas: ba'zi brauzer ICU to'plamlarida `uz-Latn` /
+ * `kaa` uchun oy nomlari yo'q — `month: "long"` "M11" bo'lib chiqadi, root
+ * fallback esa "11-01" tartibini beradi. Raqamli, qat'iy tartibli format har
+ * tilda bir xil o'qiladi. Yaroqsiz sana → "—".
+ */
+export function fmtDayMonthTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tashkent",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("day")}.${get("month")}, ${get("hour")}:${get("minute")}`;
+}

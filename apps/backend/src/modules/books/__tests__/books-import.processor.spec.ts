@@ -17,6 +17,11 @@ import { ElasticsearchService } from "@nestjs/elasticsearch";
 import type { Job } from "bullmq";
 import type { BookImportJobData } from "../books.service";
 
+// Real ExcelJS workbook generatsiyasi + parse: yolg'iz 16 s, to'liq suite
+// parallel yurganda 80 s gacha cho'ziladi va 5 s default timeout'ga uriladi
+// (2026-10-29: 2 test shu sababdan yiqildi, kod regressiyasi emas).
+jest.setTimeout(60_000);
+
 /** Build a real .xlsx buffer via ExcelJS (mirrors prod parser API). */
 async function makeExcelBuffer(
   rows: Array<Record<string, string | number>>
@@ -72,13 +77,24 @@ function makeJob(buffer: Buffer, libraryId = "lib1"): Job<BookImportJobData> {
 
 const mockPrisma = {
   book: {
-    createMany: jest.fn().mockResolvedValue({ count: 0 })
+    createMany: jest.fn().mockResolvedValue({ count: 0 }),
+    // ES: createMany ID qaytarmaydi — (libraryId, isbn) bo'yicha qayta o'qiladi
+    findMany: jest.fn().mockResolvedValue([])
   }
 } as unknown as PrismaService;
 
 const mockEs = {
-  bulk: jest.fn().mockResolvedValue({})
+  bulk: jest.fn().mockResolvedValue({ errors: false, items: [] }),
+  indices: {
+    exists: jest.fn().mockResolvedValue(true),
+    create: jest.fn().mockResolvedValue({})
+  }
 } as unknown as ElasticsearchService;
+
+/** `_bulkIndex` fon rejimida (void) — mikrotasklar tugashini kutamiz. */
+const flushBackground = async () => {
+  for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+};
 
 describe("BookImportProcessor", () => {
   let processor: BookImportProcessor;
@@ -109,6 +125,46 @@ describe("BookImportProcessor", () => {
     expect(args.skipDuplicates).toBe(true);
     expect(args.data).toHaveLength(3);
     expect(args.data[0].libraryId).toBe("lib1");
+  });
+
+  describe("Elasticsearch indekslash", () => {
+    const prevEs = process.env.ELASTICSEARCH_ENABLED;
+    afterEach(() => {
+      if (prevEs === undefined) delete process.env.ELASTICSEARCH_ENABLED;
+      else process.env.ELASTICSEARCH_ENABLED = prevEs;
+    });
+    const oneRow = () =>
+      makeExcelBuffer([
+        { ISBN: "9789943452787", Nomi: "Alpomish", Muallif: "Xalq dostoni", Janr: "Epik", Til: "uz", Sahifalar: 320, Yil: 2020, Nusxa: 3 }
+      ]);
+
+    it("yangi kitoblar `sifat_books` ga `_id` = bazadagi ID bilan yoziladi (avval _id'siz, `books` ga)", async () => {
+      process.env.ELASTICSEARCH_ENABLED = "true";
+      (mockPrisma.book.findMany as jest.Mock).mockResolvedValueOnce([
+        {
+          id: "db-1", isbn: "9789943452787", title: "Alpomish", author: "Xalq dostoni", genre: "Epik", lang: "uz",
+          pages: 320, year: 2020, availableCount: 3, libraryId: "lib1", createdAt: new Date(),
+          library: { name: "Karmana kutubxonasi", type: "GOV", regionId: "r1", latitude: null, longitude: null }
+        }
+      ]);
+
+      await processor.process(makeJob(await oneRow()));
+      await flushBackground();
+
+      const findArgs = (mockPrisma.book.findMany as jest.Mock).mock.calls[0][0];
+      expect(findArgs.where).toEqual({ libraryId: "lib1", isbn: { in: ["9789943452787"] } });
+      const [params] = (mockEs.bulk as jest.Mock).mock.calls[0];
+      expect(params.operations[0]).toEqual({ index: { _index: "sifat_books", _id: "db-1" } });
+      expect(params.operations[1]).toMatchObject({ id: "db-1", libraryName: "Karmana kutubxonasi" });
+    });
+
+    it("ELASTICSEARCH_ENABLED=false — indekslashga urinilmaydi (o'lik portga bulk yo'q)", async () => {
+      process.env.ELASTICSEARCH_ENABLED = "false";
+      await processor.process(makeJob(await oneRow()));
+      await flushBackground();
+      expect(mockPrisma.book.findMany).not.toHaveBeenCalled();
+      expect(mockEs.bulk).not.toHaveBeenCalled();
+    });
   });
 
   it("collects per-row errors without aborting (invalid ISBN, missing fields)", async () => {

@@ -44,10 +44,16 @@ const mockPrisma = {
   libraryApprovalLog: {
     create: jest.fn()
   },
+  tuman: {
+    findUnique: jest.fn()
+  },
   book: {
     aggregate: jest.fn(),
+    count: jest.fn(),
     update: jest.fn()
   },
+  // I2 — confirmTransfer nusxani LEAST(available+1, total) bilan qaytaradi.
+  $executeRaw: jest.fn(),
   bookTransfer: {
     findUnique: jest.fn(),
     update: jest.fn()
@@ -56,10 +62,13 @@ const mockPrisma = {
   // (libraries.service.ts:139). Bu modellarsiz findOne ga tayanadigan
   // har bir test TypeError bilan yiqilardi.
   institution: {
-    findFirst: jest.fn()
+    findFirst: jest.fn(),
+    // update() egalik tekshiruvi — resolveCallerLibraryId (Institution.libraryId)
+    findUnique: jest.fn()
   },
   user: {
-    count: jest.fn()
+    count: jest.fn(),
+    findUnique: jest.fn()
   },
   $transaction: jest.fn()
 };
@@ -74,6 +83,8 @@ describe("LibrariesService", () => {
     // Testlar kerak bo'lsa o'zi qayta yozadi.
     mockPrisma.institution.findFirst.mockResolvedValue(null);
     mockPrisma.user.count.mockResolvedValue(0);
+    mockPrisma.tuman.findUnique.mockResolvedValue({ code: "08-012" });
+    mockPrisma.library.findMany.mockResolvedValue([]);
   });
 
   // ── findAll ───────────────────────────────────────────────────────────────
@@ -111,8 +122,36 @@ describe("LibrariesService", () => {
   describe("findByCode", () => {
     it("kod bo'yicha qaytaradi", async () => {
       mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: 0 } });
+      mockPrisma.book.count.mockResolvedValue(0);
       const result = await service.findByCode("LIB-GOV-08012-001");
       expect(result.id).toBe("lib1");
+    });
+
+    // I9 — "Mavjud" soni 50 ta cheklangan books ro'yxati uzunligi emas,
+    // butun fond bo'yicha DB agregatidan keladi.
+    it("availableCopies (nusxalar yig'indisi) va availableTitles qaytaradi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: 249 } });
+      mockPrisma.book.count.mockResolvedValue(73);
+      const result = await service.findByCode("LIB-GOV-08012-001");
+      expect(result.availableCopies).toBe(249);
+      expect(result.availableTitles).toBe(73);
+      expect(mockPrisma.book.aggregate).toHaveBeenCalledWith({
+        where: { libraryId: "lib1" },
+        _sum: { availableCount: true }
+      });
+      expect(mockPrisma.book.count).toHaveBeenCalledWith({
+        where: { libraryId: "lib1", availableCount: { gt: 0 } }
+      });
+    });
+
+    it("fond bo'sh bo'lsa availableCopies = 0 (null emas)", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockLib);
+      mockPrisma.book.aggregate.mockResolvedValue({ _sum: { availableCount: null } });
+      mockPrisma.book.count.mockResolvedValue(0);
+      const result = await service.findByCode("LIB-GOV-08012-001");
+      expect(result.availableCopies).toBe(0);
     });
 
     it("topilmasa NotFoundException", async () => {
@@ -136,6 +175,34 @@ describe("LibrariesService", () => {
 
       expect(mockPrisma.library.create).toHaveBeenCalled();
       expect(result.code).toContain("LIB-GOV");
+    });
+
+    it("kod TZ formatida: tuman kodi (08-012 → 08012) + tartib raqami", async () => {
+      mockPrisma.library.findMany.mockResolvedValue([{ code: "LIB-SCH-08012-001" }, { code: "LIB-SCH-08012-004" }]);
+      mockPrisma.library.create.mockResolvedValue(mockLib);
+
+      await service.create({ type: LibraryType.SCH, name: "8-maktab kutubxonasi", regionId: "t1", tumanId: "t1" });
+
+      expect(mockPrisma.tuman.findUnique).toHaveBeenCalledWith({ where: { id: "t1" }, select: { code: true } });
+      // count+1 emas — eng katta raqamdan davom etadi (o'chirilganidan keyin to'qnashmaydi)
+      expect(mockPrisma.library.create.mock.calls[0][0].data.code).toBe("LIB-SCH-08012-005");
+    });
+
+    it("regionId geo kod bo'lsa (UZ-14-001) — 14001", async () => {
+      mockPrisma.tuman.findUnique.mockResolvedValue(null);
+      mockPrisma.library.create.mockResolvedValue(mockLib);
+
+      await service.create({ type: LibraryType.GOV, name: "Test kutubxona", regionId: "UZ-14-001" });
+
+      expect(mockPrisma.library.create.mock.calls[0][0].data.code).toBe("LIB-GOV-14001-001");
+    });
+
+    it("tuman topilmasa — kutubxona yaratilmaydi", async () => {
+      mockPrisma.tuman.findUnique.mockResolvedValue(null);
+      await expect(
+        service.create({ type: LibraryType.GOV, name: "Test kutubxona", regionId: "nomalum" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.library.create).not.toHaveBeenCalled();
     });
 
     it("maktab kutubxonasi SCH prefiksi bilan", async () => {
@@ -277,6 +344,53 @@ describe("LibrariesService", () => {
 
       const result = await service.update("lib1", { name: "Yangi nom" });
       expect(result.name).toBe("Yangi nom");
+    });
+
+    // ── Egalik (IDOR): MUASSASA_ADMIN faqat o'z kutubxonasini yangilaydi ──
+    it("MUASSASA_ADMIN o'z muassasasi kutubxonasini yangilaydi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: "inst1", universityId: null, organizationId: null });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib1" });
+      mockPrisma.library.update.mockResolvedValue({ ...mockActiveLib, phone: "+998901112233" });
+
+      const result = await service.update(
+        "lib1",
+        { phone: "+998901112233" },
+        { sub: "admin-inst1", role: "MUASSASA_ADMIN" }
+      );
+      expect(result.phone).toBe("+998901112233");
+      expect(mockPrisma.library.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "lib1" }, data: { phone: "+998901112233" } })
+      );
+    });
+
+    it("MUASSASA_ADMIN boshqa kutubxonani yangilay olmaydi — ForbiddenException", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: "inst2", universityId: null, organizationId: null });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib-other" });
+
+      await expect(
+        service.update("lib1", { name: "Egallab olish" }, { sub: "admin-inst2", role: "MUASSASA_ADMIN" })
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.library.update).not.toHaveBeenCalled();
+    });
+
+    it("muassasasiz MUASSASA_ADMIN (libraryId=null) ham 403 oladi", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: null, universityId: null, organizationId: null });
+
+      await expect(
+        service.update("lib1", { address: "x" }, { sub: "lonely-admin", role: "MUASSASA_ADMIN" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("SUPER_ADMIN istalgan kutubxonani yangilaydi (egalik tekshirilmaydi)", async () => {
+      mockPrisma.library.findUnique.mockResolvedValue(mockActiveLib);
+      mockPrisma.library.update.mockResolvedValue({ ...mockActiveLib, workHours: "08:00-17:00" });
+
+      const result = await service.update("lib1", { workHours: "08:00-17:00" }, { sub: "root", role: "SUPER_ADMIN" });
+      expect(result.workHours).toBe("08:00-17:00");
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 
@@ -476,13 +590,13 @@ describe("LibrariesService", () => {
       };
       expect(updateArgs.data.confirmedAt).toBeInstanceOf(Date);
 
-      // book.update called with atomic { increment: 1 } — race-safe
-      expect(mockPrisma.book.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: bookId },
-          data: { availableCount: { increment: 1 } }
-        })
+      // I2 — atomik, totalCount bilan chegaralangan qaytarish (race-safe)
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      const [sqlParts, ...sqlValues] = mockPrisma.$executeRaw.mock.calls[0];
+      expect((sqlParts as string[]).join("?")).toContain(
+        'LEAST("availableCount" + 1, "totalCount")'
       );
+      expect(sqlValues).toEqual([bookId]);
 
       expect(result.confirmed).toBe(true);
     });
@@ -499,7 +613,7 @@ describe("LibrariesService", () => {
       });
 
       expect(result.confirmed).toBe(true);
-      expect(mockPrisma.book.update).toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
     });
 
     it("rejects non-owner with ForbiddenException", async () => {
@@ -556,7 +670,7 @@ describe("LibrariesService", () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it("availableCount increment uses atomic { increment: 1 } not read-then-write", async () => {
+    it("availableCount increment is a single atomic UPDATE capped at totalCount (I2)", async () => {
       runInteractiveTransaction();
       mockPrisma.bookTransfer.findUnique.mockResolvedValue(pendingTransfer);
       mockPrisma.bookTransfer.update.mockResolvedValue({ ...pendingTransfer, status: "CONFIRMED" });
@@ -567,12 +681,11 @@ describe("LibrariesService", () => {
         role: "KUTUBXONACHI"
       });
 
-      // Cross-check: book.update was the atomic-increment variant, no
-      // findUnique → arithmetic → update sequence.
-      const bookUpdateCall = mockPrisma.book.update.mock.calls[0][0] as {
-        data: { availableCount: unknown };
-      };
-      expect(bookUpdateCall.data.availableCount).toEqual({ increment: 1 });
+      // Cross-check: bitta atomik SQL UPDATE (read-then-write yo'q) va
+      // availableCount totalCount dan oshmaydi.
+      expect(mockPrisma.book.update).not.toHaveBeenCalled();
+      const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join("?");
+      expect(sql).toContain('LEAST("availableCount" + 1, "totalCount")');
     });
   });
 

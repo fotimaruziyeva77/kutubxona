@@ -157,8 +157,8 @@ describe("RiRecalcProcessor", () => {
       // Avval: min(10 × 1.0 × 10, 100) = 100. Endi: 1 distinct → 10.
       expect(components.booksCount).toBe(10);
       expect(components.totalLibrary).toBe(1);
-      // Dedup faqat kreditga — faollik xom event hisobida qoladi.
-      expect(components.activity).toBe(100);
+      // FR3: faollik ham distinct asar bo'yicha — 10 xom event, 1 asar → 25.
+      expect(components.activity).toBe(25);
     });
 
     it("3 distinct books credit 3; mixed duplicates across sources deduped per key", async () => {

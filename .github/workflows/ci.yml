@@ -7,6 +7,10 @@ on:
       - develop
       - main
 
+# Monorepo: lockfile faqat root'da (npm workspaces). Har job root'dan `npm ci`
+# qiladi — workspace ichida `npm install` lockfile'ni chetlab o'tib, CI'da
+# prod image'dan boshqa versiyalar yechilishiga sabab bo'lardi (T5, iyul auditi).
+
 jobs:
   secrets:
     # Sirlar (API kalit, parol, token) tarixga tushmasin — har PR va push'da
@@ -24,6 +28,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  audit:
+    # Prod bog'liqliklar: high/critical = qizil. Yopib bo'lmaydigan (major
+    # upgrade talab qiladigan) advisory'lar audit-ci.jsonc allowlist'ida sabab
+    # va muddat bilan turadi — ro'yxat bo'sh bo'lgani sari yaxshi.
+    name: Dependencies — npm audit (audit-ci)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npx audit-ci@^7 --config audit-ci.jsonc
+
   backend:
     name: Backend — Lint / TypeCheck / Test
     runs-on: ubuntu-latest
@@ -39,8 +63,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (workspace root)
+        working-directory: ${{ github.workspace }}
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -54,8 +79,9 @@ jobs:
       - name: Unit tests
         run: npm run test:cov
 
-      - name: Security audit
-        run: npm audit --audit-level=high
+      - name: Prod env example ↔ PRODUCTION_REQUIRED_ENV (D1)
+        working-directory: ${{ github.workspace }}
+        run: node scripts/check-prod-env.mjs
 
   frontend:
     name: Frontend — Lint / TypeCheck / Build
@@ -72,8 +98,9 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (workspace root)
+        working-directory: ${{ github.workspace }}
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -81,11 +108,161 @@ jobs:
       - name: TypeScript check
         run: npm run typecheck
 
+      - name: Unit tests (Jest + jsdom)
+        # T3: lib/ va components/ dagi spec'lar (offline sync, xarita ranglari,
+        # geojson, API client 401 mantig'i). E2E — alohida `e2e` job.
+        run: npm test -- --ci
+
+      - name: Accessibility — axe JSDOM fixture sanity (tests/accessibility, ~10 s)
+        # Statik fixture'lar: axe ishlayotganini tekshiradi. HAQIQIY sahifalar
+        # auditi — e2e job (apps/frontend/e2e/a11y.spec.ts, brauzerda).
+        working-directory: ${{ github.workspace }}
+        run: npx jest --config tests/accessibility/jest.config.ts --no-coverage
+
       - name: Build
         run: npm run build
 
-      - name: Security audit
-        run: npm audit --audit-level=high
+  e2e:
+    # HAQIQIY backend + seed DB bilan (mock yo'q), bitta job'da uch tekshiruv:
+    #   1) Playwright smoke: login → qidiruv → bron (apps/frontend/e2e/smoke.spec.ts)
+    #   2) Playwright + axe: 9 ta haqiqiy sahifa WCAG 2.1 AA (e2e/a11y.spec.ts)
+    #   3) k6 API smoke: 5 endpoint, p95 < 500 ms, xato < 5 % (tests/k6/smoke-test.js)
+    # Postgres/Redis — GitHub service konteynerlari; Elasticsearch/Kafka/MinIO
+    # yo'q — backend ularsiz no-op rejimda ishlaydi (ELASTICSEARCH_ENABLED=false,
+    # KAFKA_BROKERS/MINIO_ENDPOINT o'rnatilmagan). 1–2 uchun serverlarni
+    # Playwright webServer ko'taradi (apps/frontend/playwright.config.ts), 3 uchun
+    # backend qayta ishga tushiriladi (Playwright o'zinikini yopadi).
+    name: E2E — Playwright (smoke + a11y) va k6 API smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sifat
+          POSTGRES_USER: sifat
+          POSTGRES_PASSWORD: sifat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sifat"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://sifat:sifat@localhost:5432/sifat
+      DIRECT_DATABASE_URL: postgresql://sifat:sifat@localhost:5432/sifat
+      REDIS_URL: redis://localhost:6379
+      ELASTICSEARCH_ENABLED: "false"
+      # Faqat CI uchun qiymatlar — production sirlari emas.
+      JWT_SECRET: e2e-only-jwt-secret-not-for-production
+      JWT_REFRESH_SECRET: e2e-only-jwt-refresh-secret-not-for-production
+      QR_HMAC_SECRET: e2e-only-qr-hmac-secret-not-for-production
+      PORT: "4000"
+      FRONTEND_URL: http://localhost:3000
+      # Butun test trafigi BITTA IP'dan (127.0.0.1): default 100 so'rov/daqiqa
+      # va 10 login/15 daqiqa k6'ni (5 VU) va Playwright'ning 5 ta login'ini
+      # 429 bilan to'xtatardi. Rate-limit mantig'i unit testlarda tekshiriladi;
+      # bu job perf/a11y/oqim uchun, shuning uchun limitlar ko'tarilgan.
+      THROTTLE_LIMIT: "100000"
+      THROTTLE_LOGIN_LIMIT: "1000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies (workspace root)
+        run: npm ci
+
+      - name: Prisma generate + migrate deploy + seed (demo akkauntlar)
+        working-directory: apps/backend
+        env:
+          NODE_ENV: development
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run prisma:seed
+
+      - name: Build backend
+        working-directory: apps/backend
+        run: npm run build
+
+      - name: Build frontend (API — /api proxy orqali, OTP bypass o'chiq)
+        working-directory: apps/frontend
+        env:
+          NEXT_PUBLIC_API_URL: ""
+          BACKEND_PROXY_TARGET: http://localhost:4000
+          NEXT_PUBLIC_DISABLE_OTP: "false"
+        run: npm run build
+
+      - name: Install Playwright browser (chromium)
+        working-directory: apps/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright — smoke (login → qidiruv → bron) + axe a11y (9 sahifa)
+        working-directory: apps/frontend
+        env:
+          BACKEND_PROXY_TARGET: http://localhost:4000
+        run: npm run e2e
+
+      - name: Upload Playwright report (xato bo'lsa)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/frontend/playwright-report
+          retention-days: 7
+
+      # ── k6 API smoke ─────────────────────────────────────────────────────
+      # Binar GitHub releases'dan (Docker Hub'ga bog'liq emas — anonim pull
+      # limiti / TLS uzilishlari CI'ni qizartirmasin).
+      - name: k6 — o'rnatish
+        uses: grafana/setup-k6-action@v1
+
+      - name: k6 uchun backend (Playwright o'zinikini yopgan)
+        working-directory: apps/backend
+        env:
+          NODE_ENV: development
+        run: |
+          nohup node dist/main.js > "$RUNNER_TEMP/backend-k6.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend-k6.pid"
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:4000/health > /dev/null; then
+              echo "backend tayyor (${i} s)"; exit 0
+            fi
+            sleep 1
+          done
+          echo "backend 60 s ichida ko'tarilmadi:"; cat "$RUNNER_TEMP/backend-k6.log"; exit 1
+
+      - name: k6 smoke — 5 endpoint, 5 VU × 20 s (p95 < 500 ms, xato < 5 %)
+        # Admin endpoint (admin/stats/national) uchun seed SUPER_ADMIN bilan
+        # bir marta login — parol seed.ts'dagi DEMO_PASSWORD (faqat dev/CI).
+        run: |
+          ADMIN_PASSWORD="$(grep -oP 'const DEMO_PASSWORD = "\K[^"]+' apps/backend/prisma/seed.ts)"
+          k6 run \
+            -e BASE_URL=http://localhost:4000 -e VUS=5 -e DURATION=20s \
+            -e ADMIN_PHONE=+998900000001 -e "ADMIN_PASSWORD=$ADMIN_PASSWORD" \
+            tests/k6/smoke-test.js
+
+      - name: k6 backend'ini to'xtatish
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/backend-k6.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/backend-k6.pid")" 2>/dev/null || true
+          fi
 
   docker-build:
     name: Docker — Build check
@@ -102,7 +279,9 @@ jobs:
       - name: Build backend image
         uses: docker/build-push-action@v5
         with:
-          context: apps/backend
+          # D6: monorepo — kontekst root, lockfile shu yerda (npm ci --workspace)
+          context: .
+          file: apps/backend/Dockerfile
           push: false
           tags: sifat-backend:${{ github.sha }}
           cache-from: type=gha
@@ -111,7 +290,8 @@ jobs:
       - name: Build frontend image
         uses: docker/build-push-action@v5
         with:
-          context: apps/frontend
+          context: .
+          file: apps/frontend/Dockerfile
           push: false
           tags: sifat-frontend:${{ github.sha }}
           cache-from: type=gha

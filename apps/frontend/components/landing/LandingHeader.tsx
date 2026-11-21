@@ -19,16 +19,30 @@ import { LocaleThemeControl } from "@/components/LocaleThemeControl";
  * Scroll holati: sahifa tepasida panel shaffof (hero bilan qo'shilib ketadi),
  * pastga tushilganda oq fon + chegara paydo bo'ladi — kontent panel ostidan
  * "kesilib" o'tayotgani ko'rinmasligi uchun.
+ *
+ * Ichki ommaviy sahifalar (qidiruv, kutubxona, reyting — PublicShell) ham
+ * AYNAN shu panelni ishlatadi, shunda mehmon bosh sahifadan kitobni bosganda
+ * dizayn keskin o'zgarmaydi. U yerda hero yo'q, shuning uchun `solid` —
+ * panel doim oq fon va chegara bilan chiziladi. Bo'lim havolalari `/{locale}#…`
+ * ko'rinishida: bosh sahifada xuddi shu hash'ga scroll bo'ladi, ichki
+ * sahifadan esa bosh sahifaning tegishli bo'limiga olib boradi.
  */
 
 const SECTIONS = [
-  { href: "#reytinglar", key: "Reytinglar" },
-  { href: "#xarita", key: "Hududlar" },
-  { href: "#muassasalar", key: "Muassasalar uchun" },
-  { href: "#donat", key: "Donat" },
+  { hash: "reytinglar", key: "Reytinglar" },
+  { hash: "xarita", key: "Hududlar" },
+  { hash: "muassasalar", key: "Muassasalar uchun" },
+  { hash: "donat", key: "Donat" },
 ] as const;
 
-export function LandingHeader({ locale }: { locale: string }) {
+export function LandingHeader({
+  locale,
+  solid = false,
+}: {
+  locale: string;
+  /** Ichki sahifalar uchun: shaffof holat yo'q, doim oq fon + chegara. */
+  solid?: boolean;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -42,7 +56,7 @@ export function LandingHeader({ locale }: { locale: string }) {
   return (
     <header
       className={`sticky top-0 z-40 transition-colors duration-200 ${
-        scrolled
+        solid || scrolled
           ? "border-b border-line bg-white/90 backdrop-blur-md"
           : "border-b border-transparent"
       }`}
@@ -61,8 +75,8 @@ export function LandingHeader({ locale }: { locale: string }) {
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Bo'limlar">
           {SECTIONS.map((s) => (
             <a
-              key={s.href}
-              href={s.href}
+              key={s.hash}
+              href={`/${locale}#${s.hash}`}
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-surface-sunken hover:text-brand-700"
             >
               {s.key}
@@ -104,8 +118,8 @@ export function LandingHeader({ locale }: { locale: string }) {
           <nav className="mx-auto max-w-7xl space-y-1 px-4 py-3 sm:px-6" aria-label="Bo'limlar">
             {SECTIONS.map((s) => (
               <a
-                key={s.href}
-                href={s.href}
+                key={s.hash}
+                href={`/${locale}#${s.hash}`}
                 onClick={() => setMenuOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-surface-sunken"
               >

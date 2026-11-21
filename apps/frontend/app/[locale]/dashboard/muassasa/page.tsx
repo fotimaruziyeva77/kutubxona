@@ -10,6 +10,11 @@ import { ErrorState } from "@/components/ui/error-state";
 import { BookCover } from "@/components/books/BookCover";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
+import { updateLibrary } from "@/lib/api/libraries";
+import { useAuthStore } from "@/store/auth.store";
+import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { FormField, Input } from "@/components/ui/input";
 
 // ── API funksiyalar ──────────────────────────────────────────────────────────
 
@@ -31,9 +36,15 @@ async function getInventoryReport(libraryId: string) {
   return data as InventoryReport;
 }
 
+// GET /books 2026-11-01 dan { total, page, limit, data } qaytaradi (avval massiv
+// edi — massiv deb o'qilganda sahifa `books.filter is not a function` bilan
+// yiqilardi). Panel statistikasi shu ro'yxatdan hisoblanadi, shuning uchun
+// backend maksimumi (200) so'raladi.
 async function getLibraryBooks(libraryId: string) {
-  const { data } = await apiClient.get("/books", { params: { libraryId } });
-  return data as Book[];
+  const { data } = await apiClient.get<{ total: number; data: Book[] }>("/books", {
+    params: { libraryId, limit: 200 }
+  });
+  return data.data;
 }
 
 async function getPendingUsers() {
@@ -63,6 +74,8 @@ interface Library {
   address?: string;
   phone?: string;
   workHours?: string;
+  latitude?: number;
+  longitude?: number;
   subscriptions?: Subscription[];
 }
 
@@ -87,6 +100,7 @@ interface Book {
   title: string;
   author: string;
   genre: string;
+  coverUrl?: string | null;
   totalCount: number;
   availableCount: number;
 }
@@ -229,6 +243,11 @@ export default function MuassasaPage() {
 
 function LibraryDashboard({ libraryId }: { libraryId: string }) {
   const qc = useQueryClient();
+  // Kutubxona ma'lumotlarini (manzil, telefon, ish vaqti) faqat MUASSASA_ADMIN
+  // (o'z kutubxonasi — backend egalikni tekshiradi) va SUPER_ADMIN tahrirlaydi.
+  const { user } = useAuthStore();
+  const canEdit = user?.role === "SUPER_ADMIN" || user?.role === "MUASSASA_ADMIN";
+  const [editing, setEditing] = useState(false);
   const locale = useLocale();
   const t = useTranslations("MuassasaPanel");
   const typeLabel = (type: string) =>
@@ -263,9 +282,13 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
     queryFn: () => getLibraryBooks(libraryId)
   });
 
+  // Tasdiqlash ro'yxati faqat MUASSASA_ADMIN / TUMAN_ADMIN / SUPER_ADMIN uchun
+  // (backend @Roles). Kutubxonachi uchun so'ralsa 403 qaytib, konsolni to'ldirardi.
+  const canApproveUsers = ["SUPER_ADMIN", "MUASSASA_ADMIN", "TUMAN_ADMIN"].includes(user?.role ?? "");
   const { data: pendingUsers = [], isError: pendingError } = useQuery({
     queryKey: ["pending-users"],
-    queryFn: getPendingUsers
+    queryFn: getPendingUsers,
+    enabled: canApproveUsers
   });
 
   const approve = useMutation({
@@ -293,29 +316,67 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
   }
 
   const subscription = lib.subscriptions?.[0];
-  const availableBooks = books.filter((b) => b.availableCount > 0).length;
+  // NUSXALAR soni (nomlar emas) — "Jami kitoblar" va inventarizatsiya bloki
+  // bilan bir xil birlikda. Asosiy manba — inventarizatsiya hisoboti (u
+  // /books limit=200 bilan cheklanmagan); u kelmaguncha ro'yxatdan hisoblanadi.
+  const availableBooks =
+    inventory?.availableCount ??
+    books.reduce((s, b) => s + Math.max(0, b.availableCount), 0);
   // Manfiy bo'lib qolmasligi uchun clamp (ombor sonlari mos kelmasa).
   const borrowedBooks = Math.max(
     0,
-    books.reduce((s, b) => s + (b.totalCount - b.availableCount), 0)
+    inventory?.borrowedCount ??
+      books.reduce((s, b) => s + (b.totalCount - b.availableCount), 0)
   );
 
   return (
     <div className="space-y-6">
-      {/* Kutubxona ma'lumotlari */}
+      {/* Kutubxona ma'lumotlari — manzil/telefon/ish vaqti HAR DOIM ko'rsatiladi
+          (kiritilmagan bo'lsa shunday deyiladi), chunki ular ommaviy sahifada
+          kitobxonga ko'rinadi va telefonga bron SMS'i boradi. */}
       <div className="card-surface rounded-2xl p-6">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-xl font-bold text-slate-900">{lib.name}</h2>
             <p className="text-sm text-slate-500 mt-0.5 font-mono">{lib.code}</p>
-            {lib.address && <p className="text-sm text-slate-600 mt-1">{lib.address}</p>}
-            {lib.phone && <p className="text-sm text-slate-600">{lib.phone}</p>}
-            {lib.workHours && <p className="text-sm text-slate-600">{lib.workHours}</p>}
           </div>
-          <span className="px-3 py-1 bg-brand-600 text-white rounded-full text-sm font-medium">
-            {typeLabel(lib.type)}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            {canEdit && !editing && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Icon.edit aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("editInfo.button")}
+              </Button>
+            )}
+            <span className="px-3 py-1 bg-brand-600 text-white rounded-full text-sm font-medium">
+              {typeLabel(lib.type)}
+            </span>
+          </div>
         </div>
+        {editing ? (
+          <LibraryInfoForm lib={lib} onDone={() => setEditing(false)} />
+        ) : (
+          <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+            {(
+              [
+                { key: "address", icon: Icon.map, value: lib.address },
+                { key: "phone", icon: Icon.phone, value: lib.phone },
+                { key: "workHours", icon: Icon.pending, value: lib.workHours },
+              ] as const
+            ).map(({ key, icon: RowIcon, value }) => (
+              // dt/dd — <dl> ning bevosita <div> farzandi ichida (axe
+              // definition-list / dlitem); ikonka dt ichida.
+              <div key={key} className="min-w-0 rounded-xl bg-surface-muted px-3 py-2.5">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  <RowIcon aria-hidden="true" size={ICON_SIZE.sm} className="shrink-0" />
+                  {t(`editInfo.${key}`)}
+                </dt>
+                <dd className={value ? "mt-0.5 text-sm text-slate-800" : "mt-0.5 text-sm italic text-slate-400"}>
+                  {value || t("editInfo.notSet")}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </div>
 
       {/* Statistika kartalar */}
@@ -454,7 +515,7 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
             <div className="divide-y divide-line">
               {books.slice(0, 30).map((book) => (
                 <div key={book.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-muted">
-                  <BookCover size="sm" title={book.title} author={book.author} genre={book.genre} />
+                  <BookCover size="sm" title={book.title} author={book.author} genre={book.genre} coverUrl={book.coverUrl} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{book.title}</p>
                     <p className="truncate text-sm text-slate-500">{book.author} · {book.genre}</p>
@@ -480,7 +541,7 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
             {books.length > 30 && (
               <p className="py-3 text-center text-xs text-slate-400">
                 {t("fund.moreHidden", { count: books.length - 30 })}{" "}
-                <Link href={`/${locale}/dashboard/books`} className="font-medium text-brand-600 hover:underline">
+                <Link href={`/${locale}/dashboard/books`} className="font-medium text-brand-600 underline underline-offset-2">
                   {t("fund.goToBooks")}
                 </Link>
               </p>
@@ -491,7 +552,8 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
 
       {/* PENDING foydalanuvchilar. Panel DOIM ko'rinadi: ilgari bo'sh bo'lsa
           butunlay yashirinardi va admin "ariza yo'q"mi yoki "yuklanmadi"mi —
-          farqlay olmasdi. */}
+          farqlay olmasdi. Faqat tasdiqlash huquqi borlarga (kutubxonachiga emas). */}
+      {canApproveUsers && (
       <div className="card-surface rounded-2xl overflow-hidden">
         <div className="p-6 border-b border-line flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-900">{t("pending.title")}</h3>
@@ -551,6 +613,149 @@ function LibraryDashboard({ libraryId }: { libraryId: string }) {
           </div>
         )}
       </div>
+      )}
     </div>
+  );
+}
+
+// ── Kutubxona ma'lumotlari formasi ───────────────────────────────────────────
+
+type LibraryInfoValues = {
+  name: string;
+  address: string;
+  phone: string;
+  workHours: string;
+  latitude: string;
+  longitude: string;
+};
+
+/**
+ * Manzil / telefon / ish vaqti / koordinata tahriri (PUT /libraries/:id).
+ * Bo'sh qoldirilgan matn maydoni "" sifatida yuboriladi (tozalash), bo'sh
+ * koordinata esa YUBORILMAYDI (avvalgi qiymat qoladi) — noto'g'ri 0,0
+ * nuqta yozilib qolmasligi uchun.
+ */
+function LibraryInfoForm({ lib, onDone }: { lib: LibraryDetail; onDone: () => void }) {
+  const t = useTranslations("MuassasaPanel");
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState<LibraryInfoValues>({
+    name: lib.name,
+    address: lib.address ?? "",
+    phone: lib.phone ?? "",
+    workHours: lib.workHours ?? "",
+    latitude: lib.latitude != null ? String(lib.latitude) : "",
+    longitude: lib.longitude != null ? String(lib.longitude) : "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof LibraryInfoValues, string>>>({});
+  const set = (k: keyof LibraryInfoValues, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  // undefined — kiritilmagan, null — xato, son — yaroqli
+  const parseCoord = (raw: string, max: number): number | null | undefined => {
+    const s = raw.trim();
+    if (s === "") return undefined;
+    const n = Number(s.split(",").join("."));
+    return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+  };
+
+  const validate = (): { ok: boolean; lat?: number; lon?: number } => {
+    const e: Partial<Record<keyof LibraryInfoValues, string>> = {};
+    if (form.name.trim().length < 2) e.name = t("editInfo.errName");
+    const phoneDigits = form.phone
+      .split(" ").join("")
+      .split("-").join("")
+      .split("(").join("")
+      .split(")").join("");
+    if (phoneDigits !== "" && !/^[+]?[0-9]{9,13}$/.test(phoneDigits)) e.phone = t("editInfo.errPhone");
+    const lat = parseCoord(form.latitude, 90);
+    const lon = parseCoord(form.longitude, 180);
+    if (lat === null) e.latitude = t("editInfo.errCoord");
+    if (lon === null) e.longitude = t("editInfo.errCoord");
+    if ((lat === undefined) !== (lon === undefined)) {
+      e.longitude = e.longitude ?? t("editInfo.errCoordPair");
+    }
+    setErrors(e);
+    return { ok: Object.keys(e).length === 0, lat: lat ?? undefined, lon: lon ?? undefined };
+  };
+
+  const save = useMutation({
+    mutationFn: (coords: { lat?: number; lon?: number }) =>
+      updateLibrary(lib.id, {
+        name: form.name.trim(),
+        address: form.address.trim(),
+        phone: form.phone.trim(),
+        workHours: form.workHours.trim(),
+        ...(coords.lat !== undefined ? { latitude: coords.lat } : {}),
+        ...(coords.lon !== undefined ? { longitude: coords.lon } : {}),
+      }),
+    onSuccess: () => {
+      toast.success(t("editInfo.saved"));
+      qc.invalidateQueries({ queryKey: ["library-detail", lib.id] });
+      qc.invalidateQueries({ queryKey: ["libraries-mine"] });
+      onDone();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data?.message;
+      toast.error(t("editInfo.saveError"), Array.isArray(msg) ? msg.join(", ") : msg);
+    },
+  });
+
+  return (
+    <form
+      className="mt-4 space-y-4"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        const v = validate();
+        if (v.ok) save.mutate({ lat: v.lat, lon: v.lon });
+      }}
+    >
+      <p className="text-sm text-slate-500">{t("editInfo.hint")}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField id="lib-name" label={t("editInfo.name")} error={errors.name} required className="sm:col-span-2">
+          <Input value={form.name} onChange={(e) => set("name", e.target.value)} maxLength={120} />
+        </FormField>
+        <FormField id="lib-address" label={t("editInfo.address")} className="sm:col-span-2">
+          <Input
+            value={form.address}
+            onChange={(e) => set("address", e.target.value)}
+            maxLength={255}
+            placeholder={t("editInfo.addressPlaceholder")}
+          />
+        </FormField>
+        <FormField id="lib-phone" label={t("editInfo.phone")} error={errors.phone}>
+          <Input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            maxLength={32}
+            placeholder={t("editInfo.phonePlaceholder")}
+          />
+        </FormField>
+        <FormField id="lib-hours" label={t("editInfo.workHours")}>
+          <Input
+            value={form.workHours}
+            onChange={(e) => set("workHours", e.target.value)}
+            maxLength={64}
+            placeholder={t("editInfo.workHoursPlaceholder")}
+          />
+        </FormField>
+        <FormField id="lib-lat" label={t("editInfo.latitude")} error={errors.latitude} hint={t("editInfo.coordsHint")}>
+          <Input inputMode="decimal" value={form.latitude} onChange={(e) => set("latitude", e.target.value)} />
+        </FormField>
+        <FormField id="lib-lon" label={t("editInfo.longitude")} error={errors.longitude}>
+          <Input inputMode="decimal" value={form.longitude} onChange={(e) => set("longitude", e.target.value)} />
+        </FormField>
+      </div>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={onDone} disabled={save.isPending}>
+          {t("editInfo.cancel")}
+        </Button>
+        <Button type="submit" isLoading={save.isPending}>
+          {t("editInfo.save")}
+        </Button>
+      </div>
+    </form>
   );
 }

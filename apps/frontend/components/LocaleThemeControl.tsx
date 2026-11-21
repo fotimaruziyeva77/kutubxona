@@ -131,7 +131,10 @@ export function LocaleThemeControl({ inline = false }: { inline?: boolean } = {}
           className={PILL}
           aria-haspopup="listbox"
           aria-expanded={menuOpen}
-          aria-label="Tilni o'zgartirish"
+          // WCAG 2.5.3 (axe label-content-name-mismatch): ko'rinadigan matn
+          // ("UZ") accessible name ichida bo'lishi shart — ovozli boshqaruv
+          // foydalanuvchisi ko'rgan so'zini aytib tugmani ochadi.
+          aria-label={`${current.short} — Tilni o'zgartirish`}
           onClick={() => setMenuOpen((v) => !v)}
         >
           <GlobeIcon />

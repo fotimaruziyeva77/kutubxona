@@ -1,0 +1,21 @@
+{
+  "BookPage": {
+    "home": "Бош саҳифа",
+    "books": "Китоблар",
+    "genre": "Жанр",
+    "year": "Нашр йили",
+    "pages": "Саҳифалар",
+    "lang": "Тил",
+    "available": "Мавжуд: {count} / {total} нусха",
+    "unavailable": "Ҳозирча банд",
+    "reserve": "Брон қилиш",
+    "openLibrary": "Кутубхонани кўриш",
+    "moreByAuthor": "Муаллифнинг бошқа китоблари",
+    "about": "Китоб ҳақида",
+    "whereTitle": "Қаердан олиш мумкин",
+    "whereSubtitle": "Кутубхонани танланг — у ерда брон қиласиз ва китобни оласиз.",
+    "copies": "{count} та бўш",
+    "unavailableShort": "Банд",
+    "similarTitle": "Ўхшаш китоблар"
+  }
+}

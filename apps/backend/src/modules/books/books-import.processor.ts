@@ -44,9 +44,9 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { ElasticsearchService } from "@nestjs/elasticsearch";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import type { BookImportJobData } from "./books.service";
+import { bulkIndexBooks, ensureBooksIndex } from "./books-search-index";
 
 const BATCH_SIZE = 100;
-const ES_INDEX = "books";
 
 interface RowError {
   row: number;
@@ -81,6 +81,7 @@ export class BookImportProcessor extends WorkerHost {
   async process(job: Job<BookImportJobData>): Promise<{
     processed: number;
     total: number;
+    skipped: number;
     errors: RowError[];
   }> {
     const { fileBase64, libraryId, uploaderUserId } = job.data;
@@ -93,6 +94,9 @@ export class BookImportProcessor extends WorkerHost {
 
     let processed = 0;
     let totalSeen = 0;
+    // FR2: (libraryId, isbn) unique — fondda allaqachon bor ISBN qatorlari
+    // createMany(skipDuplicates) bilan o'tkazib yuboriladi; soni ko'rinsin.
+    let skipped = 0;
     const errors: RowError[] = [];
 
     try {
@@ -132,14 +136,18 @@ export class BookImportProcessor extends WorkerHost {
         batch.push(parsed);
 
         if (batch.length >= BATCH_SIZE) {
-          processed += await this._flushBatch(batch);
+          const created = await this._flushBatch(batch);
+          processed += created;
+          skipped += batch.length - created;
           batch.length = 0;
           await this._reportProgress(job, dataRowCount, totalSeen, processed, errors);
         }
       }
 
       if (batch.length > 0) {
-        processed += await this._flushBatch(batch);
+        const created = await this._flushBatch(batch);
+        processed += created;
+        skipped += batch.length - created;
         batch.length = 0;
       }
     } catch (err) {
@@ -160,15 +168,16 @@ export class BookImportProcessor extends WorkerHost {
       ...job.data,
       processed,
       total: totalSeen,
+      skipped,
       errors
     } as never);
     await job.updateProgress(100);
 
     this.logger.log(
-      `BOOK_IMPORT done (job ${job.id}, library ${libraryId}): ${processed} created, ${errors.length} errors`
+      `BOOK_IMPORT done (job ${job.id}, library ${libraryId}): ${processed} created, ${skipped} skipped (ISBN fondda bor), ${errors.length} errors`
     );
 
-    return { processed, total: totalSeen, errors };
+    return { processed, total: totalSeen, skipped, errors };
   }
 
   private _parseRow(
@@ -201,7 +210,7 @@ export class BookImportProcessor extends WorkerHost {
       return { error: "ISBN, Nomi va Muallif majburiy" };
     }
 
-    const isbn = isbnRaw.replace(/[-\s]/g, "");
+    const isbn = this._toIsbn13(isbnRaw.replace(/[-\s]/g, "").toUpperCase());
     if (!this._isValidIsbn(isbn)) {
       return { error: `ISBN noto'g'ri: ${isbnRaw}` };
     }
@@ -218,6 +227,14 @@ export class BookImportProcessor extends WorkerHost {
       totalCount,
       libraryId
     };
+  }
+
+  // ISBN-10 → ISBN-13 (978 + 9 raqam + yangi nazorat raqami); qolganlari o'zgarmaydi.
+  private _toIsbn13(isbn: string): string {
+    if (!/^\d{9}[\dX]$/.test(isbn)) return isbn;
+    const body = "978" + isbn.slice(0, 9);
+    const sum = body.split("").reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+    return body + String((10 - (sum % 10)) % 10);
   }
 
   private _isValidIsbn(isbn: string): boolean {
@@ -257,27 +274,28 @@ export class BookImportProcessor extends WorkerHost {
     return result.count;
   }
 
+  /**
+   * Partiyadagi kitoblarni `sifat_books` ga `_id` = Postgres ID bilan yozadi.
+   *
+   * Avval hujjatlar `_id`siz (ES tasodifiy ID bergan) va eski `books`
+   * indeksiga yozilardi: kitobni keyin yangilab/o'chirib bo'lmasdi, qayta
+   * import dublikat hujjat yaratardi. `createMany` ID qaytarmaydi — shuning
+   * uchun (libraryId, isbn) bo'yicha (unique) qayta o'qiymiz; skipDuplicates
+   * o'tkazgan, avval bor kitoblar ham shu bilan qayta indekslanadi (zararsiz).
+   */
   private async _bulkIndex(batch: ParsedRow[]): Promise<void> {
-    if (batch.length === 0) return;
-    const body: Array<Record<string, unknown>> = [];
-    for (const r of batch) {
-      body.push({ index: { _index: ES_INDEX } });
-      body.push({
-        isbn: r.isbn,
-        title: r.title,
-        author: r.author,
-        genre: r.genre,
-        lang: r.lang,
-        pages: r.pages,
-        year: r.year,
-        availableCount: r.totalCount,
-        libraryId: r.libraryId
-      });
-    }
-    try {
-      await this.es.bulk({ operations: body });
-    } catch {
-      // Swallowed — fallback path handles search if ES is unavailable.
+    if (batch.length === 0 || process.env.ELASTICSEARCH_ENABLED === "false") return;
+    const libraryId = batch[0].libraryId;
+    const books = await this.prisma.book.findMany({
+      where: { libraryId, isbn: { in: batch.map((r) => r.isbn) } },
+      include: { library: { select: { name: true, type: true, regionId: true, latitude: true, longitude: true } } }
+    });
+    if (books.length === 0) return;
+    // Yozishdan oldin — aks holda ES indeksni dinamik mapping bilan yaratadi.
+    await ensureBooksIndex(this.es);
+    const { failed } = await bulkIndexBooks(this.es, books);
+    if (failed > 0) {
+      this.logger.warn(`Elasticsearch: ${failed}/${books.length} ta kitob indekslanmadi (5 daqiqalik sinxronizatsiya qayta urinadi)`);
     }
   }
 

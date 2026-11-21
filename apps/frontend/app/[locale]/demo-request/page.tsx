@@ -113,7 +113,7 @@ export default function DemoRequestPage() {
             Mutaxassisimiz <strong className="text-slate-700">24 soat ichida</strong>{" "}
             ko&apos;rsatgan raqamingizga qo&apos;ng&apos;iroq qiladi va
             platformani bepul ko&apos;rsatadi. Shoshilinch savol bo&apos;lsa —{" "}
-            <a href="mailto:hamkorlik@sifat.uz" className="font-medium text-brand-600 hover:underline">
+            <a href="mailto:hamkorlik@sifat.uz" className="font-medium text-brand-600 underline underline-offset-2">
               hamkorlik@sifat.uz
             </a>
             .

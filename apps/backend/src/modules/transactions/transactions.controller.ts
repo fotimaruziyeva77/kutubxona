@@ -35,6 +35,9 @@ const HISTORY_VIEWER_ROLES = [
   UserRole.VILOYAT_ADMIN
 ] as const;
 
+// I1 — kutubxona doirasi (o'z kutubxonasi) service'da tekshiriladi:
+// actor (JWT payload) har bir kutubxonachi endpoint'iga uzatiladi va
+// TransactionsService.assertLibraryAccess boshqa kutubxona uchun 403 beradi.
 function isLibrarianRole(role: string): boolean {
   return (LIBRARIAN_ROLES as readonly UserRole[]).includes(role as UserRole);
 }
@@ -79,24 +82,24 @@ export class TransactionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...LIBRARIAN_ROLES)
   @ApiOperation({ summary: "Kutubxona aktiv bronlari (PENDING + RESERVED)" })
-  getLibraryBrons(@Param("libraryId") libraryId: string) {
-    return this.svc.getLibraryBrons(libraryId);
+  getLibraryBrons(@Param("libraryId") libraryId: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.getLibraryBrons(libraryId, user);
   }
 
   @Get("library/:libraryId/borrowed")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...LIBRARIAN_ROLES)
   @ApiOperation({ summary: "Kutubxona berilgan kitoblar" })
-  getLibraryBorrowed(@Param("libraryId") libraryId: string) {
-    return this.svc.getLibraryBorrowed(libraryId);
+  getLibraryBorrowed(@Param("libraryId") libraryId: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.getLibraryBorrowed(libraryId, user);
   }
 
   @Get("library/:libraryId/overdue")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...LIBRARIAN_ROLES)
   @ApiOperation({ summary: "Kutubxona muddati o'tgan kitoblar" })
-  getOverdueByLibrary(@Param("libraryId") libraryId: string) {
-    return this.svc.getOverdueByLibrary(libraryId);
+  getOverdueByLibrary(@Param("libraryId") libraryId: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.getOverdueByLibrary(libraryId, user);
   }
 
   // ── Bron ─────────────────────────────────────────────────────────────────
@@ -116,8 +119,8 @@ export class TransactionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...LIBRARIAN_ROLES)
   @ApiOperation({ summary: "Kutubxonachi bronni tasdiqlaydi (PENDING→RESERVED)" })
-  confirmReservation(@Param("id") id: string) {
-    return this.svc.confirmReservation(id);
+  confirmReservation(@Param("id") id: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.confirmReservation(id, user);
   }
 
   // IDOR-C3 — requester = JWT sub; librarian privilege = JWT ROLE, never the
@@ -128,7 +131,7 @@ export class TransactionsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Bron bekor qilish (kitobxon o'ziniki yoki kutubxonachi)" })
   cancelReservation(@Param("id") id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.cancelReservation(id, user.sub, isLibrarianRole(user.role));
+    return this.svc.cancelReservation(id, user.sub, isLibrarianRole(user.role), user.role);
   }
 
   // ── Berish / Qaytarish ────────────────────────────────────────────────────
@@ -137,8 +140,11 @@ export class TransactionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...LIBRARIAN_ROLES)
   @ApiOperation({ summary: "Kitob berish (BORROWED). reservationId + dueDate ixtiyoriy." })
-  borrow(@Body() body: { userId: string; bookId: string; reservationId?: string; dueDate?: string }) {
-    return this.svc.borrow(body.userId, body.bookId, body.reservationId, body.dueDate);
+  borrow(
+    @Body() body: { userId: string; bookId: string; reservationId?: string; dueDate?: string },
+    @CurrentUser() user: JwtPayload
+  ) {
+    return this.svc.borrow(body.userId, body.bookId, body.reservationId, body.dueDate, user);
   }
 
   // IDOR-C3 — reader-self endpoint: actor from JWT, body.userId removed
@@ -156,9 +162,10 @@ export class TransactionsController {
   @ApiOperation({ summary: "Kitob qaytarish" })
   returnBook(
     @Param("id") id: string,
-    @Body() body: { returnLibraryId?: string }
+    @Body() body: { returnLibraryId?: string },
+    @CurrentUser() user: JwtPayload
   ) {
-    return this.svc.returnBook(id, body.returnLibraryId);
+    return this.svc.returnBook(id, body.returnLibraryId, user);
   }
 
   @Patch(":id/return-roaming")
@@ -167,9 +174,10 @@ export class TransactionsController {
   @ApiOperation({ summary: "Kitob roaming qaytarish (boshqa kutubxona)" })
   returnRoaming(
     @Param("id") id: string,
-    @Body() body: { returnLibraryId: string }
+    @Body() body: { returnLibraryId: string },
+    @CurrentUser() user: JwtPayload
   ) {
-    return this.svc.returnRoaming(id, body.returnLibraryId);
+    return this.svc.returnRoaming(id, body.returnLibraryId, user);
   }
 
   // ── ISBN Scan ─────────────────────────────────────────────────────────────

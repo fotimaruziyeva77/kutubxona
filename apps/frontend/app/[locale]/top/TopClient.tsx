@@ -32,7 +32,7 @@ import { io, Socket } from "socket.io-client";
 import { apiClient } from "@/lib/api-client";
 import { apiOrigin } from "@/lib/api/base";
 import { useAuthStore } from "@/store/auth.store";
-import { ReaderShell } from "@/components/reader/ReaderShell";
+import { AdaptiveShell } from "@/components/reader/AdaptiveShell";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 
 // ── Tipler ────────────────────────────────────────────────────────────────────
@@ -104,9 +104,9 @@ export default function TopClient({
   const { user, isAuthenticated } = useAuthStore();
   const [tab, setTab] = useState<FilterTab>("all");
   const [page, setPage] = useState(0);
-  // Kirgan kitobxon uchun sahifa ilova qobig'ida ochiladi; mehmon uchun
-  // ommaviy sarlavha bilan. Qaror MOUNTDAN keyin qabul qilinadi — SSR
-  // markup har doim "mehmon" holatida chiziladi va hydration mos keladi.
+  // "Siz qayerdasiz" kartasi sessiyaga bog'liq — u MOUNTDAN keyin
+  // hisoblanadi: SSR markup har doim "mehmon" holatida chiziladi va
+  // hydration mos keladi. (Qobiq tanlovi — AdaptiveShell'da, xuddi shu qoida.)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -340,7 +340,7 @@ export default function TopClient({
         </p>
         <Link
           href={`/${locale}/donate`}
-          className="inline-flex h-10 shrink-0 items-center rounded-xl bg-info-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-info-700"
+          className="inline-flex h-10 shrink-0 items-center rounded-xl bg-info-700 px-5 text-sm font-semibold text-white transition-colors hover:bg-info-900"
         >
           {t("donate")}
         </Link>
@@ -352,32 +352,10 @@ export default function TopClient({
     </div>
   );
 
-  // Kirgan kitobxon — ilova qobig'ida (pastki tab-panel saqlanadi).
-  if (mounted && isAuthenticated && user?.role === "KITOBXON") {
-    return (
-      <ReaderShell title={t("title")} backHref={`/${locale}/profile`}>
-        {body}
-      </ReaderShell>
-    );
-  }
-
-  // Mehmon — ommaviy ko'rinish.
-  return (
-    <main className="min-h-screen bg-surface-muted">
-      <header className="border-b border-line bg-white">
-        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-          <Link
-            href={`/${locale}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline"
-          >
-            <Icon.next aria-hidden="true" size={ICON_SIZE.xs} className="rotate-180" />
-            {t("home")}
-          </Link>
-        </div>
-      </header>
-      <div className="mx-auto max-w-3xl px-4 py-5">{body}</div>
-    </main>
-  );
+  // Yagona qoida (AdaptiveShell): kirgan kitobxon — ilova qobig'ida (pastki
+  // tab-panel saqlanadi), mehmon va xodim — bosh sahifa bilan bir xil
+  // ommaviy qobiqda. Avval mehmon bu yerda uchinchi xil sarlavha ko'rardi.
+  return <AdaptiveShell title={t("title")}>{body}</AdaptiveShell>;
 }
 
 // ── "Siz qayerdasiz" kartasi ─────────────────────────────────────────────────

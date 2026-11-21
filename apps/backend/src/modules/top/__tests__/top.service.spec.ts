@@ -236,6 +236,40 @@ describe("TopService", () => {
       expect(upsertCall.create.score).toBe(100);
     });
 
+    it("(FR1 roaming) bir ISBN 20 kutubxonada (20 xil bookId) → verifiedReading 1 asar = 5 ball", async () => {
+      // Book qatori kutubxonaga bog'langan nusxa: "Alpomish" har kutubxonada
+      // o'z bookId'si bilan. bookId bo'yicha dedup 20 kredit (100 ball) berardi —
+      // roaming orqali Top-100 "fermerlash" yo'li. Endi kalit book.isbn.
+      const returnedAt = new Date(Date.now() - 1 * 86400000);
+      const borrowedAt = new Date(returnedAt.getTime() - 5 * 86400000);
+      const roaming = Array.from({ length: 20 }, (_, i) => ({
+        bookId: `lib-${i}-alpomish`,
+        returnedAt,
+        borrowedAt,
+        penaltyDays: 0,
+        book: { genre: "Doston", isbn: "9789943000011" },
+      }));
+      const users = [mockUser({
+        id: "roaming-user",
+        trustScore: 100,
+        transactions: roaming,
+        comprehensionTests: [
+          { passed: true }, { passed: true }, { passed: true },
+          { passed: true }, { passed: true },
+        ],
+      })];
+      mockReplica.user.findMany.mockResolvedValue(users);
+
+      await service.computeMonthlyTop100();
+
+      const upsertCall = mockPrisma.top100Entry.upsert.mock.calls[0][0];
+      // verifiedReading 5 (40%) + consistency 25 (15%) + diversity 15 (10%)
+      // + comprehension 100 (15%) + discipline 100 (10%) + trust 100 (10%)
+      // = 2 + 3.75 + 1.5 + 15 + 10 + 10 = 42.25 — 100 dan ancha past.
+      expect(upsertCall.create.score).toBeLessThan(50);
+      expect(upsertCall.create.score).toBeGreaterThan(40);
+    });
+
     it("(TOP-01 diversity 12-month window) older transactions excluded from diversity", async () => {
       // One transaction within 12 months (genre A) + one 18 months ago (genre B).
       // The 12-month-old genre B should NOT count toward diversity uniqueness.

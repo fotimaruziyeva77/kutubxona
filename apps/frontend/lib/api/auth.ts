@@ -14,6 +14,10 @@ export const authApi = {
       { phone, password }
     ),
 
+  // Kod qaysi kanaldan keladi (telegram-bot bo'lsa — bot havolasi)
+  otpChannel: () =>
+    apiClient.get<{ channel: "telegram-bot" | "telegram" | "sms"; botUrl: string | null }>("/auth/otp/channel"),
+
   // OTP yuborish (faqat ro'yhat va parol tiklash)
   sendOtp: (phone: string, purpose: "register" | "reset") =>
     apiClient.post<{ message: string }>("/auth/otp/send", { phone, purpose }),

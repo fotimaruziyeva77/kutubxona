@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { locales, type Locale } from "@/i18n";
 import { Providers } from "@/components/providers";
 import { SkipNavLink } from "@/components/accessibility/SkipNavLink";
+import { TopLoader } from "@/components/ui/TopLoader";
 import { LocaleThemeControl } from "@/components/LocaleThemeControl";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import {
@@ -14,6 +15,7 @@ import {
   LiteModeProvider,
 } from "@/components/offline/LiteModeBanner";
 import "@/app/globals.css";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Inter — loyihaning asosiy matn shrifti.
@@ -42,7 +44,7 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
 });
 
-const BASE_URL = "https://sifat.uz";
+const BASE_URL = SITE_URL;
 
 export async function generateMetadata({
   params,
@@ -162,8 +164,9 @@ export default async function LocaleLayout({
         />
       </head>
       <body>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={messages} timeZone="Asia/Tashkent">
           <SkipNavLink />
+          <TopLoader />
           <LocaleThemeControl />
           <LiteModeProvider>
             <LiteModeBanner />

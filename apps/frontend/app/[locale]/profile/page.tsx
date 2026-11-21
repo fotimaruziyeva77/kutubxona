@@ -21,6 +21,7 @@
  * yagona "profil" shu) — ularga kitobxon bloklari ko'rsatilmaydi.
  */
 
+import { logoutToHome, isLoggingOut } from "@/lib/logout";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -30,7 +31,6 @@ import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { usersApi } from "@/lib/api/users";
-import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/store/auth.store";
 import { apiClient } from "@/lib/api-client";
 import { refreshAccessToken } from "@/lib/api/client";
@@ -44,9 +44,11 @@ import { ReaderDiscovery } from "@/components/reader/ReaderDiscovery";
 import { BadgeShelf, type CatalogBadge, type EarnedBadge } from "@/components/reader/BadgeShelf";
 import { ReaderSettings } from "@/components/reader/ReaderSettings";
 import { BookRow } from "@/components/books/BookCard";
+import { OverdueNotice, findOverdue } from "@/components/reader/OverdueNotice";
 import { fetchMyStore } from "@/lib/api/store";
 import { fetchMyXp } from "@/lib/api/xp";
 import { apiOrigin } from "@/lib/api/base";
+import { fmtDayMonthTime } from "@/lib/format";
 
 // ── API ─────────────────────────────────────────────────────────────────────
 
@@ -175,21 +177,61 @@ interface ProfileData {
   trustScore: number;
   readingScore?: number;
   familyDetectionEnabled?: boolean;
+  address?: { viloyatId?: string | null; tumanId?: string | null } | null;
 }
 
 // ── Sahifa ──────────────────────────────────────────────────────────────────
+
+/**
+ * "Siz uchun" tavsiyalari — bir xil kitob (nom + muallif) turli kutubxonalarda
+ * alohida `Book` qatori sifatida saqlanadi va /ai/recommendations uni ikki
+ * marta qaytarishi mumkin ("Hayrat ul-abror" ikki kutubxonadan). Normallashtirilgan
+ * title|author bo'yicha birinchisi qoladi (javob tartibi — odatda eng mos /
+ * eng yaqin kutubxona). Bosh sahifadagi dedup bilan bir xil qoida.
+ */
+function dedupRecommendations(data: unknown): unknown {
+  if (!Array.isArray(data)) return data;
+  const seen = new Set<string>();
+  return data.filter((r: { title?: string; author?: string }) => {
+    const norm = (v?: string) => (v ?? "").trim().replace(/s+/g, " ").toLowerCase();
+    const key = `${norm(r?.title)}|${norm(r?.author)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 export default function ProfilePage() {
   const locale = useLocale();
   const t = useTranslations("ReaderHome");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { isAuthenticated, accessToken, user: authUser, logout } = useAuthStore();
+  // Tavsiyalar so'rovi ReaderDiscovery ichida (["reader-recommendations"]).
+  // `select` default'i o'sha so'rov observer'i yaratilishidan OLDIN (birinchi
+  // render'da) o'rnatiladi — natijada kartalar takrorsiz chiziladi, keshdagi
+  // xom javob esa o'zgarmaydi.
+  useState(() => {
+    queryClient.setQueryDefaults(["reader-recommendations"], { select: dedupRecommendations });
+    return null;
+  });
+  const { isAuthenticated, accessToken, user: authUser } = useAuthStore();
   const role = authUser?.role ?? "";
   const isKitobxon = role === "KITOBXON";
   const isDokon = role === "DOKON_OPERATOR";
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  useEffect(() => {
+    const openFromHash = () => {
+      if (typeof window === "undefined" || window.location.hash !== "#qr") return;
+      setShowQr(true);
+      window.setTimeout(() => {
+        document.getElementById("qr")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [profile?.sifatId]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -237,7 +279,7 @@ export default function ProfilePage() {
     }
 
     if (!isAuthenticated) {
-      router.replace(`/${locale}/login`);
+      if (!isLoggingOut()) router.replace(`/${locale}/login`);
       return;
     }
 
@@ -347,9 +389,7 @@ export default function ProfilePage() {
   });
 
   const handleLogout = async () => {
-    await authApi.logout().catch(() => {});
-    logout();
-    router.push(`/${locale}/login`);
+    await logoutToHome(locale);
   };
 
   const formatDate = (iso?: string) =>
@@ -364,6 +404,12 @@ export default function ProfilePage() {
     () => hist?.transactions.filter((t) => t.status === "BORROWED") ?? [],
     [hist],
   );
+  // Muddati o'tgan kitob(lar) — server yangi bron bermaydi (403). Kitobxon
+  // buni "Bron qilish"ni bosgandan keyin emas, OLDINDAN bilsin: tepada
+  // banner, tavsiya/fond kartalaridagi Bron tugmalari esa o'chiriladi.
+  const overdue = useMemo(() => findOverdue(hist?.transactions), [hist]);
+  const reserveBlocked = overdue.length > 0;
+
   const activeReservations = useMemo(
     () =>
       hist?.transactions.filter((t) => ["PENDING", "RESERVED"].includes(t.status)) ??
@@ -437,6 +483,12 @@ export default function ProfilePage() {
   }
 
   const pendingPurchases = hist?.pendingPurchases ?? [];
+  // Tarix yuklangach: hech qanday kitob, bron yoki o'qilgan kitob yo'q.
+  const isNewReader =
+    !!hist &&
+    activeBorrows.length === 0 &&
+    activeReservations.length === 0 &&
+    finishedBooks.length === 0;
 
   // Kitobxon yagona qobiqda (pastki tab-panel bilan) ishlaydi. Xodim va
   // do'kon rollari uchun profil — ikkinchi darajali sahifa, ular o'z
@@ -474,6 +526,10 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {!isDokon && reserveBlocked && (
+          <OverdueNotice id="overdue-notice" items={overdue} profileHref="#qolimdagi-kitoblar" />
+        )}
+
         {/* 1. Men qanday ketyapman? */}
         {!isDokon ? (
           <ReaderHero
@@ -494,6 +550,93 @@ export default function ProfilePage() {
             <Icon.pending aria-hidden="true" size={ICON_SIZE.sm} className="mt-0.5 shrink-0" />
             <span>{t("pendingNotice")}</span>
           </div>
+        )}
+
+        {/* Kutubxona pasporti — kutubxonada eng ko'p kerak bo'ladigan narsa,
+            shuning uchun yuqorida va bitta bosishda ochiladi. */}
+        {profile.sifatId && (
+          <section id="qr" className="card-surface overflow-hidden rounded-2xl scroll-mt-20">
+            <div className="flex items-center gap-3 p-4 sm:p-5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                <Icon.qr aria-hidden="true" size={ICON_SIZE.md} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-bold text-slate-900">{t("passport")}</span>
+                <span className="block truncate font-mono text-xs text-slate-500">{profile.sifatId}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowQr((v) => !v)}
+                aria-expanded={showQr}
+                aria-controls="qr-panel"
+                className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold transition-colors ${
+                  showQr
+                    ? "border border-line bg-white text-slate-700 hover:bg-surface-muted"
+                    : "bg-brand-600 text-white hover:bg-brand-700"
+                }`}
+              >
+                {showQr ? (
+                  t("hideQr")
+                ) : (
+                  <>
+                    <Icon.qr aria-hidden="true" size={ICON_SIZE.sm} />
+                    {t("showQr")}
+                  </>
+                )}
+              </button>
+            </div>
+            {showQr && (
+              <div id="qr-panel" className="flex flex-col items-center gap-4 border-t border-line p-5 pt-4">
+                <RotatingUserQr sifatId={profile.sifatId} />
+                <p className="max-w-xs text-center text-xs leading-relaxed text-slate-500">
+                  {t("qrHint")}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Yangi kitobxon: birinchi kitobgacha qanday yo'l bosiladi */}
+        {!isDokon && isNewReader && (
+          <section className="card-surface rounded-2xl p-5">
+            <h2 className="text-base font-bold text-slate-900">{t("start.title")}</h2>
+            <p className="mt-0.5 text-xs text-slate-500">{t("start.subtitle")}</p>
+            <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+              {([
+                { icon: Icon.search, title: t("start.s1"), desc: t("start.s1d"), href: `/${locale}/search` },
+                { icon: Icon.bookmark, title: t("start.s2"), desc: t("start.s2d"), href: null },
+                { icon: Icon.qr, title: t("start.s3"), desc: t("start.s3d"), href: "#qr" },
+              ] as const).map((step, i) => {
+                const StepIcon = step.icon;
+                const body = (
+                  <>
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                        {i + 1}
+                      </span>
+                      <StepIcon aria-hidden="true" size={ICON_SIZE.sm} className="text-brand-600" />
+                      <span className="text-sm font-semibold text-slate-900">{step.title}</span>
+                    </span>
+                    <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">{step.desc}</span>
+                  </>
+                );
+                return (
+                  <li key={i}>
+                    {step.href ? (
+                      <Link
+                        href={step.href}
+                        className="block h-full rounded-xl border border-line bg-surface-muted/60 p-3 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className="h-full rounded-xl border border-line bg-surface-muted/60 p-3">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
         )}
 
         {/* 2. Nima qilishim kerak? — tasdiqlash kutayotgan xaridlar */}
@@ -535,7 +678,7 @@ export default function ProfilePage() {
 
         {/* Qo'limdagi kitoblar — muqova bilan */}
         {activeBorrows.length > 0 && (
-          <section className="card-surface rounded-2xl p-5">
+          <section id="qolimdagi-kitoblar" className="card-surface scroll-mt-20 rounded-2xl p-5">
             <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
               <Icon.book aria-hidden="true" size={ICON_SIZE.sm} className="text-brand-500" />
               {t("myBooks")}
@@ -620,19 +763,44 @@ export default function ProfilePage() {
                     library: tx.book.library,
                   }}
                   meta={
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-                      {tx.status === "RESERVED" ? t("bronReady") : t("bronPending")}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                        {tx.status === "RESERVED" ? t("bronReady") : t("bronPending")}
+                      </span>
+                      {/* Keyingi qadam: PENDING — qachongacha tasdiq kutiladi
+                          (server sanasi), RESERVED — kutubxonaga borish. */}
+                      {tx.status === "PENDING" && tx.reservationExpiresAt && (
+                        <span className="text-[11px] text-slate-500">
+                          {t("bronUntil", { date: fmtDayMonthTime(tx.reservationExpiresAt) })}
+                        </span>
+                      )}
+                      {tx.status === "RESERVED" && (
+                        <span className="max-w-[9rem] text-right text-[11px] text-slate-500">
+                          {t("bronConfirmedHint")}
+                        </span>
+                      )}
+                    </div>
                   }
                   action={
-                    <button
-                      type="button"
-                      onClick={() => cancelMut.mutate(tx.id)}
-                      disabled={cancelMut.isPending}
-                      className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
-                    >
-                      {t("cancel")}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {tx.status === "RESERVED" && (
+                        <a
+                          href="#qr"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline"
+                        >
+                          <Icon.qr aria-hidden="true" size={ICON_SIZE.xs} />
+                          {t("showQr")}
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => cancelMut.mutate(tx.id)}
+                        disabled={cancelMut.isPending}
+                        className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                      >
+                        {t("cancel")}
+                      </button>
+                    </div>
                   }
                 />
               ))}
@@ -644,8 +812,25 @@ export default function ProfilePage() {
         {!isDokon && (
           <>
             <ReaderSearchBar locale={locale} />
-            <ReaderDiscovery locale={locale} onToast={showToast} />
-            <ReadingCharts finished={finishedBooks} />
+            {/* fieldset disabled — muddati o'tgan kitob bo'lsa ichidagi BARCHA
+                Bron tugmalari brauzer darajasida o'chadi (ReaderDiscovery'da
+                boshqa tugma yo'q, havolalar ishlayveradi). Sabab — tepadagi
+                OverdueNotice banneri. */}
+            <fieldset
+              disabled={reserveBlocked}
+              aria-describedby={reserveBlocked ? "overdue-notice" : undefined}
+              className="m-0 min-w-0 border-0 p-0"
+            >
+              <ReaderDiscovery
+                locale={locale}
+                onToast={showToast}
+                viloyatId={profile.address?.viloyatId ?? undefined}
+                tumanId={profile.address?.tumanId ?? undefined}
+              />
+            </fieldset>
+            {/* Grafik faqat kamida bitta o'qilgan kitob bo'lganda — bo'sh
+                grafik yangi kitobxonga foyda bermaydi, sahifani uzaytiradi. */}
+            {finishedBooks.length > 0 && <ReadingCharts finished={finishedBooks} />}
           </>
         )}
 
@@ -659,45 +844,6 @@ export default function ProfilePage() {
                 : badgeCatalogFallback
             }
           />
-        )}
-
-        {/* Kutubxona pasporti — yig'ilgan, kerak bo'lganda ochiladi */}
-        {profile.sifatId && (
-          <section className="card-surface overflow-hidden rounded-2xl">
-            <button
-              type="button"
-              onClick={() => setShowQr((v) => !v)}
-              aria-expanded={showQr}
-              className="flex w-full items-center justify-between gap-3 p-5 text-left"
-            >
-              <span className="flex min-w-0 items-center gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                  <Icon.qr aria-hidden="true" size={ICON_SIZE.sm} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-base font-bold text-slate-900">
-                    {t("passport")}
-                  </span>
-                  <span className="block truncate font-mono text-xs text-slate-500">
-                    {profile.sifatId}
-                  </span>
-                </span>
-              </span>
-              <Icon.next
-                aria-hidden="true"
-                size={ICON_SIZE.sm}
-                className={`shrink-0 text-slate-400 transition-transform ${showQr ? "rotate-90" : ""}`}
-              />
-            </button>
-            {showQr && (
-              <div className="flex flex-col items-center gap-4 border-t border-line p-5 pt-4">
-                <RotatingUserQr sifatId={profile.sifatId} />
-                <p className="max-w-xs text-center text-xs leading-relaxed text-slate-500">
-                  {t("qrHint")}
-                </p>
-              </div>
-            )}
-          </section>
         )}
 
         {/* 5. Sozlash */}

@@ -28,7 +28,8 @@ const customJestConfig = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
+  // e2e/ — Playwright spec'lari (alohida runner: `npm run e2e`), Jest ularni ochmasin.
+  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/", "<rootDir>/e2e/"],
 };
 
 module.exports = createJestConfig(customJestConfig);

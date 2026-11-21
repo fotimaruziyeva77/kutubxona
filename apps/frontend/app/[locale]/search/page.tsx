@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { searchBooks, getNearbyLibraries, type Book, type NearbyLibrary } from "@/lib/api/libraries";
+import {
+  searchBooks,
+  getNearbyLibraries,
+  getLibrary,
+  type Book,
+  type NearbyLibrary,
+} from "@/lib/api/libraries";
+import SearchLoading from "./loading";
 import { searchStoreProducts, type StoreProductSearchResult } from "@/lib/api/store";
-import { ReaderShell } from "@/components/reader/ReaderShell";
+import { AdaptiveShell } from "@/components/reader/AdaptiveShell";
+import { BookCover } from "@/components/books/BookCover";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
 
 // A library book result carries a libraryId on every search path (Elasticsearch
@@ -20,7 +29,26 @@ function libraryHref(locale: string, book: Book): string | null {
   // type, then fall back to the always-present libraryId.
   const code = (book.library as { code?: string } | undefined)?.code;
   const codeOrId = code ?? book.libraryId;
-  return codeOrId ? `/${locale}/library/${encodeURIComponent(codeOrId)}` : null;
+  // `?book=` — kutubxona sahifasi aynan shu kitobni tepada "Tanlangan kitob"
+  // kartasi sifatida ko'rsatadi. Usiz kitobxon bosgan kitobini kutubxonaning
+  // 50 talik katalogidan qaytadan qidirishi kerak edi (u yerda bo'lmasligi ham
+  // mumkin edi).
+  return codeOrId
+    ? `/${locale}/library/${encodeURIComponent(codeOrId)}?book=${encodeURIComponent(book.id)}`
+    : null;
+}
+
+/**
+ * Muqova manbai — bosh sahifadagi kitob kartasi bilan BIR XIL qoida:
+ * yuklangan muqova bo'lsa `/api/books/:id/cover` (updatedAt bilan kesh
+ * buziladi), bo'lmasa BookCover'ning generatsiya qilingan muqovasi.
+ * Avval qidiruv o'z gradient + ikon placeholder'ini chizardi va bitta kitob
+ * bosh sahifada va qidiruvda butunlay boshqacha ko'rinardi.
+ */
+function bookCoverSrc(book: Book): string | null {
+  if (!book.coverUrl) return null;
+  const v = (book as { updatedAt?: string }).updatedAt;
+  return `/api/books/${encodeURIComponent(book.id)}/cover${v ? `?v=${encodeURIComponent(v)}` : ""}`;
 }
 
 /**
@@ -62,10 +90,30 @@ function formatPrice(price: number, unit: string): string {
 // Main Page
 // ---------------------------------------------------------------------------
 
+/**
+ * useSearchParams() Next 14 da statik sahifada Suspense chegarasini talab
+ * qiladi — aks holda build "Missing Suspense boundary with useSearchParams"
+ * bilan yiqiladi. Fallback — mavjud skelet (loading.tsx).
+ */
 export default function SearchPage() {
-  const locale = useLocale();
+  return (
+    <Suspense fallback={<SearchLoading />}>
+      <SearchPageInner />
+    </Suspense>
+  );
+}
+
+function SearchPageInner() {
   const t = useTranslations("ReaderSearch");
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  // Landing, kitobxon bosh sahifasi va tavsiyalar `?q=` bilan, kutubxona
+  // sahifasining "To'liq katalog" havolasi `?libraryId=` bilan yuboradi.
+  // Avval ikkalasi ham o'qilmasdi — foydalanuvchi bo'sh qidiruvga tushardi.
+  const qParam = searchParams.get("q") ?? "";
+  const libraryIdParam = searchParams.get("libraryId") ?? "";
+  const [query, setQuery] = useState(qParam);
   const [genre, setGenre] = useState("");
   const [lang, setLang] = useState("");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
@@ -82,6 +130,26 @@ export default function SearchPage() {
   const [pricePreset, setPricePreset] = useState(0);
 
 
+  // URL o'zgarsa (yangi `?q=` bilan qayta kelish) maydon va sahifalash
+  // yangilanadi; foydalanuvchi yozganda esa URL tegilmaydi.
+  useEffect(() => {
+    setQuery(qParam);
+    setPage(1);
+    setStorePage(1);
+  }, [qParam]);
+
+  // Kutubxona bo'yicha cheklov chipi uchun nom.
+  const { data: scopedLibrary } = useQuery({
+    queryKey: ["library", libraryIdParam],
+    queryFn: () => getLibrary(libraryIdParam),
+    enabled: Boolean(libraryIdParam),
+    staleTime: 300_000,
+  });
+  const clearLibraryFilter = () => {
+    const q = query.trim();
+    router.replace(q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname);
+  };
+
   const debouncedQuery = useDebounce(query, 400);
   const debouncedMin = useDebounce(minPrice, 300);
   const debouncedMax = useDebounce(maxPrice, 300);
@@ -92,12 +160,13 @@ export default function SearchPage() {
   // while deleting/retyping the box) served a STALE cached result instead of
   // refetching — old book names appeared "stuck" even after changing the query.
   const { data: searchResult, isLoading: searchLoading } = useQuery({
-    queryKey: ["books-search", debouncedQuery, genre, lang, onlyAvailable, page],
+    queryKey: ["books-search", debouncedQuery, genre, lang, onlyAvailable, page, libraryIdParam],
     queryFn: () =>
       searchBooks({
         q: debouncedQuery || undefined,
         genre: genre || undefined,
         lang: lang || undefined,
+        libraryId: libraryIdParam || undefined,
         available: onlyAvailable || undefined,
         page,
         limit: 20,
@@ -212,12 +281,12 @@ export default function SearchPage() {
   const libraryCount = searchResult?.total ?? 0;
   const storeCount = storeResult?.total ?? 0;
 
-  // Qidiruv — kitobxon qobig'ining bir qismi: pastki tab-panel va
-  // "Asosiy"ga qaytish yo'li shu yerda ham bo'ladi. Avval sahifa o'z
-  // qobig'ini chizardi va bu yerga kirgan foydalanuvchi orqaga qaytish
-  // yo'lini topolmasdi.
+  // Qobiq — AdaptiveShell: kirgan kitobxonga ilova qobig'i (pastki
+  // tab-panel, "Orqaga" → profil), mehmonga esa bosh sahifa bilan bir xil
+  // ommaviy qobiq. Avval ReaderShell SHARTSIZ chizilardi va mehmon
+  // "Orqaga"/"Asosiy"ni bossa login sahifasiga tushardi.
   return (
-    <ReaderShell title={t("title")} backHref={`/${locale}/profile`}>
+    <AdaptiveShell title={t("title")}>
       <div>
         <p className="text-slate-500 mb-6">
           {t("subtitle")}
@@ -237,6 +306,24 @@ export default function SearchPage() {
             />
           </div>
 
+          {/* Kutubxona bo'yicha cheklov — kutubxona sahifasidan kelganda */}
+          {libraryIdParam && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
+                <Icon.library aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("libraryFilter", { name: scopedLibrary?.name ?? "…" })}
+              </span>
+              <button
+                type="button"
+                onClick={clearLibraryFilter}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-700"
+              >
+                <Icon.close aria-hidden="true" size={ICON_SIZE.xs} />
+                {t("clearLibraryFilter")}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3 items-center">
             {/* Genre chips */}
             <div className="flex gap-1.5 flex-wrap">
@@ -255,10 +342,12 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {/* Language */}
+            {/* Language — ko'rinadigan label yo'q, shuning uchun aria-label
+                (axe select-name, WCAG 4.1.2) */}
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value)}
+              aria-label={t("langFilter")}
               className="border border-line-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {LANGS.map((l) => (
@@ -309,7 +398,7 @@ export default function SearchPage() {
                   onClick={() => handlePricePreset(i)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                     pricePreset === i
-                      ? "bg-orange-600 text-white border-orange-600"
+                      ? "bg-orange-700 text-white border-orange-700"
                       : "border-line-strong text-slate-600 hover:border-orange-400"
                   }`}
                 >
@@ -350,7 +439,7 @@ export default function SearchPage() {
 
         {/* ── Tabs (non-nearby) ── */}
         {!nearbyMode && (
-          <div className="flex gap-1 card-surface rounded-xl p-1 mb-4">
+          <div className="flex min-w-0 gap-1 card-surface rounded-xl p-1 mb-4">
             {([
               { key: "all", label: t("tabAll"), count: libraryCount + storeCount },
               { key: "libraries", label: t("tabLibraries"), count: libraryCount, icon: Icon.library },
@@ -359,18 +448,20 @@ export default function SearchPage() {
               <button
                 key={tabItem.key}
                 onClick={() => setViewTab(tabItem.key)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   viewTab === tabItem.key
                     ? "bg-brand-600 text-white shadow-sm"
                     : "text-slate-600 hover:bg-surface-muted"
                 }`}
               >
-                {"icon" in tabItem && <tabItem.icon aria-hidden="true" size={ICON_SIZE.sm} />}
-                {tabItem.label}
+                {"icon" in tabItem && (
+                  <tabItem.icon aria-hidden="true" size={ICON_SIZE.sm} className="hidden shrink-0 sm:block" />
+                )}
+                <span className="truncate">{tabItem.label}</span>
                 {debouncedQuery && (
                   <span
-                    className={`ml-1.5 text-xs ${
-                      viewTab === tabItem.key ? "text-blue-200" : "text-slate-400"
+                    className={`shrink-0 text-[11px] sm:ml-0.5 sm:text-xs ${
+                      viewTab === tabItem.key ? "text-white" : "text-slate-400"
                     }`}
                   >
                     ({tabItem.count})
@@ -420,7 +511,7 @@ export default function SearchPage() {
           />
         )}
       </div>
-    </ReaderShell>
+    </AdaptiveShell>
   );
 }
 
@@ -813,7 +904,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
               {product.storeName}
             </span>
             {product.stockCount > 0 ? (
-              <span className="text-green-600 font-medium">{t("inStock")}</span>
+              <span className="text-green-700 font-medium">{t("inStock")}</span>
             ) : (
               <span className="text-red-500 font-medium">{t("outOfStock")}</span>
             )}
@@ -854,21 +945,15 @@ function BookCard({
         compact ? "p-3" : "p-4"
       } flex gap-3 hover:shadow-sm transition-shadow`}
     >
-      {book.coverUrl ? (
-        <img
-          src={book.coverUrl}
-          alt={book.title}
-          className={`object-cover rounded ${compact ? "w-8 h-12" : "w-14 h-20"}`}
+      <div className="shrink-0">
+        <BookCover
+          size={compact ? "xs" : "sm"}
+          title={book.title}
+          author={book.author}
+          genre={book.genre}
+          coverUrl={bookCoverSrc(book)}
         />
-      ) : (
-        <div
-          className={`bg-gradient-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center text-brand-600 ${
-            compact ? "w-8 h-12" : "w-14 h-20"
-          }`}
-        >
-          <Icon.book aria-hidden="true" size={compact ? ICON_SIZE.xs : ICON_SIZE.md} />
-        </div>
-      )}
+      </div>
       <div className="flex-1 min-w-0">
         <h3
           className={`font-semibold text-slate-900 truncate ${
@@ -889,7 +974,7 @@ function BookCard({
         )}
         <div className={`mt-1 flex items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
           {book.availableCount > 0 ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-green-700 font-medium">
               {t("freeAvailable", { count: book.availableCount })}
             </span>
           ) : (
@@ -962,7 +1047,7 @@ function StoreProductCard({
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
           {product.stockCount > 0 ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-green-700 font-medium">
               {t("inStockCount", { count: product.stockCount })}
             </span>
           ) : (

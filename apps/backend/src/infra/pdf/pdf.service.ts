@@ -81,7 +81,10 @@ export class PdfService implements OnModuleDestroy {
     try {
       const browser = await this.getBrowser();
       page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "networkidle0" });
+      // puppeteer-core 25: setContent uchun waitUntil faqat "load" | "domcontentloaded"
+      // (networkidle* olib tashlangan). "load" inline HTML + tashqi shrift/rasm
+      // subresurslarini kutadi — PDF uchun yetarli.
+      await page.setContent(html, { waitUntil: "load" });
 
       const pdf = await page.pdf({
         format: options.format ?? "A4",

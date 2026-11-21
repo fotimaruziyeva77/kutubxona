@@ -1,0 +1,39 @@
+{
+  // CI: `npx audit-ci@^7 --config audit-ci.jsonc` (.github/workflows/ci.yml, `audit` job).
+  // Prod bog'liqliklarda high/critical topilsa — qizil. Allowlist faqat major upgrade
+  // talab qiladigan (hozircha yopib bo'lmaydigan) advisory'lar uchun; har biri sabab,
+  // mitigatsiya va qayta ko'rib chiqish sanasi bilan. Ro'yxat qisqargani sari yaxshi.
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "high": true,
+  "skip-dev": true,
+  "report-type": "important",
+  "allowlist": [
+    // ── Next.js 14.2.35 (apps/frontend) — barcha tuzatishlar faqat Next 15.5.x/16 da
+    //    (React 19 + App Router migratsiyasi, alohida PR). Qayta ko'rish: 2026-12-01.
+    //    Mitigatsiya (2026-10-29): next/image loyihada ishlatilmaydi →
+    //    next.config.js `images.unoptimized: true` va nginx.prod.conf `/_next/image → 404`
+    //    (Image Optimization API umuman ochilmaydi); Server Actions ishlatilmaydi
+    //    (barcha mutatsiyalar NestJS API orqali); Pages Router middleware yo'q;
+    //    rewrites'da foydalanuvchi boshqaradigan URL yo'q; server Linux (windows RCE N/A).
+    "GHSA-p293-qw3h-jr36", // RCE — windows-hosted server (Linux'da N/A)
+    "GHSA-2xp9-vwfh-vxw4", // RCE — Image Optimization API (yopilgan: unoptimized + nginx 404)
+    "GHSA-2464-fhr4-w9xw", // RCE — Image Optimization API (yopilgan)
+    "GHSA-q4gf-8mx6-v5v3", // DoS — Server Components
+    "GHSA-8h8q-6873-q5fj", // DoS — Server Components
+    "GHSA-c4j6-fc7j-m34r", // SSRF — Server Actions (ishlatilmaydi)
+    "GHSA-36qx-fr4f-26g5", // Middleware bypass — Pages Router (ishlatilmaydi)
+    "GHSA-m99w-x7hq-7vfj", // DoS — Server Actions (ishlatilmaydi)
+    "GHSA-89xv-2m56-2m9x", // SSRF — Server Actions, custom server (ishlatilmaydi)
+    "GHSA-p9j2-gv94-2wf4", // SSRF — rewrites, attacker-controlled host (rewrites statik)
+    "GHSA-p3m5-59mp-jv5r", // DoS — Server Actions (ishlatilmaydi)
+    "GHSA-h25m-26qc-wcjf", // DoS — HTTP request deserialization, insecure config (standart config)
+    // ── postcss 8.4.31 — Next 14 ning o'zi pin qilgan nusxasi (override npm 11 da
+    //    qo'llanmadi). Faqat BUILD vaqtida, birinchi tomon CSS bilan ishlaydi — runtime
+    //    server postcss ni yuklamaydi. Next upgrade bilan birga yopiladi.
+    "GHSA-6g55-p6wh-862q", // postcss — sourceMappingURL orqali fayl o'qish (build-vaqt)
+    "GHSA-r28c-9q8g-f849", // postcss — source map path traversal (build-vaqt)
+    // ── zod 4.6.5 — @serwist/next 9.5 build-plugin konfiguratsiyasini tekshiradi
+    //    (build-vaqt, foydalanuvchi kiritmasi yo'q). serwist yangilansa yopiladi.
+    "GHSA-mrhx-c7xc-m3w5"  // zod — oversized collection memory exhaustion
+  ]
+}

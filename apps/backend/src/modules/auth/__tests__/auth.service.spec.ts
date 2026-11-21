@@ -93,7 +93,7 @@ describe("AuthService", () => {
       expect(mockPrisma.otpCode.upsert).toHaveBeenCalledWith(
         expect.objectContaining({ where: { phone: "+998901234567" } })
       );
-      expect(mockSms.sendOtp).toHaveBeenCalledWith("+998901234567", expect.any(String));
+      expect(mockSms.sendOtp).toHaveBeenCalledWith("+998901234567", expect.any(String), 120);
       expect(result).toEqual({ message: "SMS yuborildi" });
     });
 

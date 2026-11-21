@@ -52,11 +52,13 @@
   "auth": {
     "phone": "Telefon nómeri",
     "phonePlaceholder": "+998 XX XXX XX XX",
-    "sendOtp": "SMS kod jiberiw",
-    "otpCode": "SMS kod",
-    "otpPlaceholder": "4 sanlı kod",
+    "sendOtp": "Telegram arqalı kod alıw",
+    "otpCode": "Tastıyıqlaw kodı",
+    "otpPlaceholder": "6 sanlı kod",
     "verifyOtp": "Tastıyıqlaw",
-    "otpSent": "SMS kod jiberildi",
+    "otpSent": "Kod Telegram'ǵa jiberildi",
+    "tgBotHint": "Tastıyıqlaw kodı Telegram botımız arqalı keledi. Bottı ashıń, «Start» tı basıń hám telefon nomerińizdi bólisiń — kod dárhal keledi.",
+    "tgBotOpen": "Telegram bottı ashıw",
     "resendIn": "{seconds} sekund keyin qayta jiberiw",
     "firstName": "Atı",
     "lastName": "Familiyası",
@@ -381,6 +383,14 @@
     "findNearby": "Jaqın kitapxanalardan tabıw"
   },
   "landing": {
+    "newBooks": {
+      "eyebrow": "Fondtan",
+      "title": "Kitapxanalardaǵı kitaplar",
+      "subtitle": "Kitapxanalarǵa jańa qosılǵan kitaplar. Dizimnen ótiń, bron qılıń hám kitapxanadan alıń.",
+      "all": "Barlıq kitaplar",
+      "available": "Bar: {count}",
+      "unavailable": "Házir bánt"
+    },
     "meta": {
       "title": "SIFAT LIBRARY — Milliy Kitap Oqıw Indeksi",
       "description": "Ózbekistan Respublikasınıń milliy kitap oqıw monitoringi hám reyting platforması. PQ-9 qararı tiykarında islep shıǵılǵan."
@@ -399,7 +409,9 @@
       "statLibraries": "Kitapxana",
       "statReaders": "Kitap oqıwshı",
       "statBooks": "Kitap fondı",
-      "statRI": "Milliy RI balı"
+      "statRI": "Milliy RI balı",
+      "trustData": "Maǵlıwmatlar Ózbekstanda saqlanadı",
+      "trustOffline": "Oflayn rejim — 12 saat"
     },
     "challenge": {
       "title": "Oqıw sayaxatıńız usı jerden baslanadı",

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneField } from "@/components/ui/PhoneField";
+import { TelegramOtpHint } from "@/components/auth/TelegramOtpHint";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { authApi } from "@/lib/api/auth";
 import { usersApi } from "@/lib/api/users";
@@ -171,7 +172,7 @@ export default function LoginPage() {
       setMode("forgot-verify");
       startResendTimer();
     } catch (e: unknown) {
-      setError(humanizeError(e, "SMS yuborishda xato"));
+      setError(humanizeError(e, "Kod yuborishda xato"));
     } finally { setLoading(false); }
   };
 
@@ -242,7 +243,7 @@ export default function LoginPage() {
             <CardTitle>
               {mode === "login"         && "Tizimga kirish"}
               {mode === "forgot-send"   && (skipOtp ? t("login.devBypassReset.title") : "Parolni tiklash")}
-              {mode === "forgot-verify" && "SMS kodni tasdiqlang"}
+              {mode === "forgot-verify" && "Telegram'dagi kodni kiriting"}
               {mode === "forgot-reset"  && "Yangi parol o'rnating"}
             </CardTitle>
           </CardHeader>
@@ -295,6 +296,7 @@ export default function LoginPage() {
                 <p className="text-sm text-slate-600">
                   Telefon raqamingizni kiriting — tasdiqlash kodi yuboramiz.
                 </p>
+                <TelegramOtpHint />
                 <div>
                   <label className="text-sm font-medium mb-1 block">Telefon raqam</label>
                   <PhoneField
@@ -304,7 +306,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button className="w-full" size="lg" onClick={handleForgotSendOtp} disabled={loading}>
-                  {loading ? "Yuborilmoqda..." : "SMS olish"}
+                  {loading ? "Yuborilmoqda..." : "Telegram orqali kod olish"}
                 </Button>
                 <button
                   className="w-full text-sm text-slate-500 hover:text-slate-700"
@@ -361,6 +363,7 @@ export default function LoginPage() {
             {/* ── PAROLNI UNUTDIM — OTP ── */}
             {mode === "forgot-verify" && (
               <>
+                <TelegramOtpHint />
                 <div className="bg-blue-50 text-brand-700 text-sm px-4 py-3 rounded-lg">
                   <strong>{phone}</strong> raqamiga 6 raqamli kod yuborildi
                 </div>
@@ -427,7 +430,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-slate-500 mt-4">
           Yangi foydalanuvchimisiz?{" "}
-          <Link href={`/${locale}/register`} className="text-brand-600 hover:underline">
+          <Link href={`/${locale}/register`} className="text-brand-600 underline underline-offset-2">
             Ro&apos;yhatdan o&apos;tish
           </Link>
         </p>

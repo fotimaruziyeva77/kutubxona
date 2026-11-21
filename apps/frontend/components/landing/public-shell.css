@@ -1,0 +1,7 @@
+/* Ommaviy qobiq (PublicShell) o'z sarlavhasida — LandingHeader'da — inline
+   til/tema boshqaruvini chizadi. Root layout'dagi suzuvchi (position: fixed)
+   nusxa yashiriladi, aks holda u "Kirish" / "Demo so'rash" tugmalari ustiga
+   tushib qolardi. ReaderShell uchun xuddi shu qoida globals.css'da bor. */
+body:has([data-public-shell]) .locale-theme-control {
+  display: none;
+}

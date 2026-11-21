@@ -5,6 +5,11 @@ const config: Config = {
   testEnvironment: "node",
   rootDir: "src",
   testRegex: ".*\\.spec\\.ts$",
+  // Default 5 s: to'liq suite parallel yurganda PDF/Excel generatsiya qiladigan
+  // spec'lar (books-import, invoice) yolg'iz 16 s, yuklama ostida 200 s+ cho'zilib
+  // timeout'ga tushardi (2026-10-29/30 — kod regressiyasi emas, flaky). 30 s —
+  // haqiqiy osilib qolishni hali ham ushlaydi.
+  testTimeout: 30_000,
   transform: {
     "^.+\\.ts$": ["ts-jest", {
       // Pre-existing @nestjs/elasticsearch type incompatibility: the installed
@@ -14,17 +19,23 @@ const config: Config = {
       diagnostics: false,
     }],
   },
+  // T6 (2026-10-31): controller'lar va guard'lar endi coverage'ga KIRADI —
+  // RBAC (@Roles/@Public) va egalik tekshiruvlari (IDOR) aynan shu qatlamda,
+  // ularni o'lchovdan chiqarib tashlash xavfsizlik testlarini ko'rinmas
+  // qilardi. Chiqarib tashlanganlar: modul deklaratsiyalari, bootstrap,
+  // infra adapterlari (tashqi servislar), dekoratorlar (metadata), mock/test.
   collectCoverageFrom: [
     "**/*.ts",
     "!**/*.module.ts",
-    "!**/*.controller.ts",
     "!**/main.ts",
     "!**/infra/**",
-    "!**/common/guards/**",
     "!**/common/decorators/**",
     "!**/__tests__/**",
+    "!**/__mocks__/**",
     "!**/dist/**",
-    "!**/app.controller.ts"
+    // CLI skriptlar (es-reindex) — klientlarni yaratib umumiy funksiyani chaqiradi;
+    // mantiqning o'zi books-search-index.spec.ts da sinaladi.
+    "!**/scripts/**"
   ],
   coverageThreshold: {
     global: {

@@ -33,23 +33,47 @@ export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
   // ── Ochiq qidiruv endpointlari (auth kerak emas — @Public, INFRA-03) ──────
-  // AUDIT-REPORT M16 — majburiy pagination (default 50, max 200); javob
-  // shakli (massiv) o'zgarmagan, mavjud chaqiruvchilar buzilmaydi.
+  // AUDIT-REPORT M16 — majburiy pagination (default 50, max 200).
+  // 2026-11-01: javob { total, page, limit, data } (avval faqat massiv) —
+  // fond sahifasi sahifalash uchun jami songa muhtoj; yagona chaqiruvchi
+  // (apps/frontend lib/api/libraries.ts getBooks) shu bilan yangilandi.
+  // Filtrlar: q (nomi/muallif/ISBN), genre, lang, available=true.
   @Public()
   @Get()
   @ApiQuery({ name: "libraryId", required: false })
+  @ApiQuery({ name: "q", required: false, description: "Nomi / muallif / ISBN bo'yicha qidiruv" })
+  @ApiQuery({ name: "genre", required: false })
+  @ApiQuery({ name: "lang", required: false })
+  @ApiQuery({ name: "available", required: false, description: "true — faqat mavjud nusxasi borlar" })
+  @ApiQuery({ name: "viloyatId", required: false, description: "Shu viloyat kutubxonalari fondi" })
+  @ApiQuery({ name: "tumanId", required: false, description: "Shu tuman kutubxonalari fondi" })
+  @ApiQuery({ name: "activeLibraries", required: false, description: "true — faqat faol kutubxonalar" })
   @ApiQuery({ name: "page", required: false, description: "Sahifa (default 1)" })
   @ApiQuery({ name: "limit", required: false, description: "Sahifa hajmi (default 50, max 200)" })
   findAll(
     @Query("libraryId") libraryId?: string,
+    @Query("q") q?: string,
+    @Query("genre") genre?: string,
+    @Query("lang") lang?: string,
+    @Query("available") available?: string,
     @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
+    @Query("viloyatId") viloyatId?: string,
+    @Query("tumanId") tumanId?: string,
+    @Query("activeLibraries") activeLibraries?: string
   ) {
-    return this.booksService.findAll(
+    return this.booksService.findAll({
       libraryId,
-      page !== undefined ? Number(page) : undefined,
-      limit !== undefined ? Number(limit) : undefined
-    );
+      q,
+      genre,
+      lang,
+      available: available === "true" || available === "1",
+      viloyatId: viloyatId || undefined,
+      tumanId: tumanId || undefined,
+      activeLibraries: activeLibraries === "true" || activeLibraries === "1",
+      page: page !== undefined ? Number(page) : undefined,
+      limit: limit !== undefined ? Number(limit) : undefined
+    });
   }
 
   @Public()
@@ -88,6 +112,27 @@ export class BooksController {
       "Content-Length": String(buf.length),
     });
     res.end(buf);
+  }
+
+  // Muqova rasmi alohida, keshlanadigan URL orqali. coverUrl bazada data-URL
+  // (~80KB) bo'lib saqlanadi — ro'yxatlar/bosh sahifa HTML'iga ichma-ich
+  // qo'yilsa sahifa og'irlashadi. Bu yerdan brauzer rasmni bir marta yuklab
+  // keshlaydi (?v=<updatedAt> bilan versiyalanadi).
+  @Public()
+  @Get(":id/cover")
+  async cover(@Param("id") id: string, @Res() res: Response) {
+    const result = await this.booksService.getCover(id);
+    if (result.kind === "redirect") {
+      res.set("Cache-Control", "public, max-age=86400");
+      return res.redirect(302, result.url);
+    }
+    res.set({
+      "Content-Type": result.mime,
+      "Content-Length": String(result.data.length),
+      "Cache-Control": "public, max-age=604800",
+      "X-Content-Type-Options": "nosniff",
+    });
+    res.end(result.data);
   }
 
   @Public()
@@ -132,6 +177,18 @@ export class BooksController {
   @Roles(UserRole.KUTUBXONACHI, UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
   getImportStatus(@Param("jobId") jobId: string) {
     return this.booksService.getImportStatus(jobId);
+  }
+
+  // Elasticsearch `sifat_books` indeksini Postgres'dan qayta to'ldirish.
+  // ?recreate=true — indeksni o'chirib, mapping bilan qayta yaratadi.
+  // ES o'chiq bo'lsa 503. CLI muqobili: `npm run es:reindex -w apps/backend`.
+  @Post("reindex")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiQuery({ name: "recreate", required: false, description: "true — indeksni qayta yaratish" })
+  reindex(@Query("recreate") recreate?: string) {
+    return this.booksService.reindexAll({ recreate: recreate === "true" || recreate === "1" });
   }
 
   @Put(":id")

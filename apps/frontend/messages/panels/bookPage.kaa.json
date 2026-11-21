@@ -1,0 +1,21 @@
+{
+  "BookPage": {
+    "home": "Bas bet",
+    "books": "Kitaplar",
+    "genre": "Janr",
+    "year": "Baspa jılı",
+    "pages": "Betler",
+    "lang": "Til",
+    "available": "Bar: {count} / {total} nusqa",
+    "unavailable": "Házirshe bánt",
+    "reserve": "Bron etiw",
+    "openLibrary": "Kitapxananı kóriw",
+    "moreByAuthor": "Avtordıń basqa kitapları",
+    "about": "Kitap haqqında",
+    "whereTitle": "Qay jerden alıw múmkin",
+    "whereSubtitle": "Kitapxananı saylań — sol jerde bron etip, kitaptı alasız.",
+    "copies": "{count} bos",
+    "unavailableShort": "Bánt",
+    "similarTitle": "Uqsas kitaplar"
+  }
+}

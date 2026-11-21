@@ -13,7 +13,7 @@ const mockPrisma = {
   book: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
   user: { findUnique: jest.fn(), update: jest.fn() },
   library: { findUnique: jest.fn() },
-  institution: { findFirst: jest.fn() },
+  institution: { findFirst: jest.fn(), findUnique: jest.fn() },
   // Do'kon operatorining egaligi Institution.directorId emas, Store.operatorId
   // orqali tekshiriladi (transactions.service.ts:730) — spec eski shartnomada
   // qolgan edi va storeManualEntry testlari TypeError bilan yiqilardi.
@@ -47,7 +47,13 @@ const mockPrisma = {
     update:     jest.fn(),
   },
   $transaction: jest.fn(),
+  // I2 — nusxani fondga qaytarish: LEAST(availableCount + 1, totalCount)
+  $executeRaw: jest.fn().mockResolvedValue(1),
 };
+
+// I1 — kutubxona doirasi. SA = SUPER_ADMIN (doira tekshiruvi DB'siz o'tadi),
+// mavjud oqim testlari shu actor bilan ishlaydi.
+const SA = { sub: "sa-1", role: "SUPER_ADMIN" };
 
 const mockSms = {
   sendNotification: jest.fn().mockResolvedValue(undefined),
@@ -137,40 +143,40 @@ describe("TransactionsService", () => {
         fn(mockPrisma as unknown as typeof mockPrisma)
       );
 
-      const result = await service.borrow("u1", "b1");
+      const result = await service.borrow("u1", "b1", undefined, undefined, SA);
       expect(result).toEqual(newTx);
     });
 
     it("kitob topilmasa NotFoundException", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(activeUser);
       mockPrisma.book.findUnique.mockResolvedValue(null);
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(NotFoundException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(NotFoundException);
     });
 
     it("foydalanuvchi topilmasa NotFoundException", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.book.findUnique.mockResolvedValue(availableBook);
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(NotFoundException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(NotFoundException);
     });
 
     it("kitob mavjud bo'lmasa BadRequestException", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(activeUser);
       mockPrisma.book.findUnique.mockResolvedValue({ ...availableBook, availableCount: 0 });
       mockPrisma.bookTransaction.count.mockResolvedValueOnce(0); // no overdue
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(BadRequestException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(BadRequestException);
     });
 
     it("muddati o'tgan kitob bor — ForbiddenException", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(activeUser);
       mockPrisma.book.findUnique.mockResolvedValue(availableBook);
       mockPrisma.bookTransaction.count.mockResolvedValueOnce(1); // has overdue
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(ForbiddenException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(ForbiddenException);
     });
 
     it("faol emas foydalanuvchi — ForbiddenException", async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ ...activeUser, status: "BLOCKED" });
       mockPrisma.book.findUnique.mockResolvedValue(availableBook);
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(ForbiddenException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(ForbiddenException);
     });
 
     it("CITIZEN uchun limit 2, oshganda BadRequestException", async () => {
@@ -179,7 +185,7 @@ describe("TransactionsService", () => {
       mockPrisma.bookTransaction.count
         .mockResolvedValueOnce(0) // no overdue
         .mockResolvedValueOnce(2); // activeBorrows = limit
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(BadRequestException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(BadRequestException);
     });
 
     it("STUDENT_UNIVERSITY uchun limit 5", async () => {
@@ -188,7 +194,7 @@ describe("TransactionsService", () => {
       mockPrisma.bookTransaction.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(5); // at limit
-      await expect(service.borrow("u1", "b1")).rejects.toThrow(BadRequestException);
+      await expect(service.borrow("u1", "b1", undefined, undefined, SA)).rejects.toThrow(BadRequestException);
     });
 
     it("Trust Score 90+ uchun +1 bonus limit", async () => {
@@ -205,7 +211,7 @@ describe("TransactionsService", () => {
       );
 
       // Should NOT throw because limit is 3 for trustScore 90
-      const result = await service.borrow("u1", "b1");
+      const result = await service.borrow("u1", "b1", undefined, undefined, SA);
       expect(result).toEqual(newTx);
     });
 
@@ -217,7 +223,7 @@ describe("TransactionsService", () => {
       mockPrisma.bookTransaction.findUnique.mockResolvedValue(reservation);
       mockPrisma.bookTransaction.update.mockResolvedValue({ ...reservation, status: "BORROWED" });
 
-      await service.borrow("u1", "b1", "res-1");
+      await service.borrow("u1", "b1", "res-1", undefined, SA);
 
       expect(mockPrisma.bookTransaction.update).toHaveBeenCalled();
     });
@@ -242,7 +248,7 @@ describe("TransactionsService", () => {
         } as unknown as typeof mockPrisma);
       });
 
-      const result = await service.returnBook("tx1");
+      const result = await service.returnBook("tx1", undefined, SA);
 
       expect(result.returned).toBe(true);
       expect(result.penaltyDays).toBe(0);
@@ -256,7 +262,7 @@ describe("TransactionsService", () => {
         fn(mockPrisma as unknown as typeof mockPrisma)
       );
 
-      const result = await service.returnBook("tx1");
+      const result = await service.returnBook("tx1", undefined, SA);
 
       expect(result.returned).toBe(true);
       expect(result.penaltyDays).toBeGreaterThan(0);
@@ -271,13 +277,13 @@ describe("TransactionsService", () => {
         } as unknown as typeof mockPrisma);
       });
 
-      const result = await service.returnBook("tx1", "lib-tashkent");
+      const result = await service.returnBook("tx1", "lib-tashkent", SA);
       expect(result.returned).toBe(true);
     });
 
     it("tranzaksiya topilmasa NotFoundException", async () => {
       mockPrisma.bookTransaction.findUnique.mockResolvedValue(null);
-      await expect(service.returnBook("notfound")).rejects.toThrow(NotFoundException);
+      await expect(service.returnBook("notfound", undefined, SA)).rejects.toThrow(NotFoundException);
     });
 
     it("BORROWED bo'lmagan tranzaksiyani qaytarishda BadRequestException", async () => {
@@ -285,7 +291,7 @@ describe("TransactionsService", () => {
         ...baseTx,
         status: TransactionStatus.RETURNED
       });
-      await expect(service.returnBook("tx1")).rejects.toThrow(BadRequestException);
+      await expect(service.returnBook("tx1", undefined, SA)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -304,7 +310,7 @@ describe("TransactionsService", () => {
         fn(mockPrisma as unknown as typeof mockPrisma)
       );
 
-      await service.borrow("u1", "b1");
+      await service.borrow("u1", "b1", undefined, undefined, SA);
 
       // The first $transaction arg must be a function (interactive form) —
       // NOT an array (legacy array form).
@@ -377,7 +383,7 @@ describe("TransactionsService", () => {
       );
       mockPrisma.$transaction.mockRejectedValue(raceErr);
 
-      const err = await service.borrow("u1", "b1").catch((e) => e);
+      const err = await service.borrow("u1", "b1", undefined, undefined, SA).catch((e) => e);
       expect(err).toBeInstanceOf(BadRequestException);
       expect(err.message).toMatch(/race/i);
     });
@@ -493,7 +499,7 @@ describe("TransactionsService", () => {
         async (fn: (p: typeof txClient) => Promise<unknown>) => fn(txClient)
       );
 
-      const result = await service.returnRoaming("tx-roam", returnLibraryId);
+      const result = await service.returnRoaming("tx-roam", returnLibraryId, SA);
 
       // Result is { returned: true, penaltyDays: 0 }
       expect(result).toEqual({ returned: true, penaltyDays: 0 });
@@ -522,7 +528,7 @@ describe("TransactionsService", () => {
         status: TransactionStatus.RETURNED
       });
       await expect(
-        service.returnRoaming("tx-roam", returnLibraryId)
+        service.returnRoaming("tx-roam", returnLibraryId, SA)
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -542,7 +548,7 @@ describe("TransactionsService", () => {
         }
       );
 
-      await service.returnRoaming("tx-roam", returnLibraryId);
+      await service.returnRoaming("tx-roam", returnLibraryId, SA);
 
       // sms.sendNotification was called with the source library's phone and
       // a message that references the return library (so the source
@@ -574,7 +580,7 @@ describe("TransactionsService", () => {
         }
       );
 
-      await service.returnRoaming("tx-roam", returnLibraryId);
+      await service.returnRoaming("tx-roam", returnLibraryId, SA);
 
       // No SMS should fire when source library has no contact number.
       expect(mockSms.sendNotification).not.toHaveBeenCalled();
@@ -859,6 +865,29 @@ describe("TransactionsService", () => {
       expect(result.correct).toBe(3);
     });
 
+    // Dublikat variant: to'g'ri javob distraktor bilan ustma-ust tushib
+    // qolgan eski testlarda ro'yxatda ikkita bir xil matn bo'ladi. Ikkalasini
+    // tanlagan ham to'g'ri hisoblanishi kerak (matn bo'yicha solishtirish).
+    it("bir xil matnli ikki variantdan istalganini tanlash to'g'ri hisoblanadi", async () => {
+      const dupQuestions = [
+        { q: "Muallif?", options: ["Abdulla Qahhor", "Oybek", "Abdulla Qahhor", "Cho'lpon"], answerIdx: 0 },
+        { q: "Nomi?", options: ["Sarob", "O'tkan kunlar", "Ufq", "Oʻtkan kunlar"], answerIdx: 1 },
+        { q: "Qachon?", options: ["A", "B", "C", "D"], answerIdx: 1 },
+      ];
+      mockPrisma.comprehensionTest.findUnique.mockResolvedValue({ ...pendingTest, questions: dupQuestions });
+      mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
+        fn(mockPrisma as unknown as typeof mockPrisma)
+      );
+      mockPrisma.comprehensionTest.update.mockResolvedValue({});
+      mockPrisma.isbnScan.update.mockResolvedValue({});
+
+      // 2-indeks ("Abdulla Qahhor" dublikati) va 3-indeks (apostrof varianti)
+      const result = await service.submitComprehensionTest("u1", "scan-1", [2, 3, 1]);
+
+      expect(result.correct).toBe(3);
+      expect(result.passed).toBe(true);
+    });
+
     it("yetarli javob yo'q — test o'tilmadi", async () => {
       mockPrisma.comprehensionTest.findUnique.mockResolvedValue(pendingTest);
       mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
@@ -926,6 +955,26 @@ describe("TransactionsService", () => {
         expect(qs[1].options[qs[1].answerIdx]).toBe("Alpomish");
         // Question 3 — correct = recency answer
         expect(qs[2].options[qs[2].answerIdx]).toBe("Oxirgi 30 kun ichida");
+      }
+    });
+
+    it("distraktorlar to'g'ri javob bilan ustma-ust tushmaydi (muallif/nom havzada bo'lsa)", () => {
+      const svc = service as unknown as {
+        generateQuestions(t: string, a: string): Array<{ q: string; options: string[]; answerIdx: number }>;
+      };
+      // Ikkalasi ham distraktor havzasida bor — avval variantlar ichida
+      // ikkita "Abdulla Qahhor" / ikkita "O'tkan kunlar" chiqardi.
+      for (let i = 0; i < 50; i++) {
+        const qs = svc.generateQuestions("Oʻtkan kunlar", "Abdulla Qahhor");
+        for (const q of qs) {
+          expect(q.options).toHaveLength(4);
+          const normalized = q.options.map((o) =>
+            o.toLowerCase().replace(/[‘’ʻʼ]/g, "'").trim()
+          );
+          expect(new Set(normalized).size).toBe(4);
+        }
+        expect(qs[0].options[qs[0].answerIdx]).toBe("Abdulla Qahhor");
+        expect(qs[1].options[qs[1].answerIdx]).toBe("Oʻtkan kunlar");
       }
     });
 
@@ -1333,7 +1382,7 @@ describe("TransactionsService", () => {
       // hasOverdueBooks count > 0 → block
       mockPrisma.bookTransaction.count.mockResolvedValueOnce(1);
 
-      const err = await service.borrow("u1", "b1").catch((e) => e);
+      const err = await service.borrow("u1", "b1", undefined, undefined, SA).catch((e) => e);
       expect(err).toBeInstanceOf(ForbiddenException);
       expect(err.message).toMatch(/muddati o'tgan/i);
     });
@@ -1428,13 +1477,13 @@ describe("TransactionsService", () => {
           data: { status: TransactionStatus.CANCELLED }
         })
       );
-      // Nusxa fondga qaytadi — bir xil interaktiv transaction ichida.
-      expect(mockPrisma.book.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: "b1" },
-          data: { availableCount: { increment: 1 } }
-        })
+      // Nusxa fondga qaytadi — bir xil interaktiv transaction ichida,
+      // totalCount bilan chegaralangan (I2).
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect((mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join("?")).toContain(
+        'LEAST("availableCount" + 1, "totalCount")'
       );
+      expect(mockPrisma.$executeRaw.mock.calls[0].slice(1)).toEqual(["b1"]);
       // RESERVED uchun mos xabar (72 soat tilga olinadi).
       expect(mockSms.sendNotification).toHaveBeenCalledWith(
         "+998901234567",
@@ -1584,6 +1633,270 @@ describe("TransactionsService", () => {
       await expect(
         service.storeManualEntry("admin-1", "+998900000000", "9789943452787")
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── I1: kutubxona doirasi (kutubxonachi faqat o'z kutubxonasi) ────────────
+  describe("library scope — assertLibraryAccess (I1)", () => {
+    const STAFF = { sub: "staff-1", role: "KUTUBXONACHI" };
+    const OWN = "lib-own";
+    const OTHER = "lib-other";
+
+    // resolveCallerLibraryId: user.findUnique({select: schoolId...}) →
+    // institution.findUnique → libraryId. Reader so'rovlari activeUser oladi.
+    function staffOwns(libraryId: string | null) {
+      mockPrisma.user.findUnique.mockImplementation(async (args: { select?: { schoolId?: boolean } }) => {
+        if (args?.select?.schoolId) {
+          return { schoolId: "inst-1", universityId: null, organizationId: null };
+        }
+        return activeUser;
+      });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId });
+    }
+    const interactive = () =>
+      mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
+        fn({
+          ...mockPrisma,
+          user: { ...mockPrisma.user, findUnique: jest.fn().mockResolvedValue({ trustScore: 80 }) },
+        } as unknown as typeof mockPrisma)
+      );
+
+    afterEach(() => {
+      mockPrisma.user.findUnique.mockReset();
+      mockPrisma.institution.findUnique.mockReset();
+      mockPrisma.$transaction.mockReset();
+    });
+
+    it("SUPER_ADMIN — DB so'rovisiz ruxsat", async () => {
+      await expect(service.assertLibraryAccess(SA, OTHER)).resolves.toBeUndefined();
+      expect(mockPrisma.institution.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("KUTUBXONACHI / MUASSASA_ADMIN o'z kutubxonasida ruxsat oladi", async () => {
+      staffOwns(OWN);
+      await expect(service.assertLibraryAccess(STAFF, OWN)).resolves.toBeUndefined();
+      await expect(
+        service.assertLibraryAccess({ sub: "ma-1", role: "MUASSASA_ADMIN" }, OWN)
+      ).resolves.toBeUndefined();
+    });
+
+    it("boshqa kutubxona → 403", async () => {
+      staffOwns(OWN);
+      await expect(service.assertLibraryAccess(STAFF, OTHER)).rejects.toThrow(
+        "Bu kutubxona sizga tegishli emas"
+      );
+    });
+
+    it("kutubxonaga bog'lanmagan xodim → 403 (fail-closed)", async () => {
+      staffOwns(null);
+      await expect(service.assertLibraryAccess(STAFF, OWN)).rejects.toThrow(ForbiddenException);
+    });
+
+    it("KITOBXON / TUMAN_ADMIN kutubxonachi amallarini bajara olmaydi → 403", async () => {
+      await expect(
+        service.assertLibraryAccess({ sub: "r", role: "KITOBXON" }, OWN)
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.assertLibraryAccess({ sub: "t", role: "TUMAN_ADMIN" }, OWN)
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("confirmReservation: boshqa kutubxona broni → 403, holat o'zgarmaydi", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-p", userId: "u1", bookId: "b1", status: TransactionStatus.PENDING,
+        user: { phone: "+998901234567" }, book: { title: "Alpomish", libraryId: OTHER },
+      });
+      await expect(service.confirmReservation("tx-p", STAFF)).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.bookTransaction.update).not.toHaveBeenCalled();
+    });
+
+    it("confirmReservation: o'z kutubxonasi broni tasdiqlanadi", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-p", userId: "u1", bookId: "b1", status: TransactionStatus.PENDING,
+        user: { phone: "+998901234567" }, book: { title: "Alpomish", libraryId: OWN },
+      });
+      mockPrisma.bookTransaction.update.mockResolvedValue({ id: "tx-p", status: TransactionStatus.RESERVED });
+      const res = await service.confirmReservation("tx-p", STAFF);
+      expect(res.status).toBe(TransactionStatus.RESERVED);
+    });
+
+    it("cancelReservation: kutubxonachi boshqa kutubxona bronini bekor qila olmaydi → 403", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-p", userId: "u1", bookId: "b1", status: TransactionStatus.PENDING,
+        user: { phone: "+998901234567" }, book: { title: "Alpomish", libraryId: OTHER },
+      });
+      await expect(
+        service.cancelReservation("tx-p", STAFF.sub, true, STAFF.role)
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("cancelReservation: kitobxon o'z bronini kutubxona doirasisiz bekor qiladi", async () => {
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-p", userId: "u1", bookId: "b1", status: TransactionStatus.PENDING,
+        user: { phone: "+998901234567" }, book: { title: "Alpomish", libraryId: OTHER },
+      });
+      interactive();
+      await expect(service.cancelReservation("tx-p", "u1", false, "KITOBXON")).resolves.toEqual({
+        cancelled: true,
+      });
+      expect(mockPrisma.institution.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("borrow: boshqa kutubxona kitobini berish → 403, inventar o'zgarmaydi", async () => {
+      staffOwns(OWN);
+      mockPrisma.book.findUnique.mockResolvedValue({ ...availableBook, libraryId: OTHER });
+      await expect(service.borrow("u1", "b1", undefined, undefined, STAFF)).rejects.toThrow(
+        ForbiddenException
+      );
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("borrow: o'z kutubxonasi kitobini istalgan hududdagi kitobxonga beradi (roaming)", async () => {
+      staffOwns(OWN);
+      mockPrisma.book.findUnique.mockResolvedValue({ ...availableBook, libraryId: OWN });
+      mockPrisma.bookTransaction.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+      mockPrisma.bookTransaction.create.mockResolvedValue({ id: "tx-b", status: "BORROWED" });
+      interactive();
+      const res = await service.borrow("u1", "b1", undefined, undefined, STAFF);
+      expect(res).toEqual({ id: "tx-b", status: "BORROWED" });
+    });
+
+    it("returnBook: boshqa kutubxona kitobi → 403 (faqat return-roaming orqali)", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-r", userId: "u1", bookId: "b1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: OTHER },
+      });
+      await expect(service.returnBook("tx-r", undefined, STAFF)).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("returnBook: o'z kitobi, lekin begona returnLibraryId → 403", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-r", userId: "u1", bookId: "b1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: OWN },
+      });
+      await expect(service.returnBook("tx-r", OTHER, STAFF)).rejects.toThrow(ForbiddenException);
+    });
+
+    it("returnRoaming: returnLibraryId actor'niki bo'lmasa → 403", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-r", userId: "u1", bookId: "b1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: "lib-source", library: { phone: null } },
+      });
+      await expect(service.returnRoaming("tx-r", OTHER, STAFF)).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("returnRoaming: boshqa kutubxona kitobini o'z kutubxonasiga qabul qiladi (transfer PENDING)", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-r", userId: "u1", bookId: "b1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: "lib-source", library: { phone: null } },
+      });
+      interactive();
+      const res = await service.returnRoaming("tx-r", OWN, STAFF);
+      expect(res).toEqual({ returned: true, penaltyDays: 0 });
+      expect(mockPrisma.bookTransfer.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ fromLibraryId: "lib-source", toLibraryId: OWN, status: "PENDING" }),
+        })
+      );
+      // Manba kutubxona nusxasi transfer tasdiqlanguncha qaytmaydi.
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["getLibraryBrons" as const],
+      ["getLibraryBorrowed" as const],
+      ["getOverdueByLibrary" as const],
+    ])("%s: boshqa kutubxona ro'yxati → 403, ma'lumot o'qilmaydi", async (fn) => {
+      staffOwns(OWN);
+      await expect(service[fn](OTHER, STAFF)).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.bookTransaction.findMany).not.toHaveBeenCalled();
+    });
+
+    it("getLibraryBrons: o'z kutubxonasi ro'yxati qaytadi", async () => {
+      staffOwns(OWN);
+      mockPrisma.bookTransaction.findMany.mockResolvedValue([{ id: "tx-1" }]);
+      await expect(service.getLibraryBrons(OWN, STAFF)).resolves.toEqual([{ id: "tx-1" }]);
+    });
+  });
+
+  // ── I2: availableCount hech qachon totalCount dan oshmaydi ─────────────────
+  describe("inventory cap — availableCount <= totalCount (I2)", () => {
+    const leastSql = 'LEAST("availableCount" + 1, "totalCount")';
+    const sqlOf = (i = 0) => (mockPrisma.$executeRaw.mock.calls[i][0] as string[]).join("?");
+    const interactive = () =>
+      mockPrisma.$transaction.mockImplementation(async (fn: (p: typeof mockPrisma) => Promise<unknown>) =>
+        fn({
+          ...mockPrisma,
+          user: { ...mockPrisma.user, findUnique: jest.fn().mockResolvedValue({ trustScore: 80 }) },
+        } as unknown as typeof mockPrisma)
+      );
+
+    it("returnBook nusxani LEAST(..., totalCount) bilan qaytaradi — book.update increment ishlatilmaydi", async () => {
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx1", bookId: "b1", userId: "u1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: "lib-1" },
+      });
+      interactive();
+      await service.returnBook("tx1", undefined, SA);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(sqlOf()).toContain(leastSql);
+      expect(mockPrisma.$executeRaw.mock.calls[0].slice(1)).toEqual(["b1"]);
+      expect(mockPrisma.book.update).not.toHaveBeenCalled();
+    });
+
+    it("cancelReservation ham chegaralangan qaytarishdan foydalanadi", async () => {
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-c", userId: "u1", bookId: "b1", status: TransactionStatus.RESERVED,
+        user: { phone: "+998901234567" }, book: { title: "Alpomish", libraryId: "lib-1" },
+      });
+      interactive();
+      await service.cancelReservation("tx-c", "u1", false, "KITOBXON");
+      expect(sqlOf()).toContain(leastSql);
+      expect(mockPrisma.book.update).not.toHaveBeenCalled();
+    });
+
+    it("returnRoaming o'z kutubxonasiga bo'lsa transfer yaratmaydi, nusxa darhol qaytadi", async () => {
+      mockPrisma.bookTransaction.findUnique.mockResolvedValue({
+        id: "tx-s", userId: "u1", bookId: "b1", status: TransactionStatus.BORROWED,
+        dueDate: new Date(Date.now() + 86400000), user: { phone: "+998901234567" },
+        book: { title: "Alpomish", libraryId: "lib-1", library: { phone: null } },
+      });
+      interactive();
+      await service.returnRoaming("tx-s", "lib-1", SA);
+      expect(mockPrisma.bookTransfer.create).not.toHaveBeenCalled();
+      expect(sqlOf()).toContain(leastSql);
+    });
+  });
+
+  // ── I14: takroriy bron aniq xabar oladi ────────────────────────────────────
+  describe("reserve — takroriy bron xabari (I14)", () => {
+    it("oxirgi nusxani o'zi bron qilgan bo'lsa 'allaqachon bron qilingan' (Kitob mavjud emas emas)", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(activeUser);
+      mockPrisma.book.findUnique.mockResolvedValue({ ...availableBook, availableCount: 0 });
+      mockPrisma.bookTransaction.findFirst.mockResolvedValue({ id: "existing", status: TransactionStatus.PENDING });
+      await expect(service.reserve("u1", "b1")).rejects.toThrow("Bu kitob allaqachon bron qilingan");
+    });
+
+    it("bron yo'q va nusxa tugagan — 'Kitob mavjud emas'", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(activeUser);
+      mockPrisma.book.findUnique.mockResolvedValue({ ...availableBook, availableCount: 0 });
+      mockPrisma.bookTransaction.findFirst.mockResolvedValue(null);
+      await expect(service.reserve("u1", "b1")).rejects.toThrow("Kitob mavjud emas");
     });
   });
 });

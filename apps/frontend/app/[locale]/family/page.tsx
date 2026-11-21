@@ -1,25 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth.store";
-import { apiBase } from "@/lib/api/base";
+import { apiClient } from "@/lib/api-client";
 import { useLocale, useTranslations } from "next-intl";
 import { ReaderShell } from "@/components/reader/ReaderShell";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { RankMedal } from "@/components/dashboard/ui";
 
-// H18: canonical `<origin>/api` (the ":3000/api/v1" fallback was a bug —
-// frontend port + a version prefix the backend never served).
-const API = apiBase();
+/**
+ * So'rovlar — apiClient orqali (refresh interceptor bilan). Avval bu sahifa
+ * raw fetch'ni `Bearer ${token}` bilan yuborardi: token faqat xotirada, sahifa
+ * to'liq yuklanganda null bo'ladi → 401. `if (!res.ok) return null` esa bu
+ * xatoni "Hali oilangiz yo'q" deb ko'rsatardi.
+ */
+class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+async function apiJson<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
+  const res = await apiClient(path, {
+    method: init?.method,
+    body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = (data as { message?: unknown })?.message;
+    throw new ApiError(res.status, typeof msg === "string" ? msg : "");
+  }
+  return data as T;
+}
 
 interface FamilyMember {
   id: string;
   name: string;
-  phone: string;
-  joinedFamilyAt: string;
-  latestRi?: number;
-  isEligibleForRating: boolean; // 30 days passed
+  /** FamilyMembership.joinedAt (ISO). Eski yozuvlarda null. */
+  joinedFamilyAt?: string | null;
+  /** Backend `{ score, calculatedAt }` qaytaradi; eski shakl — raqam. */
+  latestRi?: { score: number; calculatedAt?: string } | number | null;
+  isEligibleForRating?: boolean;
+}
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+const WAIT_DAYS = 30;
+
+/** Sana yaroqli bo'lsa Date, aks holda null ("Invalid Date" chiqmasin). */
+function validDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/** KK.OO.YYYY (Toshkent vaqti); sana bo'lmasa "—". */
+function fmtDate(d: Date | null): string {
+  if (!d) return "—";
+  return d.toLocaleDateString("ru-RU", { timeZone: "Asia/Tashkent" });
+}
+
+function riScore(ri: FamilyMember["latestRi"]): number | undefined {
+  if (typeof ri === "number") return Number.isFinite(ri) ? ri : undefined;
+  const s = ri?.score;
+  return typeof s === "number" && Number.isFinite(s) ? s : undefined;
 }
 
 interface FamilyData {
@@ -57,7 +101,7 @@ interface FamilySuggestion {
 }
 
 function RiBadge({ score }: { score?: number }) {
-  if (score === undefined) return <span className="text-slate-400 text-xs">—</span>;
+  if (score === undefined || !Number.isFinite(score)) return <span className="text-slate-400 text-xs">—</span>;
   const color =
     score >= 75
       ? "bg-green-100 text-green-700"
@@ -89,7 +133,7 @@ function RankBadge({ rank, label }: { rank: number | null; label: string }) {
 export default function FamilyPage() {
   const locale = useLocale();
   const t = useTranslations("FamilyPage");
-  const { user, token } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const qc = useQueryClient();
 
   const [invitePhone, setInvitePhone] = useState("");
@@ -100,78 +144,125 @@ export default function FamilyPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
 
-  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-
-  // Fetch my family
-  const { data: family, isLoading: familyLoading } = useQuery<FamilyData | null>({
-    queryKey: ["my-family", user?.id],
+  // Oila id — /users/me'dan YANGI holda olinadi. Saqlangan `user.familyId`
+  // eskirgan bo'lishi mumkin (oila login'dan keyin yaratilgan / tark etilgan).
+  const meQuery = useQuery<{ familyId: string | null }>({
+    queryKey: ["me-family-id", user?.id],
     queryFn: async () => {
-      if (!user?.familyId) return null;
-      const res = await fetch(`${API}/family/${user.familyId}`, { headers });
-      if (!res.ok) return null;
-      return res.json();
+      const me = await apiJson<{ familyId?: string | null }>("/users/me");
+      return { familyId: me.familyId ?? null };
     },
     enabled: !!user,
+    retry: 1,
   });
+  const familyId = meQuery.data?.familyId ?? null;
+
+  // Saqlangan sessiyadagi familyId ni serverdagi bilan moslaymiz.
+  useEffect(() => {
+    if (!user || !meQuery.data) return;
+    const fresh = meQuery.data.familyId ?? undefined;
+    if ((user.familyId ?? undefined) !== fresh) setUser({ ...user, familyId: fresh });
+  }, [meQuery.data, user, setUser]);
+
+  // Fetch my family — 404/403 (oila yo'q yoki endi a'zo emas) = "oila yo'q";
+  // 401/5xx/tarmoq xatosi esa XATO holati (qayta urinish tugmasi bilan).
+  const familyQuery = useQuery<FamilyData | null>({
+    queryKey: ["my-family", familyId],
+    queryFn: async () => {
+      if (!familyId) return null;
+      try {
+        return await apiJson<FamilyData>(`/family/${encodeURIComponent(familyId)}`);
+      } catch (e) {
+        if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return null;
+        throw e;
+      }
+    },
+    enabled: !!user && meQuery.isSuccess,
+    retry: 1,
+  });
+  const family = familyQuery.data ?? null;
+  const familyLoading = meQuery.isLoading || familyQuery.isLoading;
+  const familyError = meQuery.isError || familyQuery.isError;
+  const retryFamily = () => {
+    if (meQuery.isError) meQuery.refetch();
+    else familyQuery.refetch();
+  };
 
   // Fetch suggestions (only if no family)
   const { data: suggestions } = useQuery<FamilySuggestion[]>({
     queryKey: ["family-suggest", user?.id],
     queryFn: async () => {
-      const res = await fetch(`${API}/family/suggest/${user!.id}`, { headers });
-      if (!res.ok) return [];
-      return res.json();
+      try {
+        return await apiJson<FamilySuggestion[]>("/family/suggest");
+      } catch {
+        return [];
+      }
     },
-    enabled: !!user && !user?.familyId,
+    enabled: !!user && meQuery.isSuccess && !familyId,
   });
 
   // Fetch my family rating
   const { data: myRating } = useQuery<FamilyRating | null>({
-    queryKey: ["family-rating", user?.familyId],
+    queryKey: ["family-rating", familyId],
     queryFn: async () => {
-      if (!user?.familyId) return null;
-      const res = await fetch(`${API}/family/${user.familyId}/rating`, { headers });
-      if (!res.ok) return null;
-      return res.json();
+      if (!familyId) return null;
+      try {
+        return await apiJson<FamilyRating | null>(`/family/${encodeURIComponent(familyId)}/rating`);
+      } catch {
+        return null;
+      }
     },
-    enabled: !!user?.familyId,
+    enabled: !!familyId,
   });
 
-  // Fetch top families
+  // Fetch top families (ochiq endpoint)
   const { data: topFamilies, isLoading: topLoading } = useQuery<TopFamily[]>({
     queryKey: ["top-families", topMonth],
     queryFn: async () => {
-      const res = await fetch(`${API}/family/ratings/top?month=${topMonth}&limit=50`, { headers });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.items ?? data;
+      try {
+        const data = await apiJson<{ items?: TopFamily[] } | TopFamily[]>(
+          `/family/ratings/top?month=${encodeURIComponent(topMonth)}&limit=50`,
+        );
+        return Array.isArray(data) ? data : data.items ?? [];
+      } catch {
+        return [];
+      }
     },
   });
 
-  // Create family
+  const errMsg = (e: unknown, fallback: string) =>
+    e instanceof Error && e.message ? e.message : fallback;
+
+  const refreshFamily = () => {
+    qc.invalidateQueries({ queryKey: ["me-family-id"] });
+    qc.invalidateQueries({ queryKey: ["my-family"] });
+    qc.invalidateQueries({ queryKey: ["family-suggest"] });
+    qc.invalidateQueries({ queryKey: ["family-rating"] });
+  };
+
+  // Create family — yaratuvchi JWT'dan olinadi (IDOR-C4).
   const createFamily = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API}/family`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ creatorId: user!.id }),
-      });
-      if (!res.ok) throw new Error((await res.json()).message ?? t("error"));
-      return res.json();
+      try {
+        return await apiJson<{ id: string }>("/family", { method: "POST", body: {} });
+      } catch (e) {
+        throw new Error(errMsg(e, t("error")));
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-family"] }),
+    onSuccess: refreshFamily,
   });
 
   // Invite member
   const inviteMember = useMutation({
     mutationFn: async (inviteePhone: string) => {
-      const res = await fetch(`${API}/family/${family!.id}/invite`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ inviterId: user!.id, inviteePhone }),
-      });
-      if (!res.ok) throw new Error((await res.json()).message ?? t("error"));
-      return res.json();
+      try {
+        return await apiJson(`/family/${encodeURIComponent(family!.id)}/invite`, {
+          method: "POST",
+          body: { inviteePhone },
+        });
+      } catch (e) {
+        throw new Error(errMsg(e, t("error")));
+      }
     },
     onSuccess: () => {
       setInvitePhone("");
@@ -183,36 +274,38 @@ export default function FamilyPage() {
   // Leave family
   const leaveFamily = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API}/family/leave/${user!.id}`, {
-        method: "DELETE",
-        headers,
-      });
-      if (!res.ok) throw new Error((await res.json()).message ?? t("error"));
-      return res.json();
+      try {
+        return await apiJson("/family/leave", { method: "DELETE" });
+      } catch (e) {
+        throw new Error(errMsg(e, t("error")));
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-family"] }),
+    onSuccess: refreshFamily,
   });
 
   // Accept suggestion (create family with suggested member)
   const acceptSuggestion = useMutation({
     mutationFn: async (suggestedUserId: string) => {
       // First create family, then invite
-      const createRes = await fetch(`${API}/family`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ creatorId: user!.id }),
-      });
-      if (!createRes.ok) throw new Error(t("createError"));
-      const newFamily = await createRes.json();
-      const inviteRes = await fetch(`${API}/family/${newFamily.id}/invite`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ inviterId: user!.id, inviteeId: suggestedUserId }),
-      });
-      if (!inviteRes.ok) throw new Error(t("inviteError"));
+      let newFamily: { id: string };
+      try {
+        newFamily = await apiJson<{ id: string }>("/family", { method: "POST", body: {} });
+      } catch {
+        throw new Error(t("createError"));
+      }
+      try {
+        await apiJson(`/family/${encodeURIComponent(newFamily.id)}/invite`, {
+          method: "POST",
+          body: { inviteeId: suggestedUserId },
+        });
+      } catch {
+        throw new Error(t("inviteError"));
+      }
       return newFamily;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-family", "family-suggest"] }),
+    // Avval ["my-family","family-suggest"] kaliti hech bir so'rovga mos
+    // kelmasdi — sahifa yangilanmasdi.
+    onSuccess: refreshFamily,
   });
 
   const tabs = [
@@ -250,6 +343,19 @@ export default function FamilyPage() {
         <div className="space-y-6">
           {familyLoading ? (
             <div className="bg-white rounded-2xl p-8 text-center text-slate-400">{t("loading")}</div>
+          ) : familyError ? (
+            /* Yuklash xatosi — "oila yo'q" EMAS */
+            <div role="alert" className="bg-white rounded-2xl p-8 text-center border border-red-100">
+              <Icon.warning aria-hidden="true" size={ICON_SIZE.xl} className="mx-auto mb-3 text-red-300" />
+              <p className="text-sm text-slate-600 max-w-sm mx-auto">{t("loadError")}</p>
+              <button
+                type="button"
+                onClick={retryFamily}
+                className="mt-4 px-5 py-2 bg-brand-600 text-white text-sm rounded-xl font-medium hover:bg-brand-700"
+              >
+                {t("retry")}
+              </button>
+            </div>
           ) : !family ? (
             /* No family yet */
             <div className="space-y-4">
@@ -334,7 +440,7 @@ export default function FamilyPage() {
                     <p className="text-sm text-slate-500 mt-0.5">
                       {t("memberSince", {
                         count: family.members.length,
-                        date: new Date(family.createdAt).toLocaleDateString("uz-UZ"),
+                        date: fmtDate(validDate(family.createdAt)),
                       })}
                     </p>
                   </div>
@@ -420,11 +526,20 @@ export default function FamilyPage() {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {family.members.map((member, _idx) => {
-                    const joinDate = new Date(member.joinedFamilyAt);
-                    const daysSinceJoin = Math.floor(
-                      (Date.now() - joinDate.getTime()) / (1000 * 60 * 60 * 24)
-                    );
-                    const daysLeft = Math.max(0, 30 - daysSinceJoin);
+                    // Sana yo'q / yaroqsiz bo'lsa sana ham, kutish badge'i ham
+                    // ko'rsatilmaydi — "Invalid Date" / "NaN kun" chiqmasin.
+                    const joinDate = validDate(member.joinedFamilyAt);
+                    const daysSinceJoin = joinDate
+                      ? Math.floor((Date.now() - joinDate.getTime()) / DAY_MS)
+                      : null;
+                    const daysLeft =
+                      daysSinceJoin !== null ? Math.max(0, WAIT_DAYS - daysSinceJoin) : 0;
+                    // 30 kun qoidasi: backend maydoni bo'lsa o'sha, aks holda
+                    // qo'shilgan sanadan hisoblanadi.
+                    const waiting =
+                      typeof member.isEligibleForRating === "boolean"
+                        ? !member.isEligibleForRating && daysLeft > 0
+                        : daysLeft > 0;
 
                     return (
                       <div key={member.id} className="flex items-center gap-4 px-5 py-3.5">
@@ -442,18 +557,20 @@ export default function FamilyPage() {
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-500">
-                            {t("memberFrom", { date: joinDate.toLocaleDateString("uz-UZ") })}
-                          </div>
+                          {joinDate && (
+                            <div className="text-xs text-slate-500">
+                              {t("memberFrom", { date: fmtDate(joinDate) })}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
-                          {!member.isEligibleForRating ? (
+                          {waiting ? (
                             <span className="inline-flex items-center gap-1 text-xs text-accent-600 bg-amber-50 px-2 py-1 rounded-lg">
                               <Icon.pending aria-hidden="true" size={ICON_SIZE.xs} />
                               {t("waitDays", { count: daysLeft })}
                             </span>
                           ) : (
-                            <RiBadge score={member.latestRi} />
+                            <RiBadge score={riScore(member.latestRi)} />
                           )}
                         </div>
                       </div>

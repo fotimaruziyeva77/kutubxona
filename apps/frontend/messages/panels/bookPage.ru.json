@@ -1,0 +1,21 @@
+{
+  "BookPage": {
+    "home": "Главная",
+    "books": "Книги",
+    "genre": "Жанр",
+    "year": "Год издания",
+    "pages": "Страниц",
+    "lang": "Язык",
+    "available": "В наличии: {count} / {total} экз.",
+    "unavailable": "Сейчас занята",
+    "reserve": "Забронировать",
+    "openLibrary": "Открыть библиотеку",
+    "moreByAuthor": "Другие книги автора",
+    "about": "О книге",
+    "whereTitle": "Где взять",
+    "whereSubtitle": "Выберите библиотеку — там вы забронируете и получите книгу.",
+    "copies": "{count} свободно",
+    "unavailableShort": "Занята",
+    "similarTitle": "Похожие книги"
+  }
+}

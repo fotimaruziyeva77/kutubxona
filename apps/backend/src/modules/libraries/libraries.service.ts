@@ -168,7 +168,27 @@ export class LibrariesService {
       }
     });
     if (!lib) throw new NotFoundException("Kutubxona topilmadi");
-    return lib;
+
+    // I9 — `books` ro'yxati 50 ta bilan cheklangan, shuning uchun uning
+    // uzunligi "mavjud" soni sifatida ishlatilmasin. Haqiqiy raqamlar butun
+    // fond bo'yicha DB'dan hisoblanadi:
+    //   availableCopies — mavjud nusxalar yig'indisi (_sum.availableCount)
+    //   availableTitles — kamida 1 nusxasi mavjud kitob nomlari soni
+    const [copiesAgg, availableTitles] = await Promise.all([
+      this.prisma.book.aggregate({
+        where: { libraryId: lib.id },
+        _sum: { availableCount: true }
+      }),
+      this.prisma.book.count({
+        where: { libraryId: lib.id, availableCount: { gt: 0 } }
+      })
+    ]);
+
+    return {
+      ...lib,
+      availableCopies: copiesAgg._sum.availableCount ?? 0,
+      availableTitles
+    };
   }
 
   // ── Kutubxona yaratish ────────────────────────────────────────────────────
@@ -189,7 +209,7 @@ export class LibrariesService {
       );
     }
 
-    const code = await this.generateCode(dto.type, dto.tumanId ?? dto.regionId);
+    const code = await this.generateCode(dto.type, dto.tumanId, dto.regionId);
 
     const library = await this.prisma.library.create({
       data: {
@@ -215,8 +235,28 @@ export class LibrariesService {
   }
 
   // ── Kutubxona tahrirlash ──────────────────────────────────────────────────
-  async update(id: string, dto: UpdateLibraryDto) {
+  /**
+   * Kutubxona ma'lumotlarini yangilash (nom, manzil, telefon, ish vaqti,
+   * koordinata). `actor` berilsa egalik tekshiriladi: SUPER_ADMIN istalgan
+   * kutubxonani, MUASSASA_ADMIN faqat o'z muassasasiga biriktirilgan
+   * kutubxonani (resolveCallerLibraryId — Institution.libraryId forward-link)
+   * yangilay oladi. Avval bu tekshiruv yo'q edi: istalgan muassasa admini
+   * boshqa kutubxonaning nomi/telefonini o'zgartira olardi (IDOR).
+   */
+  async update(
+    id: string,
+    dto: UpdateLibraryDto,
+    actor?: { sub: string; role: string }
+  ) {
     await this.findOne(id);
+    if (actor && actor.role !== UserRole.SUPER_ADMIN) {
+      const ownLibraryId = await resolveCallerLibraryId(this.prisma, actor.sub);
+      if (ownLibraryId !== id) {
+        throw new ForbiddenException(
+          "Faqat o'z muassasangiz kutubxonasini tahrirlashingiz mumkin"
+        );
+      }
+    }
     // Plan 04-04 audit-fix FIX C — same defence in depth on update.
     let nameToWrite: string | undefined = undefined;
     if (dto.name !== undefined) {
@@ -462,10 +502,9 @@ export class LibrariesService {
           }
         });
 
-        await p.book.update({
-          where: { id: t.transaction.bookId },
-          data: { availableCount: { increment: 1 } }
-        });
+        // I2 — nusxa fondga qaytadi, lekin totalCount dan oshmaydi (atomik).
+        // Book modelida @@map yo'q — jadval "Book", ustunlar camelCase.
+        await p.$executeRaw`UPDATE "Book" SET "availableCount" = LEAST("availableCount" + 1, "totalCount"), "updatedAt" = NOW() WHERE "id" = ${t.transaction.bookId}`;
 
         return { confirmed: true, transferId };
       });
@@ -522,15 +561,36 @@ export class LibrariesService {
   }
 
   // ── Kod generatsiya ───────────────────────────────────────────────────────
-  private async generateCode(type: LibraryType, tumanIdOrRegion: string): Promise<string> {
+  // TZ 3.1: LIB-[TIP]-[tuman kodi]-[NNN], masalan LIB-SCH-08012-008.
+  // Tuman kodi Tuman.code ("08-012") dan olinadi — DB cuid emas.
+  private async generateCode(type: LibraryType, tumanId?: string, regionId?: string): Promise<string> {
     const prefix = TYPE_PREFIX[type];
-    // tumanIdOrRegion could be a tuman DB id or a legacy regionId string
-    const regionPart = tumanIdOrRegion.replace(/-/g, "").slice(0, 8).toUpperCase();
-    const count = await this.prisma.library.count({
-      where: { code: { startsWith: `LIB-${prefix}-${regionPart}` } }
-    });
-    const seq = String(count + 1).padStart(3, "0");
-    return `LIB-${prefix}-${regionPart}-${seq}`;
+    const regionPart = await this.resolveRegionPart(tumanId, regionId);
+    const base = `LIB-${prefix}-${regionPart}-`;
+    // count+1 emas: o'chirilgan kutubxonadan keyin kod takrorlanib, @unique
+    // xatosi chiqmasligi uchun eng katta tartib raqamidan davom etamiz.
+    const existing =
+      (await this.prisma.library.findMany({
+        where: { code: { startsWith: base } },
+        select: { code: true },
+      })) ?? [];
+    const maxSeq = existing.reduce((max, { code }) => {
+      const n = Number.parseInt(code.slice(base.length), 10);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+    return `${base}${String(maxSeq + 1).padStart(3, "0")}`;
+  }
+
+  private async resolveRegionPart(tumanId?: string, regionId?: string): Promise<string> {
+    for (const id of [tumanId, regionId]) {
+      if (!id) continue;
+      const tuman = await this.prisma.tuman.findUnique({ where: { id }, select: { code: true } });
+      if (tuman?.code) return tuman.code.replace(/\D/g, "");
+    }
+    // regionId geo kod ko'rinishida bo'lsa: "UZ-08-012" yoki "08-012" → "08012"
+    const geo = regionId?.match(/^(?:UZ-)?(\d{2})-(\d{3})$/i);
+    if (geo) return `${geo[1]}${geo[2]}`;
+    throw new BadRequestException("Tuman topilmadi — kutubxona kodi uchun tuman tanlanishi shart");
   }
 
   // ── Haversine formulasi (km) ──────────────────────────────────────────────

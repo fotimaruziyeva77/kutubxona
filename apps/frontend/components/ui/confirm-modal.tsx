@@ -28,6 +28,7 @@ export function ConfirmModal({
   isPending = false,
   /** Talab qilinsa, foydalanuvchi shu so'zni yozmaguncha tasdiq o'chiq turadi. */
   requireTypedConfirmation,
+  disabled = false,
   children,
   onConfirm,
   onCancel,
@@ -44,6 +45,8 @@ export function ConfirmModal({
    * Qo'shimcha maydonlar (masalan "rad etish sababi" inputi) — dialog ICHIDA
    * render qilinadi, shuning uchun fokus qulfi va Esc ular uchun ham ishlaydi.
    */
+  /** Tasdiq tugmasini tashqi shart bilan o'chirish (mas. amalni bajarib bo'lmaydigan holat). */
+  disabled?: boolean;
   children?: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
@@ -119,7 +122,7 @@ export function ConfirmModal({
   const typedOk =
     !requireTypedConfirmation ||
     typed.trim().toUpperCase() === requireTypedConfirmation.toUpperCase();
-  const confirmDisabled = isPending || !typedOk;
+  const confirmDisabled = isPending || !typedOk || disabled;
 
   return (
     <AnimatePresence>

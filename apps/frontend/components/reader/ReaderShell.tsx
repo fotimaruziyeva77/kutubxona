@@ -30,8 +30,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { getMyInstitutionLibrary } from "@/lib/api/libraries";
+import { hasAuthHintCookie } from "@/lib/auth-cookie";
+import { useAuthStore } from "@/store/auth.store";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
 import { LogoMark } from "@/components/brand/Logo";
+import { LocaleThemeControl } from "@/components/LocaleThemeControl";
 
 type NavItem = {
   key: string;
@@ -65,9 +68,17 @@ export function ReaderShell({
 
   // Muassasa kutubxonasi bor kitobxonda "Kutubxonam" tab'i chiqadi.
   // Xato bo'lsa (401, tarmoq) — tab shunchaki ko'rsatilmaydi, qobiq ishlaydi.
+  // Faqat sessiya bo'lganda so'raladi: qobiq ochiq sahifalarda ham (qidiruv,
+  // kutubxona profili) ishlaydi va anonim mehmon uchun himoyalangan so'rov
+  // yuborishning ma'nosi yo'q (401 → eski interceptor /login ga otardi).
+  // Hard reload: token hali xotirada emas, lekin sl_auth hint cookie bor —
+  // request interceptor boot-refresh bilan tokenni tiklaydi.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasSession = isAuthenticated || hasAuthHintCookie();
   const { data: myLib } = useQuery({
     queryKey: ["my-institution-library"],
     queryFn: getMyInstitutionLibrary,
+    enabled: hasSession,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -94,10 +105,10 @@ export function ReaderShell({
   const isActive = (m: string) => stripped === m || stripped.startsWith(`${m}/`);
 
   return (
-    <div className="min-h-screen bg-surface-muted">
+    <div className="min-h-screen bg-surface-muted" data-reader-shell="">
       {/* ── Yuqori qator ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-16 max-w-3xl items-center gap-2 px-4 sm:gap-3">
           {backHref ? (
             <Link
               href={backHref}
@@ -152,6 +163,9 @@ export function ReaderShell({
             })}
           </nav>
 
+          <div className="shrink-0">
+            <LocaleThemeControl inline />
+          </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
       </header>

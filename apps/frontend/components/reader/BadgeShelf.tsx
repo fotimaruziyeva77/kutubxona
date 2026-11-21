@@ -83,6 +83,12 @@ export function BadgeShelf({
 
   const earnedCodes = new Set(earned.map((e) => e.badge.code));
   const locked = catalog.filter((c) => !earnedCodes.has(c.code));
+  // Maxraj — olingan + olinmagan nishonlar birlashmasi. Profil `catalog`
+  // sifatida backend'ning `available` ro'yxatini (faqat OLINMAGANLAR)
+  // uzatadi, shuning uchun `catalog.length` "4 / 14" kabi noto'g'ri jami
+  // ko'rsatardi. Birlashma ikkala holatda ham (to'liq katalog yoki faqat
+  // qolganlar) ko'rsatilgan plitkalar soniga teng.
+  const totalCount = new Set([...earnedCodes, ...catalog.map((c) => c.code)]).size;
 
   // Yopiqlarni "yaqinlik" bo'yicha saralaymiz: ro'yxatdagilar oldinda.
   const sortedLocked = [...locked].sort((a, b) => {
@@ -98,7 +104,7 @@ export function BadgeShelf({
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <h2 className="text-base font-bold text-slate-900">{t("title")}</h2>
         <p className="text-xs text-slate-500">
-          {earned.length} / {catalog.length}
+          {earnedCodes.size} / {totalCount}
         </p>
       </div>
 
