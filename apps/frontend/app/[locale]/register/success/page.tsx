@@ -19,6 +19,7 @@ import { usersApi } from "@/lib/api/users";
 import { RotatingUserQr } from "@/components/qr/rotating-user-qr";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import { readAuthNext, clearAuthNext } from "@/lib/auth-next";
 
 const SIFAT_ID_STORAGE_KEY = "sl-register-sifat-id";
 
@@ -26,6 +27,9 @@ export default function RegisterSuccessPage() {
   const locale = useLocale();
   const [sifatId, setSifatId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  // Ro'yxatdan o'tishdan oldin bron qilmoqchi bo'lgan kitob sahifasi.
+  const [nextPath, setNextPath] = useState<string | null>(null);
+  useEffect(() => setNextPath(readAuthNext()), []);
 
   useEffect(() => {
     let stored: string | null = null;
@@ -79,6 +83,11 @@ export default function RegisterSuccessPage() {
             </div>
           ) : null}
 
+          {nextPath && (
+            <Link href={nextPath} onClick={clearAuthNext} className="mb-3 block">
+              <Button className="w-full">Kitobni bron qilishga qaytish</Button>
+            </Link>
+          )}
           <div className="flex gap-3">
             <Link href={`/${locale}/profile`} className="flex-1">
               <Button className="w-full">Profilga o&apos;tish</Button>

@@ -16,6 +16,21 @@
     "whereSubtitle": "Kitapxananı saylań — sol jerde bron etip, kitaptı alasız.",
     "copies": "{count} bos",
     "unavailableShort": "Bánt",
-    "similarTitle": "Uqsas kitaplar"
+    "similarTitle": "Uqsas kitaplar",
+    "author": "Avtor",
+    "free": "Biypul",
+    "inLibraries": "{count} kitapxanada bar",
+    "reserving": "Bron qılınbaqta…",
+    "reserveError": "Bron qılıw múmkin bolmadı",
+    "reservedTitle": "Bron qılındı!",
+    "reservedText": "Kitapxanashı 24 saat ishinde tastıyıqlaydı. Kitaptı alıwda QR kodıńızdı kórsetiń.",
+    "goProfile": "Bronlarımdı kóriw",
+    "close": "Jabıw",
+    "authTitle": "Bron qılıw ushın kiriń",
+    "authText": "Kitaptı bron qılıw ushın esabıńızǵa kiriń yamasa dizimnen ótiń — keyin usı betke qaytasız.",
+    "login": "Kiriw",
+    "register": "Dizimnen ótiw",
+    "authFree": "Kitapxanlar ushın biypul",
+    "descriptionTab": "Táriyp"
   }
 }

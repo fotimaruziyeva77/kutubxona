@@ -7,6 +7,7 @@ import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { BookCover } from "@/components/books/BookCover";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { apiBase } from "@/lib/api/base";
+import { BookReserveBox } from "@/components/books/BookReserveBox";
 import "@/components/landing/public-shell.css";
 
 /**
@@ -135,182 +136,152 @@ export default async function BookPage({
 
   const available = (book.availableCount ?? 0) > 0;
   const facts = [
-    book.genre ? { label: t("genre"), value: book.genre } : null,
-    book.year ? { label: t("year"), value: String(book.year) } : null,
-    book.pages ? { label: t("pages"), value: String(book.pages) } : null,
-    book.lang ? { label: t("lang"), value: book.lang.toUpperCase() } : null,
     realIsbn ? { label: "ISBN", value: realIsbn } : null,
+    { label: t("author"), value: book.author },
+    book.pages ? { label: t("pages"), value: String(book.pages) } : null,
+    book.year ? { label: t("year"), value: String(book.year) } : null,
+    book.lang ? { label: t("lang"), value: book.lang.toUpperCase() } : null,
+    book.genre ? { label: t("genre"), value: book.genre } : null,
   ].filter(Boolean) as { label: string; value: string }[];
+  const places = [book, ...copies];
+  const placesWithCopies = places.filter((b) => (b.availableCount ?? 0) > 0).length;
 
   return (
     <div className="min-h-screen bg-surface-muted" data-public-shell="">
       <ScrollReveal />
       <LandingHeader locale={locale} solid />
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="hero-canvas relative overflow-hidden">
-        <div aria-hidden="true" className="hero-orb hero-orb-a" />
-        <div aria-hidden="true" className="hero-orb hero-orb-b" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-14 pt-6 sm:px-6 lg:px-8">
-          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm">
-            <Link
-              href={`/${locale}`}
-              className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-600 hover:underline"
-            >
-              <Icon.next aria-hidden="true" size={ICON_SIZE.xs} className="rotate-180" />
-              {t("home")}
+      <div className="mx-auto max-w-6xl px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm">
+          <Link href={`/${locale}`} className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-600 hover:underline">
+            <Icon.next aria-hidden="true" size={ICON_SIZE.xs} className="rotate-180" />
+            {t("home")}
+          </Link>
+          <span aria-hidden="true" className="text-slate-300">/</span>
+          {book.genre ? (
+            <Link href={`/${locale}/search?q=${encodeURIComponent(book.genre)}`} className="shrink-0 text-slate-500 hover:text-brand-700">
+              {book.genre}
             </Link>
-            <span aria-hidden="true" className="text-slate-300">/</span>
+          ) : (
             <Link href={`/${locale}/search`} className="shrink-0 text-slate-500 hover:text-brand-700">
               {t("books")}
             </Link>
-            <span aria-hidden="true" className="text-slate-300">/</span>
-            <span className="min-w-0 truncate text-slate-700">{book.title}</span>
-          </nav>
+          )}
+          <span aria-hidden="true" className="text-slate-300">/</span>
+          <span className="min-w-0 truncate text-slate-700">{book.title}</span>
+        </nav>
 
-          <div className="mt-8 grid items-center gap-10 md:grid-cols-[minmax(0,20rem)_1fr] lg:gap-16">
-            <div className="hero-enter mx-auto w-52 sm:w-60 md:w-full">
-              <div className="book-float">
-                <BookCover
-                  size="lg"
-                  title={book.title}
-                  author={book.author}
-                  genre={book.genre}
-                  coverUrl={coverSrc(book)}
-                  className="shadow-2xl"
-                />
+        {/* ── Asosiy karta ─────────────────────────────────────────────── */}
+        <section className="mt-5 grid gap-8 rounded-3xl border border-brand-100 bg-white p-5 shadow-sm sm:p-8 md:grid-cols-[minmax(0,18rem)_1fr] lg:gap-12">
+          <div className="min-w-0">
+            <div className="hero-canvas relative flex justify-center overflow-hidden rounded-2xl px-6 py-8">
+              <div className="w-44 sm:w-52 md:w-full">
+                <div className="book-float">
+                  <BookCover size="lg" title={book.title} author={book.author} genre={book.genre} coverUrl={coverSrc(book)} className="shadow-2xl" />
+                </div>
               </div>
             </div>
 
-            <div className="hero-enter min-w-0">
-              {book.genre && (
-                <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden="true" />
-                  {book.genre}
-                </span>
-              )}
-              <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
-                {book.title}
-              </h1>
-              <p className="mt-3 text-lg text-slate-600">{book.author}</p>
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold ${
-                    available ? "bg-green-50 text-green-700 ring-1 ring-green-200" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 rounded-full ${available ? "live-dot bg-green-500" : "bg-slate-400"}`}
-                  />
-                  {available
-                    ? t("available", { count: book.availableCount ?? 0, total: book.totalCount ?? 0 })
-                    : t("unavailable")}
-                </span>
-                {book.library?.name && (
-                  <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
-                    <Icon.library aria-hidden="true" size={ICON_SIZE.sm} className="shrink-0 text-brand-500" />
-                    <span className="truncate">{book.library.name}</span>
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href={libraryHref(locale, book)}
-                  className="btn-shine inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-6 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:-translate-y-0.5 hover:bg-brand-700"
-                >
-                  <Icon.bookClosed aria-hidden="true" size={ICON_SIZE.sm} />
-                  {available ? t("reserve") : t("openLibrary")}
-                </Link>
-                <Link
-                  href={`/${locale}/search?q=${encodeURIComponent(book.author)}`}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-line bg-white px-5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-700"
-                >
-                  <Icon.search aria-hidden="true" size={ICON_SIZE.sm} />
-                  {t("moreByAuthor")}
-                </Link>
-              </div>
-
-              {facts.length > 0 && (
-                <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {facts.map((f) => (
-                    <div key={f.label} className="rounded-xl border border-line bg-white/80 px-4 py-3 backdrop-blur">
-                      <dt className="text-xs text-slate-500">{f.label}</dt>
-                      <dd className="mt-0.5 truncate text-sm font-semibold text-slate-900">{f.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
+            {/* Qayerda bor */}
+            <div className="mt-5">
+              <p
+                className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                  placesWithCopies > 0 ? "bg-green-50 text-green-700 ring-1 ring-green-200" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {placesWithCopies > 0 ? t("inLibraries", { count: placesWithCopies }) : t("unavailable")}
+              </p>
+              <ul className="mt-2 space-y-2">
+                {places.map((b) => {
+                  const ok = (b.availableCount ?? 0) > 0;
+                  return (
+                    <li key={b.id}>
+                      <Link
+                        href={libraryHref(locale, b)}
+                        className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 text-sm transition hover:border-brand-300 hover:shadow-sm"
+                      >
+                        <Icon.library aria-hidden="true" size={ICON_SIZE.xs} className="shrink-0 text-brand-500" />
+                        <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{b.library?.name ?? "—"}</span>
+                        <span className={`shrink-0 text-xs font-semibold ${ok ? "text-green-600" : "text-slate-400"}`}>
+                          {ok ? t("copies", { count: b.availableCount ?? 0 }) : t("unavailableShort")}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </div>
-        </div>
-      </section>
 
-      <div className="mx-auto max-w-6xl space-y-12 px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+          <div className="min-w-0">
+            {book.genre && <p className="text-xs font-bold uppercase tracking-wide text-brand-600">{book.genre}</p>}
+            <h1 className="mt-2 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl">{book.title}</h1>
+            <p className="mt-2 text-slate-500">{book.author}</p>
+
+            <dl className="mt-6 space-y-2.5 text-sm">
+              {facts.map((f) => (
+                <div key={f.label} className="flex items-baseline gap-2">
+                  <dt className="shrink-0 text-slate-500">{f.label}</dt>
+                  <span aria-hidden="true" className="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-slate-300" />
+                  <dd className="min-w-0 truncate text-right font-semibold text-slate-900">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-7">
+              <BookReserveBox
+                locale={locale}
+                bookId={book.id}
+                available={available}
+                availableCount={book.availableCount ?? 0}
+                totalCount={book.totalCount ?? 0}
+                libraryName={book.library?.name}
+                libraryHref={libraryHref(locale, book)}
+                authorHref={`/${locale}/search?q=${encodeURIComponent(book.author)}`}
+              />
+            </div>
+          </div>
+        </section>
+
         {book.description && (
-          <section data-reveal="" className="card-surface rounded-2xl p-6 sm:p-8">
-            <h2 className="text-lg font-bold text-slate-900">{t("about")}</h2>
+          <section data-reveal="" className="mt-8 rounded-3xl border border-brand-100 bg-white p-5 shadow-sm sm:p-8">
+            <span className="inline-flex rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white">{t("descriptionTab")}</span>
+            <h2 className="mt-5 text-lg font-bold text-slate-900">{t("about")}</h2>
             <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-600">{book.description}</p>
           </section>
         )}
 
-        {/* ── QAYERDAN OLISH MUMKIN ───────────────────────────────────── */}
-        <section data-reveal="">
-          <h2 className="text-xl font-bold text-slate-900">{t("whereTitle")}</h2>
-          <p className="mt-1 text-sm text-slate-500">{t("whereSubtitle")}</p>
-          <ul data-reveal-stagger="" className="mt-5 grid gap-3 sm:grid-cols-2">
-            {[book, ...copies].map((b) => {
-              const ok = (b.availableCount ?? 0) > 0;
-              return (
-                <li key={b.id}>
-                  <Link
-                    href={libraryHref(locale, b)}
-                    className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
-                  >
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                      <Icon.library aria-hidden="true" size={ICON_SIZE.md} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold text-slate-900 group-hover:text-brand-700">
-                        {b.library?.name ?? "—"}
-                      </span>
-                      {b.library?.address && (
-                        <span className="block truncate text-xs text-slate-500">{b.library.address}</span>
-                      )}
-                    </span>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        ok ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {ok ? t("copies", { count: b.availableCount ?? 0 }) : t("unavailableShort")}
-                    </span>
-                    <Icon.next aria-hidden="true" size={ICON_SIZE.sm} className="shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
         {/* ── O'XSHASH KITOBLAR ─────────────────────────────────────────── */}
         {similar.length > 0 && (
-          <section data-reveal="">
+          <section data-reveal="" className="mt-10">
             <h2 className="text-xl font-bold text-slate-900">{t("similarTitle")}</h2>
-            <div data-reveal-stagger="" className="mt-5 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
-              {similar.map((b) => (
-                <Link key={b.id} href={`/${locale}/book/${encodeURIComponent(b.id)}`} className="book-card group block">
-                  <div className="book-card-stage rounded-2xl p-4">
-                    <div className="book-card-cover mx-auto w-[80%]">
-                      <BookCover size="md" title={b.title} author={b.author} genre={b.genre} coverUrl={coverSrc(b)} />
+            <div data-reveal-stagger="" className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 pt-12 sm:grid-cols-3 lg:grid-cols-4">
+              {similar.slice(0, 4).map((b) => {
+                const ok = (b.availableCount ?? 0) > 0;
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/${locale}/book/${encodeURIComponent(b.id)}`}
+                    className="group flex h-full flex-col rounded-2xl border border-line bg-white px-4 pb-4 shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <div className="-mt-12 mb-4 flex h-44 items-end justify-center">
+                      <div className="w-28 transition-transform duration-300 group-hover:-translate-y-1.5">
+                        <BookCover size="md" title={b.title} author={b.author} genre={b.genre} coverUrl={coverSrc(b)} />
+                      </div>
                     </div>
-                  </div>
-                  <p className="mt-3 line-clamp-2 text-sm font-semibold text-slate-900 group-hover:text-brand-700">{b.title}</p>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">{b.author}</p>
-                </Link>
-              ))}
+                    <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 group-hover:text-brand-700">{b.title}</p>
+                    <p className="mt-1 truncate text-sm text-slate-500">{b.author}</p>
+                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-dashed border-line pt-3">
+                      <span className={`text-sm font-bold ${ok ? "text-green-700" : "text-slate-400"}`}>
+                        {ok ? t("free") : t("unavailableShort")}
+                      </span>
+                      <span aria-hidden="true" className={`grid h-9 w-9 place-items-center rounded-full text-white ${ok ? "bg-brand-600" : "bg-slate-300"}`}>
+                        <Icon.bookmark size={16} />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         )}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { saveAuthNext } from "@/lib/auth-next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -279,6 +280,8 @@ export default function RegisterPage() {
       try {
         sessionStorage.setItem("sl-register-sifat-id", data.sifatId);
       } catch { /* storage bloklangan — success sahifa profil orqali oladi */ }
+      // Bron qilish sahifasidan kelgan bo'lsa — success sahifa o'sha yerga qaytaradi.
+      saveAuthNext(new URLSearchParams(window.location.search).get("next"));
       router.push(`/${locale}/register/success`);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;

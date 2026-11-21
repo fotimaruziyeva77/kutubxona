@@ -309,11 +309,11 @@ function SearchPageInner() {
 
   const chip = (active: boolean) =>
     `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-      active ? "bg-orange-500 text-white shadow-sm" : "bg-surface-sunken text-slate-600 hover:bg-slate-200"
+      active ? "bg-brand-600 text-white shadow-sm" : "bg-surface-sunken text-slate-600 hover:bg-slate-200"
     }`;
   const fieldLabel = "mb-2 block text-sm font-medium text-slate-700";
   const control =
-    "w-full rounded-xl border border-line-strong bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
+    "w-full rounded-xl border border-line-strong bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400";
 
   return (
     <AdaptiveShell title={t("title")} wide>
@@ -332,7 +332,7 @@ function SearchPageInner() {
               {tc("filters")}
               <Icon.next aria-hidden="true" size={16} className={`text-slate-400 transition-transform lg:hidden ${filtersOpen ? "rotate-90" : ""}`} />
             </button>
-            <button type="button" onClick={resetFilters} className="text-xs font-medium text-slate-400 hover:text-orange-600">
+            <button type="button" onClick={resetFilters} className="text-xs font-medium text-slate-400 hover:text-brand-600">
               {tc("clear")}
             </button>
           </div>
@@ -388,7 +388,7 @@ function SearchPageInner() {
               type="checkbox"
               checked={onlyAvailable}
               onChange={(e) => setOnlyAvailable(e.target.checked)}
-              className="h-4 w-4 rounded accent-orange-500"
+              className="h-4 w-4 rounded accent-brand-600"
             />
             {t("onlyAvailable")}
           </label>
@@ -431,7 +431,7 @@ function SearchPageInner() {
                       setPricePreset(-1);
                       setStorePage(1);
                     }}
-                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                   />
                   <span className="text-slate-400">–</span>
                   <input
@@ -445,7 +445,7 @@ function SearchPageInner() {
                       setPricePreset(-1);
                       setStorePage(1);
                     }}
-                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full min-w-0 rounded-full border border-line-strong px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                   />
                 </div>
                 <p className="mt-2 text-right text-xs text-slate-400">{t("som")}</p>
@@ -486,7 +486,7 @@ function SearchPageInner() {
                   ))}
                 </div>
               )}
-              <div className="flex gap-1 rounded-full bg-slate-900 p-1" role="group" aria-label={tc("view")}>
+              <div className="flex gap-1 rounded-full bg-brand-600 p-1" role="group" aria-label={tc("view")}>
                 {([
                   { key: "grid", icon: LayoutGrid, label: tc("viewGrid") },
                   { key: "list", icon: List, label: tc("viewList") },
@@ -499,7 +499,7 @@ function SearchPageInner() {
                     aria-label={label}
                     title={label}
                     className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-                      layout === key ? "bg-white text-orange-500" : "text-white/80 hover:text-white"
+                      layout === key ? "bg-white text-brand-700" : "text-white/80 hover:text-white"
                     }`}
                   >
                     <VIcon aria-hidden="true" size={16} />
@@ -567,7 +567,7 @@ function IsbnComparisonBanner({
           : t("notAvailable")}
       </span>
       <span className="text-slate-400">|</span>
-      <span className="text-orange-700">
+      <span className="text-brand-700">
         {t("inStore")} {formatPrice(entry.store.price, t("som"))}
       </span>
     </div>
@@ -912,7 +912,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
   const locale = useLocale();
   const t = useTranslations("ReaderSearch");
   const inner = (
-    <div className="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-2xl border border-brand-100 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
         {product.coverUrl ? (
           <img
@@ -921,7 +921,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
             className="w-14 h-20 object-cover rounded"
           />
         ) : (
-          <div className="w-14 h-20 bg-gradient-to-br from-orange-100 to-orange-200 rounded flex items-center justify-center text-orange-600">
+          <div className="w-14 h-20 bg-gradient-to-br from-brand-50 to-brand-100 rounded flex items-center justify-center text-brand-700">
             <Icon.store aria-hidden="true" size={ICON_SIZE.md} />
           </div>
         )}
@@ -935,7 +935,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
             )}
           </div>
           <p className="text-sm text-slate-500">{product.author}</p>
-          <p className="text-lg font-bold text-orange-600 mt-1">
+          <p className="text-lg font-bold text-brand-700 mt-1">
             {formatPrice(product.price, t("som"))}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
@@ -959,7 +959,7 @@ function NearbyStoreProductCard({ product }: { product: StoreProductSearchResult
   return (
     <Link
       href={`/${locale}/dokon/${product.slug}`}
-      className="block focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-2xl"
+      className="block focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-2xl"
     >
       {inner}
     </Link>
@@ -990,7 +990,7 @@ function TileShell({
   );
   if (!href) return body;
   return (
-    <Link href={href} className="block h-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-400">
+    <Link href={href} className="block h-full rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-400">
       {body}
     </Link>
   );
@@ -1028,7 +1028,7 @@ function BookTile({ book, href }: { book: Book; href?: string | null }) {
         )}
         <span
           aria-hidden="true"
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${free ? "bg-orange-500" : "bg-slate-300"}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${free ? "bg-brand-600" : "bg-slate-300"}`}
         >
           <BookmarkPlus size={16} />
         </span>
@@ -1059,14 +1059,14 @@ function StoreTile({ product, href }: { product: StoreProductSearchResult; href?
       </p>
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-dashed border-line pt-3">
         {product.stockCount > 0 ? (
-          <span className="text-lg font-bold text-orange-500">
+          <span className="text-lg font-bold text-brand-700">
             {new Intl.NumberFormat("uz-UZ").format(product.price)}{" "}
             <span className="text-sm font-normal text-slate-500">{t("som")}</span>
           </span>
         ) : (
           <span className="text-sm font-medium text-red-500">{t("outOfStock")}</span>
         )}
-        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-sm">
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white shadow-sm">
           <ShoppingCart size={16} />
         </span>
       </div>
@@ -1166,7 +1166,7 @@ function StoreProductCard({
           className="w-14 h-20 object-cover rounded"
         />
       ) : (
-        <div className="w-14 h-20 bg-gradient-to-br from-orange-100 to-orange-200 rounded flex items-center justify-center text-orange-600">
+        <div className="w-14 h-20 bg-gradient-to-br from-brand-50 to-brand-100 rounded flex items-center justify-center text-brand-700">
           <Icon.store aria-hidden="true" size={ICON_SIZE.md} />
         </div>
       )}
@@ -1184,7 +1184,7 @@ function StoreProductCard({
             <p className="text-sm text-slate-500">{product.author}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-base font-bold text-orange-600">
+            <p className="text-base font-bold text-brand-700">
               {formatPrice(product.price, t("som"))}
             </p>
           </div>
@@ -1223,7 +1223,7 @@ function StoreProductCard({
 
   if (!href) return inner;
   return (
-    <Link href={href} className="block focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-xl">
+    <Link href={href} className="block focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-xl">
       {inner}
     </Link>
   );

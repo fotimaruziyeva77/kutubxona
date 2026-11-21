@@ -16,6 +16,21 @@
     "whereSubtitle": "Kutubxonani tanlang — u yerda bron qilasiz va kitobni olasiz.",
     "copies": "{count} ta bo'sh",
     "unavailableShort": "Band",
-    "similarTitle": "O'xshash kitoblar"
+    "similarTitle": "O'xshash kitoblar",
+    "author": "Muallif",
+    "free": "Bepul",
+    "inLibraries": "{count} ta kutubxonada mavjud",
+    "reserving": "Bron qilinmoqda…",
+    "reserveError": "Bron qilib bo'lmadi",
+    "reservedTitle": "Bron qilindi!",
+    "reservedText": "Kutubxonachi 24 soat ichida tasdiqlaydi. Kitobni olishda QR kodingizni ko'rsating.",
+    "goProfile": "Bronlarimni ko'rish",
+    "close": "Yopish",
+    "authTitle": "Bron qilish uchun kiring",
+    "authText": "Kitobni bron qilish uchun hisobingizga kiring yoki ro'yxatdan o'ting — keyin shu sahifaga qaytasiz.",
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "authFree": "Kitobxonlar uchun bepul",
+    "descriptionTab": "Tavsif"
   }
 }
