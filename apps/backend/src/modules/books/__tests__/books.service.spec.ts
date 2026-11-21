@@ -108,6 +108,7 @@ describe("BooksService", () => {
       mockEs as unknown as ElasticsearchService,
       mockImportQueue,
       mockStoreService as any,
+      { process: jest.fn() } as any,
     );
     jest.clearAllMocks();
     mockPrisma.book.aggregate.mockResolvedValue({ _sum: { totalCount: 10 } });

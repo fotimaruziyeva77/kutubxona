@@ -265,7 +265,9 @@ export default function BooksPage() {
 
   const importExcel = useMutation({
     mutationFn: (file: File) => importBooksExcel(file, effectiveLib),
+    onMutate: () => setActionNotice(t("import.running")),
     onSuccess: (data) => {
+      setActionNotice("");
       setImportJobId(data.jobId);
       setImportStatus({ status: "queued", processed: 0, total: 0, errors: [], progress: 0 });
     },

@@ -14,6 +14,7 @@ import type { Queue } from "bullmq";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import { StoreService } from "../store/store.service";
+import { BookImportProcessor } from "./books-import.processor";
 import {
   BOOKS_SEARCH_INDEX,
   buildBookSearchQuery,
@@ -155,7 +156,20 @@ export class BooksService implements OnApplicationBootstrap {
     @InjectQueue(BOOK_IMPORT_QUEUE)
     private readonly importQueue: Queue<BookImportJobData>,
     private readonly storeService: StoreService,
+    private readonly importProcessor: BookImportProcessor,
   ) {}
+
+  // Navbat (Redis/BullMQ) javob bermasa import shu so'rovning o'zida bajariladi;
+  // natija qisqa muddat xotirada turadi va status endpoint'i uni qaytaradi.
+  private readonly syncImports = new Map<string, BookImportStatus & { at: number }>();
+  private static readonly QUEUE_TIMEOUT_MS = 5000;
+
+  private withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("queue timeout")), ms);
+      p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+    });
+  }
 
   // ES o'chirilgan bo'lsa (ELASTICSEARCH_ENABLED=false) qidiruv to'g'ridan-to'g'ri
   // Prisma'ga o'tadi va indekslash o'tkazib yuboriladi — o'lik ES portiga har
@@ -647,8 +661,9 @@ export class BooksService implements OnApplicationBootstrap {
     buffer: Buffer,
     libraryId: string,
     uploaderUserId: string
-  ): Promise<{ jobId: string; status: "queued" }> {
-    const job = await this.importQueue.add(
+  ): Promise<{ jobId: string; status: "queued" | "completed" }> {
+    try {
+      const job = await this.withTimeout(this.importQueue.add(
       "book-import",
       {
         libraryId,
@@ -661,16 +676,43 @@ export class BooksService implements OnApplicationBootstrap {
         removeOnComplete: { count: 50 },
         removeOnFail: false
       }
-    );
+    ), BooksService.QUEUE_TIMEOUT_MS);
+      return { jobId: String(job.id), status: "queued" };
+    } catch (err) {
+      this.logger.warn(`BOOK_IMPORT navbati ishlamadi (${(err as Error).message}) — sinxron import`);
+    }
 
-    return { jobId: String(job.id), status: "queued" };
+    const jobId = `sync-${Date.now()}-${randomInt(1e9)}`;
+    let data: Record<string, unknown> = { libraryId, uploaderUserId, fileBase64: buffer.toString("base64") };
+    const fakeJob = {
+      id: jobId,
+      get data() { return data; },
+      opts: { attempts: 1 },
+      attemptsMade: 0,
+      updateData: async (d: Record<string, unknown>) => { data = d; },
+      updateProgress: async () => undefined
+    };
+    const r = await this.importProcessor.process(fakeJob as unknown as Parameters<BookImportProcessor["process"]>[0]);
+    const now = Date.now();
+    for (const [k, v] of this.syncImports) if (now - v.at > 30 * 60_000) this.syncImports.delete(k);
+    this.syncImports.set(jobId, {
+      status: "completed", processed: r.processed, total: r.total, skipped: r.skipped,
+      errors: r.errors, progress: 100, at: now
+    });
+    return { jobId, status: "completed" };
   }
 
   // GET /books/import/:jobId/status — UI polls this every ~2s during import.
   // Returns the normalized BullMQ state, the running processed/total counters
   // (written by the processor via job.updateData), and any per-row errors.
   async getImportStatus(jobId: string): Promise<BookImportStatus> {
-    const job = await this.importQueue.getJob(jobId);
+    const sync = this.syncImports.get(jobId);
+    if (sync) {
+      const { at: _at, ...rest } = sync;
+      return rest;
+    }
+    const job = await this.withTimeout(this.importQueue.getJob(jobId), BooksService.QUEUE_TIMEOUT_MS)
+      .catch(() => undefined);
     if (!job) {
       return { status: "unknown", processed: 0, total: 0, skipped: 0, errors: [], progress: 0 };
     }

@@ -265,7 +265,7 @@ export const importBooksExcel = (file: File, libraryId: string): Promise<BookImp
     .post<BookImportEnqueueResult>(
       `/books/import?libraryId=${libraryId}`,
       form,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      { headers: { "Content-Type": "multipart/form-data" }, timeout: 120_000 }
     )
     .then((r) => r.data);
 };
