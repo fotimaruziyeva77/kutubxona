@@ -641,3 +641,49 @@ body:has([data-reader-shell]) .locale-theme-control {
   }
   .book-card:hover .book-card-cover, .lift:hover, .book-card:hover .book-card-stage { transform: none; }
 }
+
+/* Hero: fonddagi haqiqiy muqovalar yelpig'ich shaklida. */
+@keyframes sl-fade-in { from { opacity: 0; } }
+.hero-books { position: relative; display: block; padding: 1.5rem 0 3rem; }
+.hero-books-stage {
+  position: relative;
+  height: 22rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 35%, rgb(59 130 246 / 0.18), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 70% 80%, rgb(245 158 11 / 0.12), transparent 70%);
+}
+.hero-book {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  width: 8.5rem;
+  transform-origin: 50% 120%;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.4s ease;
+  filter: drop-shadow(0 18px 22px rgb(23 37 84 / 0.25));
+  animation: sl-fade-in 0.9s ease both;
+}
+.hero-book-0 { z-index: 1; transform: translateX(-50%) translateX(-11rem) rotate(-14deg) scale(0.86); animation-delay: 0.1s; }
+.hero-book-1 { z-index: 2; transform: translateX(-50%) translateX(-5.5rem) rotate(-7deg) scale(0.93); animation-delay: 0.2s; }
+.hero-book-2 { z-index: 5; transform: translateX(-50%) translateY(-1.25rem) scale(1.08); animation-delay: 0.3s; }
+.hero-book-3 { z-index: 2; transform: translateX(-50%) translateX(5.5rem) rotate(7deg) scale(0.93); animation-delay: 0.4s; }
+.hero-book-4 { z-index: 1; transform: translateX(-50%) translateX(11rem) rotate(14deg) scale(0.86); animation-delay: 0.5s; }
+.hero-books:hover .hero-book-0 { transform: translateX(-50%) translateX(-13rem) rotate(-18deg) scale(0.86); }
+.hero-books:hover .hero-book-1 { transform: translateX(-50%) translateX(-6.5rem) rotate(-9deg) scale(0.95); }
+.hero-books:hover .hero-book-2 { transform: translateX(-50%) translateY(-2rem) scale(1.12); }
+.hero-books:hover .hero-book-3 { transform: translateX(-50%) translateX(6.5rem) rotate(9deg) scale(0.95); }
+.hero-books:hover .hero-book-4 { transform: translateX(-50%) translateX(13rem) rotate(18deg) scale(0.86); }
+.hero-books-badge { position: absolute; left: 50%; bottom: 0.5rem; transform: translateX(-50%); z-index: 6; white-space: nowrap; }
+@media (max-width: 640px) {
+  .hero-books-stage { height: 17rem; }
+  .hero-book { width: 6.5rem; }
+  .hero-book-0, .hero-book-4 { display: none; }
+}
+
+/* Quick view oynasi kirishi. */
+@keyframes sl-pop { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: none; } }
+.quick-view { animation: sl-pop 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-book, .quick-view { animation: none !important; transition: none !important; }
+}

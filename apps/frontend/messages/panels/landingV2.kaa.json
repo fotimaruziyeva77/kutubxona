@@ -1,0 +1,51 @@
+{
+  "LandingV2": {
+    "heroTop": "Kerekli kitaptı",
+    "heroAccent": "jaqın kitapxanadan tabıń",
+    "heroLead": "Izleń, onlayn bron etiń hám kitapxanadan biypul alıp oqıń. Oqıǵan hár bir kitabıńız reytingińizge qosıladı.",
+    "heroBrowse": "Fondtaǵı kitaplar",
+    "heroFund": "nusqa kitapxanalar fondında",
+    "qClose": "Jabıw",
+    "qReserve": "Bron etiw",
+    "qDetails": "Tolıǵıraq",
+    "qLibrary": "Kitapxana",
+    "qGenre": "Janr",
+    "qHint": "Bron etiw ushın biypul dizimnen ótiw jetkilikli.",
+    "audTitle": "Siz ushın qanday payda?",
+    "audSub": "Platforma hár bir qatnasıwshınıń anıq máselesin sheshedi",
+    "audPain": "Másele",
+    "audFree": "Biypul",
+    "reader": {
+      "label": "Kitapxon",
+      "pain": "Kerekli kitap qaysı kitapxanada bar ekenin bilmeysiz",
+      "g1": "Barlıq kitapxanalardan atı yamasa avtorı boyınsha izleń",
+      "g2": "Onlayn bron etiń — barǵanıńızda kitap tayar turadı",
+      "g3": "Oqıǵanlarıńız reytingte: Top-100 ge kiriń",
+      "cta": "Biypul dizimnen ótiw"
+    },
+    "library": {
+      "label": "Mektep hám kitapxana",
+      "pain": "Fond dápterde, esabat qolda, kim oqıp atırǵanı belgisiz",
+      "g1": "Fondtı Excel'den bir neshe minutta júkleń",
+      "g2": "Kitap beriw hám qaytarıw QR arqalı",
+      "g3": "Esabatlar avtomatlı — qaǵazbazlıq joq",
+      "cta": "Demo soraw"
+    },
+    "org": {
+      "label": "Mákeme hám shólkem",
+      "pain": "PQ-9: kitap múyeshi, oqıw saatı hám xızmetkerler reytingi májbúriy",
+      "g1": "Kitap múyeshi hám oqıw saatı sistemada dizimge alınadı",
+      "g2": "Xızmetkerler oqıw reytingi avtomatlı qáliplesedi",
+      "g3": "PQ-9 esabatı tayar halında",
+      "cta": "Baha hám demo"
+    },
+    "gov": {
+      "label": "Hákimiyat hám basqarma",
+      "pain": "Aymaqtaǵı kitapxonlıqtı tek qaǵaz esabattan bilesiz",
+      "g1": "Wálayat, rayon hám máhálle kesiminde tiri statistika",
+      "g2": "Belsendiligi tómenlegen aymaqlar birden kórinedi",
+      "g3": "Reyting hám karta — sheshim qabıl etiw ushın",
+      "cta": "Baylanıs"
+    }
+  }
+}

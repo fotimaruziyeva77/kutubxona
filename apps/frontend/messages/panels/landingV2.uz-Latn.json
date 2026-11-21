@@ -1,0 +1,51 @@
+{
+  "LandingV2": {
+    "heroTop": "Kerakli kitobni",
+    "heroAccent": "yaqin kutubxonadan toping",
+    "heroLead": "Qidiring, onlayn bron qiling va kutubxonadan bepul olib o'qing. O'qigan har bir kitobingiz reytingingizga qo'shiladi.",
+    "heroBrowse": "Fonddagi kitoblar",
+    "heroFund": "nusxa kutubxonalar fondida",
+    "qClose": "Yopish",
+    "qReserve": "Bron qilish",
+    "qDetails": "Batafsil",
+    "qLibrary": "Kutubxona",
+    "qGenre": "Janr",
+    "qHint": "Bron qilish uchun bepul ro'yxatdan o'tish kifoya.",
+    "audTitle": "Siz uchun nima foyda?",
+    "audSub": "Platforma har bir ishtirokchining aniq muammosini hal qiladi",
+    "audPain": "Muammo",
+    "audFree": "Bepul",
+    "reader": {
+      "label": "Kitobxon",
+      "pain": "Kerakli kitob qaysi kutubxonada borligini bilmaysiz",
+      "g1": "Barcha kutubxonalardan nomi yoki muallifi bo'yicha qidiring",
+      "g2": "Onlayn bron qiling — borganingizda kitob tayyor turadi",
+      "g3": "O'qiganlaringiz reytingda: Top-100 ga kiring",
+      "cta": "Bepul ro'yxatdan o'tish"
+    },
+    "library": {
+      "label": "Maktab va kutubxona",
+      "pain": "Fond daftarda, hisobot qo'lda, kim o'qiyotgani noma'lum",
+      "g1": "Fondni Excel'dan bir necha daqiqada yuklang",
+      "g2": "Kitob berish va qaytarish QR orqali",
+      "g3": "Hisobotlar avtomatik — qog'ozbozlik yo'q",
+      "cta": "Demo so'rash"
+    },
+    "org": {
+      "label": "Idora va tashkilot",
+      "pain": "PQ-9: kitob burchagi, o'qish soati va xodimlar reytingi majburiy",
+      "g1": "Kitob burchagi va o'qish soati tizimda qayd etiladi",
+      "g2": "Xodimlar o'qish reytingi avtomatik shakllanadi",
+      "g3": "PQ-9 hisoboti tayyor holda",
+      "cta": "Narx va demo"
+    },
+    "gov": {
+      "label": "Hokimiyat va boshqarma",
+      "pain": "Hududdagi kitobxonlikni faqat qog'oz hisobotdan bilasiz",
+      "g1": "Viloyat, tuman va mahalla kesimida jonli statistika",
+      "g2": "Faolligi pasaygan hududlar darhol ko'rinadi",
+      "g3": "Reyting va xarita — qaror qabul qilish uchun",
+      "cta": "Bog'lanish"
+    }
+  }
+}

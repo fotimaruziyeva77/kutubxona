@@ -14,6 +14,8 @@ import { LandingTopTabs } from "@/components/landing/LandingTopTabs";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { HeroVisual } from "@/components/landing/HeroVisual";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { LandingBooks } from "@/components/landing/LandingBooks";
+import QRCode from "qrcode";
 import { TelegramIcon } from "@/components/landing/SocialIcons";
 import { Icon, ICON_SIZE } from "@/components/ui/icon";
 import { BookCover } from "@/components/books/BookCover";
@@ -226,11 +228,11 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 // STATIK TUZILMA
 // ============================================================================
 
-const ROLE_DEFS = [
-  { key: "citizen", icon: Icon.readers },
-  { key: "student", icon: Icon.school },
-  { key: "teacher", icon: Icon.teacher },
-  { key: "employee", icon: Icon.organization },
+const AUDIENCE_DEFS = [
+  { key: "reader", icon: Icon.readers, href: "/register", primary: true },
+  { key: "library", icon: Icon.school, href: "#muassasalar", primary: false },
+  { key: "org", icon: Icon.organization, href: "#muassasalar", primary: false },
+  { key: "gov", icon: Icon.stats, href: "#muassasalar", primary: false },
 ] as const;
 
 const HOW_STEP_DEFS = [
@@ -287,6 +289,12 @@ export default async function HomePage({
 }) {
   const locale = params.locale ?? "uz-Latn";
   const t = await getTranslations({ locale, namespace: "landing" });
+  const tv = await getTranslations({ locale, namespace: "LandingV2" });
+  const telegramQr = await QRCode.toString("https://t.me/SifatLibraryBot", {
+    type: "svg",
+    margin: 1,
+    color: { dark: "#0c4a6e", light: "#ffffff" },
+  }).catch(() => null);
   const format = await getFormatter({ locale });
   const fmt = (n: number) => format.number(Math.round(n));
 
@@ -339,13 +347,13 @@ export default async function HomePage({
               </span>
 
               <h1 className="mt-6 text-4xl font-bold leading-[1.1] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
-                {t("hero.titleTop")}
+                {tv("heroTop")}
                 <br />
-                <span className="text-shimmer">{t("hero.titleAccent")}</span>
+                <span className="text-shimmer">{tv("heroAccent")}</span>
               </h1>
 
               <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-600">
-                {t("hero.type1")}. {t("footer.about")}
+                {tv("heroLead")}
               </p>
 
               {/* Qidiruv */}
@@ -381,7 +389,6 @@ export default async function HomePage({
                 {[
                   { icon: Icon.shield, label: t("hero.badge") },
                   { icon: Icon.locked, label: t("hero.trustData") },
-                  { icon: Icon.offline, label: t("hero.trustOffline") },
                 ].map(({ icon: TrustIcon, label }) => (
                   <span
                     key={label}
@@ -396,10 +403,44 @@ export default async function HomePage({
 
             {/* O'ng: kutubxona vizuali */}
             <div className="hero-enter mx-auto w-full max-w-lg lg:max-w-none">
-              <HeroVisual
-                liveLabel={t("live.titleLive")}
-                liveValue={stat(stats?.books)}
-              />
+              {newBooks.length >= 3 ? (
+                <a href="#kitoblar" aria-label={tv("heroBrowse")} className="hero-books block">
+                  <div className="hero-books-stage">
+                    {newBooks.slice(0, 5).map((b, i) => (
+                      <div key={b.id} className={`hero-book hero-book-${i}`}>
+                        <BookCover
+                          size="lg"
+                          title={b.title}
+                          author={b.author}
+                          genre={b.genre}
+                          coverUrl={
+                            b.hasCover
+                              ? `/api/books/${b.id}/cover${b.updatedAt ? `?v=${encodeURIComponent(b.updatedAt)}` : ""}`
+                              : null
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {stat(stats?.books) && (
+                    <div className="hero-books-badge card-surface flex items-center gap-3 rounded-2xl px-4 py-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
+                        <Icon.book aria-hidden="true" size={ICON_SIZE.sm} />
+                      </span>
+                      <span>
+                        <span className="block text-xl font-bold leading-none text-slate-900">{stat(stats?.books)}</span>
+                        <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                          <span aria-hidden="true" className="live-dot h-1.5 w-1.5 rounded-full bg-green-500" />
+                          {tv("heroFund")}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </a>
+              ) : (
+                <HeroVisual liveLabel={t("live.titleLive")} liveValue={stat(stats?.books)} />
+              )}
+
             </div>
           </div>
         </div>
@@ -453,57 +494,20 @@ export default async function HomePage({
                 <Icon.next aria-hidden="true" size={ICON_SIZE.sm} />
               </Link>
             </div>
-            <div
-              data-reveal-stagger=""
-              className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 lg:grid-cols-6"
-            >
-              {newBooks.map((b) => (
-                <Link
-                  key={b.id}
-                  href={`/${locale}/book/${encodeURIComponent(b.id)}`}
-                  className="book-card group flex w-[44%] shrink-0 snap-start flex-col rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto"
-                >
-                  <div className="book-card-stage relative rounded-2xl px-5 pb-5 pt-7">
-                    <span
-                      className={`absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${
-                        b.availableCount > 0 ? "bg-white text-green-700" : "bg-white/80 text-slate-500"
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`h-1.5 w-1.5 rounded-full ${b.availableCount > 0 ? "live-dot bg-green-500" : "bg-slate-400"}`}
-                      />
-                      {b.availableCount > 0
-                        ? t("newBooks.available", { count: b.availableCount })
-                        : t("newBooks.unavailable")}
-                    </span>
-                    <div className="book-card-cover mx-auto w-full max-w-[8.5rem]">
-                      <BookCover
-                        size="md"
-                        title={b.title}
-                        author={b.author}
-                        genre={b.genre}
-                        coverUrl={
-                          b.hasCover
-                            ? `/api/books/${b.id}/cover${b.updatedAt ? `?v=${encodeURIComponent(b.updatedAt)}` : ""}`
-                            : null
-                        }
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-3 line-clamp-2 px-1 text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-700">
-                    {b.title}
-                  </p>
-                  <p className="mt-0.5 truncate px-1 text-xs text-slate-500">{b.author}</p>
-                  {b.library?.name && (
-                    <p className="mt-1.5 flex items-center gap-1 truncate px-1 text-xs text-slate-400">
-                      <Icon.library aria-hidden="true" size={ICON_SIZE.xs} className="shrink-0 text-brand-400" />
-                      <span className="truncate">{b.library.name}</span>
-                    </p>
-                  )}
-                </Link>
-              ))}
-            </div>
+            <LandingBooks
+              books={newBooks}
+              locale={locale}
+              labels={{
+                available: t("newBooks.available", { count: "{count}" }),
+                unavailable: t("newBooks.unavailable"),
+                close: tv("qClose"),
+                reserve: tv("qReserve"),
+                details: tv("qDetails"),
+                library: tv("qLibrary"),
+                genre: tv("qGenre"),
+                hint: tv("qHint"),
+              }}
+            />
           </div>
         </section>
       )}
@@ -592,36 +596,47 @@ export default async function HomePage({
       </section>
 
       {/* ================================================================== */}
-      {/* 6. ROLLAR — referensdagi "Siz uchun maxsus imkoniyatlar"           */}
+      {/* 6. AUDITORIYALAR — har kim uchun: muammo → yechim → bitta harakat   */}
       {/* ================================================================== */}
-      <section data-reveal="" className="border-y border-line bg-white">
+      <section data-reveal="" id="kimlar-uchun" className="scroll-mt-20 border-y border-line bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <SectionHeading title={t("roles.title")} subtitle={t("roles.subtitle")} />
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {ROLE_DEFS.map(({ key, icon: RoleIcon }) => (
+          <SectionHeading title={tv("audTitle")} subtitle={tv("audSub")} />
+          <div data-reveal-stagger="" className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {AUDIENCE_DEFS.map(({ key, icon: AudIcon, href, primary }) => (
               <div
                 key={key}
-                className="group flex flex-col rounded-2xl border border-line bg-surface-muted p-6 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+                className={`lift flex flex-col rounded-2xl border p-6 ${
+                  primary ? "border-brand-300 bg-brand-50/60" : "border-line bg-surface-muted"
+                }`}
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-white text-brand-600 shadow-sm">
-                  <RoleIcon aria-hidden="true" size={ICON_SIZE.md} strokeWidth={1.75} />
-                </span>
-                <h3 className="mt-5 text-lg font-bold text-slate-900">
-                  {t(`roles.${key}.label` as "roles.citizen.label")}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  {t(`roles.${key}.desc` as "roles.citizen.desc")}
+                <div className="flex items-center justify-between">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-white text-brand-600 shadow-sm">
+                    <AudIcon aria-hidden="true" size={ICON_SIZE.md} strokeWidth={1.75} />
+                  </span>
+                  {primary && (
+                    <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">
+                      {tv("audFree")}
+                    </span>
+                  )}
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">{tv(`${key}.label`)}</h3>
+                <p className="mt-3 rounded-xl border border-red-100 bg-red-50/70 px-3 py-2 text-sm leading-snug text-red-800">
+                  <span className="font-semibold">{tv("audPain")}:</span> {tv(`${key}.pain`)}
                 </p>
                 <ul className="mt-4 flex-1 space-y-2">
-                  <FeatureItem>{t(`roles.${key}.f1` as "roles.citizen.f1")}</FeatureItem>
-                  <FeatureItem>{t(`roles.${key}.f2` as "roles.citizen.f2")}</FeatureItem>
-                  <FeatureItem>{t(`roles.${key}.f3` as "roles.citizen.f3")}</FeatureItem>
+                  <FeatureItem>{tv(`${key}.g1`)}</FeatureItem>
+                  <FeatureItem>{tv(`${key}.g2`)}</FeatureItem>
+                  <FeatureItem>{tv(`${key}.g3`)}</FeatureItem>
                 </ul>
                 <Link
-                  href={`/${locale}/register`}
-                  className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 transition-colors group-hover:text-brand-700"
+                  href={href.startsWith("#") ? href : `/${locale}${href}`}
+                  className={`mt-6 inline-flex h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-bold transition-colors ${
+                    primary
+                      ? "btn-shine bg-brand-600 text-white hover:bg-brand-700"
+                      : "border border-line bg-white text-brand-700 hover:bg-brand-50"
+                  }`}
                 >
-                  {t("roles.registerCta")}
+                  {tv(`${key}.cta`)}
                   <Icon.next aria-hidden="true" size={ICON_SIZE.sm} />
                 </Link>
               </div>
@@ -892,9 +907,21 @@ export default async function HomePage({
               <p className="mt-4 text-sm font-semibold text-slate-700">
                 {t("telegram.qrLabel")}
               </p>
-              <div className="mx-auto mt-5 flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-line-strong bg-surface-muted text-slate-300">
-                <Icon.qr aria-hidden="true" size={56} strokeWidth={1} />
-              </div>
+              {telegramQr ? (
+                <a
+                  href="https://t.me/SifatLibraryBot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="@SifatLibraryBot"
+                  className="mx-auto mt-5 block h-44 w-44 rounded-2xl border border-line bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: telegramQr }}
+                />
+              ) : (
+                <div className="mx-auto mt-5 flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-line-strong bg-surface-muted text-slate-300">
+                  <Icon.qr aria-hidden="true" size={56} strokeWidth={1} />
+                </div>
+              )}
+
               <p className="mt-4 text-xs text-slate-400">{t("telegram.qrCaption")}</p>
             </div>
           </div>
@@ -919,7 +946,7 @@ export default async function HomePage({
               </p>
             </div>
 
-            {donateStats ? (
+            {donateStats && Number(donateStats.totalCollected ?? 0) > 0 ? (
               <div className="mx-auto mt-10 grid max-w-3xl gap-6 border-t border-white/10 pt-8 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/10">
                 {(
                   [
@@ -950,82 +977,6 @@ export default async function HomePage({
                 <Icon.donate aria-hidden="true" size={ICON_SIZE.sm} />
                 {t("donate.cta")}
               </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================== */}
-      {/* 14. MOBIL ILOVA                                                    */}
-      {/* ================================================================== */}
-      <section data-reveal="" className="border-y border-line bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div>
-              <span className="eyebrow">{t("app.title")}</span>
-              <h2 className="mt-3 text-3xl font-bold text-brand-900 sm:text-4xl">
-                {t.rich("app.desc", {
-                  b: (chunks) => <b className="text-brand-600">{chunks}</b>,
-                })}
-              </h2>
-              <ul className="mt-6 space-y-2.5">
-                {(["f1", "f2", "f3", "f4"] as const).map((f) => (
-                  <FeatureItem key={f}>{t(`app.${f}` as "app.f1")}</FeatureItem>
-                ))}
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-slate-300"><path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.78 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5M13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/></svg>
-                  {t("app.iosSub")}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-slate-300"><path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.6 3 21.09 3 20.5M16.81 15.12L6.05 21.34L14.54 12.85L16.81 15.12M20.16 10.81C20.5 11.08 20.75 11.5 20.75 12C20.75 12.5 20.53 12.9 20.18 13.18L17.89 14.5L15.39 12L17.89 9.5L20.16 10.81M6.05 2.66L16.81 8.88L14.54 11.15L6.05 2.66Z"/></svg>
-                  {t("app.androidSub")}
-                </span>
-              </div>
-            </div>
-
-            {/* Telefon maketi */}
-            <div className="relative mx-auto w-full max-w-xs">
-              <div className="relative rounded-[2rem] border-[6px] border-line-strong bg-white shadow-2xl shadow-brand-950/10">
-                <div className="flex items-center justify-between rounded-t-[1.5rem] bg-brand-900 px-5 py-2.5">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-white/80"><LogoMark size={14} tone="white" />SIFAT</span>
-                  <div className="flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                  </div>
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="rounded-xl bg-brand-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">
-                      Reading Index
-                    </p>
-                    <p className="mt-1 text-3xl font-bold text-brand-800">—</p>
-                    <p className="mt-1 text-xs text-slate-400">{t("app.mockRI")}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-line bg-surface-muted p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        {t("app.mockToday")}
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-slate-700">—</p>
-                    </div>
-                    <div className="rounded-xl border border-line bg-surface-muted p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        {t("app.mockStreak")}
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-slate-700">—</p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-accent-50 p-3">
-                    <div className="flex items-center gap-2">
-                      <Icon.trophy aria-hidden="true" size={16} className="text-accent-600" />
-                      <p className="text-xs font-semibold text-accent-700">Top o&apos;quvchi</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
