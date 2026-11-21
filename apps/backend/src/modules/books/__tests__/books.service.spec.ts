@@ -1,4 +1,4 @@
-import { NotFoundException, BadRequestException, ConflictException, ServiceUnavailableException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, ConflictException, ForbiddenException, ServiceUnavailableException } from "@nestjs/common";
 import type { Queue } from "bullmq";
 import { BooksService } from "../books.service";
 import { PrismaService } from "../../../infra/prisma/prisma.service";
@@ -55,6 +55,10 @@ const mockPrisma = {
     update: jest.fn()
   },
   user: {
+    findUnique: jest.fn()
+  },
+  // remove(): kutubxonachining o'z kutubxonasi (resolveCallerLibraryId)
+  institution: {
     findUnique: jest.fn()
   },
   // remove(): berish/qaytarish tarixi tekshiruvi (FK Restrict → 409)
@@ -474,6 +478,23 @@ describe("BooksService", () => {
 
       await expect(service.remove("b1")).rejects.toThrow("4 ta berish/qaytarish yozuvi");
       expect(mockPrisma.book.delete).not.toHaveBeenCalled();
+    });
+
+    it("kutubxonachi faqat o'z kutubxonasi kitobini o'chiradi (boshqasiga 403)", async () => {
+      mockPrisma.book.findUnique.mockResolvedValue(mockBook); // libraryId: lib1
+      mockPrisma.bookTransaction.count.mockResolvedValue(0);
+      mockPrisma.user.findUnique.mockResolvedValue({ schoolId: "inst1", universityId: null, organizationId: null });
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib-boshqa" });
+      mockPrisma.book.delete.mockClear();
+
+      await expect(service.remove("b1", { sub: "u1", role: "KUTUBXONACHI" })).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.book.delete).not.toHaveBeenCalled();
+
+      mockPrisma.institution.findUnique.mockResolvedValue({ libraryId: "lib1" });
+      mockPrisma.book.delete.mockResolvedValue({});
+      await expect(service.remove("b1", { sub: "u1", role: "KUTUBXONACHI" })).resolves.toEqual(
+        expect.objectContaining({ message: expect.stringContaining("o'chirildi") })
+      );
     });
   });
 

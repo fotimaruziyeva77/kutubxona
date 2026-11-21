@@ -23,6 +23,7 @@ import {
   LibraryDeskController,
 } from "./admin-accounts.controller";
 import { AdminAccountsService } from "./admin-accounts.service";
+import { SystemUpdateController } from "./system-update.controller";
 
 @Module({
   imports: [
@@ -45,7 +46,7 @@ import { AdminAccountsService } from "./admin-accounts.service";
     // backoff) in QueueModule — this re-registration gives the scope a binding.
     BullModule.registerQueue({ name: REPORT_QUEUE }),
   ],
-  controllers: [AdminController, AddressChangeController, AdminAccountsController, LibraryDeskController],
+  controllers: [AdminController, AddressChangeController, AdminAccountsController, LibraryDeskController, SystemUpdateController],
   providers: [
     AdminService,
     StatsAggregationProcessor,

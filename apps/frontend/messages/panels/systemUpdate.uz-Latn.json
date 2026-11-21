@@ -1,0 +1,14 @@
+{
+  "SystemUpdate": {
+    "available": "Yangi versiya chiqdi — tizimni yangilang",
+    "update": "Yangilash",
+    "retry": "Qayta urinish",
+    "confirm": "Tizim yangilansinmi? Avval zaxira nusxa olinadi, sayt 1–2 daqiqa ishlamasligi mumkin.",
+    "running": "Yangilanmoqda… Zaxira nusxa olinmoqda va yangi versiya o'rnatilmoqda (2–5 daqiqa). Sahifani yopmang.",
+    "done": "Yangi versiya o'rnatildi.",
+    "reload": "Sahifani yangilash",
+    "failed": "Yangilash muvaffaqiyatsiz tugadi — eski versiya ishlashda davom etadi.",
+    "log": "Jurnal",
+    "notInstalled": "Avtomatik yangilash serverda o'rnatilmagan: bir marta `sudo bash /srv/kutubxona/deploy/install-updater.sh` ni ishga tushiring."
+  }
+}

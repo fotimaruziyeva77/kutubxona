@@ -44,14 +44,13 @@ describe("BooksController", () => {
     }
   });
 
-  it("RBAC: fond boshqaruvi — xodimlar; o'chirish — kutubxonachiga emas; QR skan — kutubxonachi", () => {
+  it("RBAC: fond boshqaruvi — xodimlar; o'chirish — xodimlar (service o'z kutubxonasini tekshiradi); QR skan — kutubxonachi", () => {
     for (const h of [controller.create, controller.update, controller.importExcel, controller.getImportStatus, controller.downloadTemplate]) {
       expect(roles(h)).toEqual(expect.arrayContaining(STAFF));
       expect(roles(h)).not.toContain(UserRole.KITOBXON);
       expect(Reflect.getMetadata(GUARDS_METADATA, h)).toEqual([JwtAuthGuard, RolesGuard]);
     }
-    expect(roles(controller.remove)).toEqual([UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN]);
-    expect(roles(controller.remove)).not.toContain(UserRole.KUTUBXONACHI);
+    expect(roles(controller.remove)).toEqual(STAFF);
     expect(roles(controller.scanQr)).toEqual(STAFF);
     expect(isPublic(controller.scanQr)).toBeUndefined();
   });
@@ -111,7 +110,7 @@ describe("BooksController", () => {
     await controller.update("b-1", updateDto);
     expect(svc.update).toHaveBeenCalledWith("b-1", updateDto);
     await controller.remove("b-1");
-    expect(svc.remove).toHaveBeenCalledWith("b-1");
+    expect(svc.remove).toHaveBeenCalledWith("b-1", undefined);
     await controller.getImportStatus("job-7");
     expect(svc.getImportStatus).toHaveBeenCalledWith("job-7");
   });

@@ -61,6 +61,9 @@ RUN addgroup -g 1001 -S sifat && \
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Image qaysi commitdan yig'ilgani — admin paneldagi "yangi versiya" tekshiruvi.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
 # Timezone — @nestjs/schedule cronlari Asia/Tashkent (UTC+5) bo'yicha ishlasin (INFRA-05)
 ENV TZ=Asia/Tashkent
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   ServiceUnavailableException,
   type OnApplicationBootstrap
 } from "@nestjs/common";
@@ -15,6 +16,7 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { BOOK_IMPORT_QUEUE } from "../../infra/queue/queue-names";
 import { StoreService } from "../store/store.service";
 import { BookImportProcessor } from "./books-import.processor";
+import { resolveCallerLibraryId } from "../../common/utils/library-scope.util";
 import {
   BOOKS_SEARCH_INDEX,
   buildBookSearchQuery,
@@ -459,8 +461,15 @@ export class BooksService implements OnApplicationBootstrap {
   }
 
   // ── Kitob o'chirish ───────────────────────────────────────────────────────
-  async remove(id: string) {
+  async remove(id: string, caller?: { sub: string; role: string }) {
     const book = await this.findOne(id);
+    // Kutubxonachi / muassasa admin faqat O'Z kutubxonasi kitobini o'chiradi.
+    if (caller && caller.role !== "SUPER_ADMIN") {
+      const ownLibraryId = await resolveCallerLibraryId(this.prisma, caller.sub);
+      if (!ownLibraryId || ownLibraryId !== book.libraryId) {
+        throw new ForbiddenException("Faqat o'z kutubxonangiz kitobini o'chira olasiz");
+      }
+    }
     // Kitobxonlardagi (qaytarilmagan) nusxalar bo'lsa — o'chirib bo'lmaydi:
     // faol tranzaksiya kitobsiz qolardi. Avval qaytarilsin.
     const borrowed = book.totalCount - book.availableCount;

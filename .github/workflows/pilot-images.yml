@@ -64,6 +64,7 @@ jobs:
             NEXT_PUBLIC_API_URL=
             NEXT_PUBLIC_SITE_URL=${{ env.PILOT_URL }}
             BACKEND_PROXY_TARGET=http://backend:4000
+            APP_VERSION=${{ github.sha }}
           tags: |
             ${{ steps.img.outputs.name }}:pilot
             ${{ steps.img.outputs.name }}:${{ github.sha }}

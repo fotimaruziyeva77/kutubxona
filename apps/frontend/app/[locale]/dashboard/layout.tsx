@@ -13,6 +13,7 @@ import { hasAuthHintCookie } from "@/lib/auth-cookie";
 // token on dashboard mount IF Notification.permission === 'granted'. NEVER
 // auto-prompts; explicit flow lives in lib/fcm-client.ts for a later UI.
 import { FcmTokenRegistrar } from "@/components/fcm/FcmTokenRegistrar";
+import { SystemUpdateBanner } from "@/components/admin/SystemUpdateBanner";
 import { LocaleThemeControl } from "@/components/LocaleThemeControl";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { Icon, ICON_SIZE, type LucideIcon } from "@/components/ui/icon";
@@ -333,6 +334,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="hidden md:block" />
             <LocaleThemeControl inline />
           </header>
+          {role === "SUPER_ADMIN" && <SystemUpdateBanner />}
           <main className="flex-1 overflow-x-hidden">{children}</main>
         </div>
       </div>

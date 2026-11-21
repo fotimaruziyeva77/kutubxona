@@ -37,6 +37,7 @@ const PANEL_MODULES = [
   "reader",
   "bookPage",
   "landingV2",
+  "systemUpdate",
 ] as const;
 
 async function loadPanel(name: string, locale: string): Promise<Record<string, unknown>> {

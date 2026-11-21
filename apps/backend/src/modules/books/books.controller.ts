@@ -200,8 +200,8 @@ export class BooksController {
 
   @Delete(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
-  remove(@Param("id") id: string) {
-    return this.booksService.remove(id);
+  @Roles(UserRole.KUTUBXONACHI, UserRole.MUASSASA_ADMIN, UserRole.SUPER_ADMIN)
+  remove(@Param("id") id: string, @CurrentUser() user?: { sub: string; role: string }) {
+    return this.booksService.remove(id, user ? { sub: user.sub, role: user.role } : undefined);
   }
 }

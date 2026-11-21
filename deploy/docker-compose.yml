@@ -55,6 +55,8 @@ services:
     volumes:
       # Kalit fayllar (masalan Firebase fcm.json) — gitga kirmaydi.
       - ./secrets:/app/apps/backend/secrets:ro
+      # Admin paneldan yangilash so'rovi (install-updater.sh) — host bilan almashuv.
+      - ./control:/app/control
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

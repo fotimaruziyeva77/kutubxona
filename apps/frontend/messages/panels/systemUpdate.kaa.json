@@ -1,0 +1,14 @@
+{
+  "SystemUpdate": {
+    "available": "Jańa versiya shıqtı — sistemanı jańalań",
+    "update": "Jańalaw",
+    "retry": "Qaytadan urınıw",
+    "confirm": "Sistema jańalansın ba? Aldın qosımsha nusqa alınadı, sayt 1–2 minut islemewi múmkin.",
+    "running": "Jańalanbaqta… Qosımsha nusqa alınbaqta hám jańa versiya ornatılmaqta (2–5 minut). Betti jappań.",
+    "done": "Jańa versiya ornatıldı.",
+    "reload": "Betti jańalaw",
+    "failed": "Jańalaw sátsiz tamamlandı — eski versiya islewin dawam etedi.",
+    "log": "Jurnal",
+    "notInstalled": "Avtomat jańalaw serverde ornatılmaǵan: bir ret `sudo bash /srv/kutubxona/deploy/install-updater.sh` iske túsiriń."
+  }
+}

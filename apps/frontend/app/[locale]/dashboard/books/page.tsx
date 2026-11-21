@@ -133,7 +133,7 @@ export default function BooksPage() {
   const role = useAuthStore((s) => s.user?.role);
   // DELETE /books/:id — faqat MUASSASA_ADMIN va SUPER_ADMIN (backend @Roles).
   // Kutubxonachiga tugma ko'rsatilmaydi: avval ko'rinardi va 403 bilan tugardi.
-  const canDelete = role === "SUPER_ADMIN" || role === "MUASSASA_ADMIN";
+  const canDelete = role === "SUPER_ADMIN" || role === "MUASSASA_ADMIN" || role === "KUTUBXONACHI";
   // Til kodi → yorliq. DB'da kodlar aralash ("uz", "uz-Latn", "uz-Cyrl", "ru" —
   // seed va forma turlicha yozgan); prefiks bo'yicha moslanadi, noma'lum — kodning o'zi.
   const langLabel = (code?: string | null) => {
