@@ -173,6 +173,16 @@ export class BookImportProcessor extends WorkerHost {
     } as never);
     await job.updateProgress(100);
 
+    // Kutubxona fond soni (fundCount) qo'lda qo'shish/o'chirishdagi kabi
+    // importdan keyin ham qayta hisoblanadi — aks holda xatlov kartasi eskicha qoladi.
+    if (processed > 0) {
+      const agg = await this.prisma.book.aggregate({ where: { libraryId }, _sum: { totalCount: true } });
+      await this.prisma.library.update({
+        where: { id: libraryId },
+        data: { fundCount: agg._sum.totalCount ?? 0 }
+      });
+    }
+
     this.logger.log(
       `BOOK_IMPORT done (job ${job.id}, library ${libraryId}): ${processed} created, ${skipped} skipped (ISBN fondda bor), ${errors.length} errors`
     );

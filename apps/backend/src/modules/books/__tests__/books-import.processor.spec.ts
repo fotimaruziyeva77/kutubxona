@@ -79,8 +79,10 @@ const mockPrisma = {
   book: {
     createMany: jest.fn().mockResolvedValue({ count: 0 }),
     // ES: createMany ID qaytarmaydi — (libraryId, isbn) bo'yicha qayta o'qiladi
-    findMany: jest.fn().mockResolvedValue([])
-  }
+    findMany: jest.fn().mockResolvedValue([]),
+    aggregate: jest.fn().mockResolvedValue({ _sum: { totalCount: 0 } })
+  },
+  library: { update: jest.fn().mockResolvedValue({}) }
 } as unknown as PrismaService;
 
 const mockEs = {
